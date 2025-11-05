@@ -1,0 +1,199 @@
+@model dynamic
+@{
+    // Este partial puede recibir TortaCatalogoDTO o cualquier objeto con las propiedades necesarias
+    var tortaId = Model.Id;
+    var nombre = Model.Nombre;
+    var descripcionCorta = Model.DescripcionCorta ?? (Model.Descripcion?.Length > 100 ? Model.Descripcion.Substring(0, 100) + "..." : Model.Descripcion);
+    var precio = Model.Precio;
+    var categoria = Model.Categoria;
+    var calificacion = Model.Calificacion;
+    var nombreVendedor = Model.NombreVendedor ?? Model.Vendedor?.NombreComercial;
+    var imagenPrincipal = Model.ImagenPrincipal ?? "/images/default-cake.jpg";
+    var disponible = Model.Disponible;
+    var esNuevo = Model.EsNuevo ?? false;
+    var esPopular = Model.EsPopular ?? false;
+    var esFavorito = Model.EsFavorito ?? false;
+    var vecesVendida = Model.VecesVendida ?? 0;
+    
+    // Para compradores autenticados
+    var mostrarFavoritos = ViewBag.MostrarFavoritos ?? false;
+}
+
+<div class="bg-white rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 @(disponible ? "" : "opacity-75")">
+    <!-- Link al detalle de la torta -->
+    <a asp-controller="Torta" asp-action="Details" asp-route-id="@tortaId" class="block">
+        
+        <!-- Imagen con Badges -->
+        <div class="relative overflow-hidden rounded-t-lg group">
+            <img src="@imagenPrincipal" 
+                 alt="@nombre" 
+                 class="w-full h-48 object-cover transition duration-300 group-hover:scale-110" 
+                 onerror="this.src='/images/default-cake.jpg'" />
+            
+            <!-- Overlay en hover -->
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition duration-300"></div>
+            
+            <!-- Badge: Nuevo -->
+            @if (esNuevo)
+            {
+                <span class="absolute top-2 left-2 bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md animate-pulse">
+                    ✨ Nuevo
+                </span>
+            }
+            
+            <!-- Badge: Popular -->
+            @if (esPopular)
+            {
+                <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                    🔥 Popular
+                </span>
+            }
+            
+            <!-- Badge: No Disponible (overlay) -->
+            @if (!disponible)
+            {
+                <div class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-t-lg">
+                    <div class="text-center text-white">
+                        <div class="text-4xl mb-2">😔</div>
+                        <span class="font-bold text-lg">No Disponible</span>
+                    </div>
+                </div>
+            }
+            
+            <!-- Botón Favorito (solo para compradores) -->
+            @if (mostrarFavoritos && disponible)
+            {
+                <button class="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow-lg hover:bg-red-50 transition transform hover:scale-110"
+                        onclick="toggleFavorito(@tortaId, event)"
+                        title="@(esFavorito ? "Quitar de favoritos" : "Agregar a favoritos")">
+                    <span class="text-2xl">@(esFavorito ? "❤️" : "🤍")</span>
+                </button>
+            }
+        </div>
+        
+        <!-- Contenido de la Card -->
+        <div class="p-4">
+            
+            <!-- Nombre de la Torta -->
+            <h3 class="font-bold text-lg mb-2 truncate text-gray-800 hover:text-orange-600 transition" title="@nombre">
+                @nombre
+            </h3>
+            
+            <!-- Descripción Corta -->
+            @if (!string.IsNullOrEmpty(descripcionCorta))
+            {
+                <p class="text-sm text-gray-600 mb-3 h-10 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                    @descripcionCorta
+                </p>
+            }
+            
+            <!-- Categoría -->
+            @if (!string.IsNullOrEmpty(categoria))
+            {
+                <span class="inline-block bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded mb-3">
+                    📂 @categoria
+                </span>
+            }
+            
+            <!-- Rating, Vendedor y Ventas -->
+            <div class="flex items-center gap-2 text-sm text-gray-600 mb-3 flex-wrap">
+                <!-- Calificación -->
+                <span class="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
+                    <span class="text-yellow-500">⭐</span>
+                    <span class="font-semibold text-gray-800">@calificacion.ToString("F1")</span>
+                </span>
+                
+                <span class="text-gray-400">•</span>
+                
+                <!-- Vendedor -->
+                <span class="truncate flex items-center gap-1" title="Vendedor: @nombreVendedor">
+                    <span>👨‍🍳</span>
+                    <span class="max-w-[100px] truncate">@nombreVendedor</span>
+                </span>
+                
+                @if (vecesVendida > 0)
+                {
+                    <span class="text-gray-400">•</span>
+                    <span class="text-xs bg-gray-100 px-2 py-1 rounded">
+                        @vecesVendida vendidas
+                    </span>
+                }
+            </div>
+            
+            <!-- Precio y Botón de Acción -->
+            <div class="flex justify-between items-center pt-3 border-t border-gray-100">
+                <!-- Precio -->
+                <div>
+                    <div class="text-xs text-gray-500 mb-1">Precio</div>
+                    <span class="text-2xl font-bold text-orange-600">
+                        $@precio.ToString("N2")
+                    </span>
+                </div>
+                
+                <!-- Botón Ver Detalles -->
+                @if (disponible)
+                {
+                    <button class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
+                        Ver más →
+                    </button>
+                }
+                else
+                {
+                    <span class="text-gray-400 text-sm font-semibold">
+                        Agotado
+                    </span>
+                }
+            </div>
+        </div>
+    </a>
+</div>
+
+@section Scripts {
+    @if (mostrarFavoritos)
+    {
+        <script>
+            // Esta función debe estar definida en la vista principal o en site.js
+            if (typeof toggleFavorito !== 'function') {
+                async function toggleFavorito(tortaId, event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    try {
+                        const response = await fetch(`/api/Comprador/ToggleFavorito/${tortaId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        });
+                        
+                        if (!response.ok) throw new Error('Error al procesar favorito');
+                        
+                        const data = await response.json();
+                        
+                        // Actualizar UI
+                        const button = event.currentTarget;
+                        const heart = button.querySelector('span');
+                        heart.textContent = data.esFavorito ? '❤️' : '🤍';
+                        
+                        // Actualizar título
+                        button.title = data.esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos';
+                        
+                        // Mostrar notificación
+                        if (typeof showNotification === 'function') {
+                            showNotification(
+                                data.esFavorito ? 'Agregado a favoritos ❤️' : 'Eliminado de favoritos',
+                                'success'
+                            );
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        if (typeof showNotification === 'function') {
+                            showNotification('Error al procesar favorito', 'error');
+                        }
+                    }
+                }
+            }
+        </script>
+    }
+}

@@ -1,0 +1,213 @@
+@model PaginacionViewModel
+@{
+    var paginaActual = Model.PaginaActual;
+    var totalPaginas = Model.TotalPaginas;
+    var tienePaginaAnterior = Model.TienePaginaAnterior;
+    var tienePaginaSiguiente = Model.TienePaginaSiguiente;
+    
+    // Calcular rango de páginas a mostrar
+    var rangoInicio = Math.Max(1, paginaActual - 2);
+    var rangoFin = Math.Min(totalPaginas, paginaActual + 2);
+    
+    // Ajustar rango si estamos cerca del inicio o fin
+    if (paginaActual <= 3)
+    {
+        rangoFin = Math.Min(5, totalPaginas);
+    }
+    if (paginaActual >= totalPaginas - 2)
+    {
+        rangoInicio = Math.Max(1, totalPaginas - 4);
+    }
+}
+
+@if (totalPaginas > 1)
+{
+    <div class="flex flex-col items-center gap-4 py-8">
+        
+        <!-- Info de paginación -->
+        <div class="text-sm text-gray-600">
+            Página <span class="font-semibold text-orange-600">@paginaActual</span> de <span class="font-semibold">@totalPaginas</span>
+            <span class="hidden sm:inline">
+                - Total: <span class="font-semibold">@Model.TotalItems</span> items
+            </span>
+        </div>
+        
+        <!-- Controles de paginación -->
+        <nav class="flex items-center gap-2">
+            
+            <!-- Botón Primera Página -->
+            @if (paginaActual > 1)
+            {
+                <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), 
+                         new { 
+                             pagina = 1,
+                             busqueda = Context.Request.Query["busqueda"],
+                             categoria = Context.Request.Query["categoria"],
+                             ordenarPor = Context.Request.Query["ordenarPor"]
+                         })"
+                   class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                   title="Primera página">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            }
+            
+            <!-- Botón Anterior -->
+            @if (tienePaginaAnterior)
+            {
+                <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), 
+                         new { 
+                             pagina = paginaActual - 1,
+                             busqueda = Context.Request.Query["busqueda"],
+                             categoria = Context.Request.Query["categoria"],
+                             ordenarPor = Context.Request.Query["ordenarPor"]
+                         })"
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold">
+                    <i class="fas fa-chevron-left mr-2"></i>
+                    <span class="hidden sm:inline">Anterior</span>
+                </a>
+            }
+            else
+            {
+                <button disabled 
+                        class="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-400 cursor-not-allowed">
+                    <i class="fas fa-chevron-left mr-2"></i>
+                    <span class="hidden sm:inline">Anterior</span>
+                </button>
+            }
+            
+            <!-- Números de página -->
+            <div class="hidden sm:flex items-center gap-2">
+                
+                <!-- Primera página si no está en el rango -->
+                @if (rangoInicio > 1)
+                {
+                    <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), 
+                             new { 
+                                 pagina = 1,
+                                 busqueda = Context.Request.Query["busqueda"],
+                                 categoria = Context.Request.Query["categoria"],
+                                 ordenarPor = Context.Request.Query["ordenarPor"]
+                             })"
+                       class="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        1
+                    </a>
+                    
+                    @if (rangoInicio > 2)
+                    {
+                        <span class="text-gray-400">...</span>
+                    }
+                }
+                
+                <!-- Rango de páginas -->
+                @for (int i = rangoInicio; i <= rangoFin; i++)
+                {
+                    if (i == paginaActual)
+                    {
+                        <button class="w-10 h-10 flex items-center justify-center bg-orange-500 text-white font-bold rounded-lg shadow-md">
+                            @i
+                        </button>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), 
+                                 new { 
+                                     pagina = i,
+                                     busqueda = Context.Request.Query["busqueda"],
+                                     categoria = Context.Request.Query["categoria"],
+                                     ordenarPor = Context.Request.Query["ordenarPor"]
+                                 })"
+                           class="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                            @i
+                        </a>
+                    }
+                }
+                
+                <!-- Última página si no está en el rango -->
+                @if (rangoFin < totalPaginas)
+                {
+                    @if (rangoFin < totalPaginas - 1)
+                    {
+                        <span class="text-gray-400">...</span>
+                    }
+                    
+                    <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), 
+                             new { 
+                                 pagina = totalPaginas,
+                                 busqueda = Context.Request.Query["busqueda"],
+                                 categoria = Context.Request.Query["categoria"],
+                                 ordenarPor = Context.Request.Query["ordenarPor"]
+                             })"
+                       class="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        @totalPaginas
+                    </a>
+                }
+            </div>
+            
+            <!-- Botón Siguiente -->
+            @if (tienePaginaSiguiente)
+            {
+                <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), 
+                         new { 
+                             pagina = paginaActual + 1,
+                             busqueda = Context.Request.Query["busqueda"],
+                             categoria = Context.Request.Query["categoria"],
+                             ordenarPor = Context.Request.Query["ordenarPor"]
+                         })"
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold">
+                    <span class="hidden sm:inline">Siguiente</span>
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
+            }
+            else
+            {
+                <button disabled 
+                        class="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-400 cursor-not-allowed">
+                    <span class="hidden sm:inline">Siguiente</span>
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </button>
+            }
+            
+            <!-- Botón Última Página -->
+            @if (paginaActual < totalPaginas)
+            {
+                <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString(), 
+                         new { 
+                             pagina = totalPaginas,
+                             busqueda = Context.Request.Query["busqueda"],
+                             categoria = Context.Request.Query["categoria"],
+                             ordenarPor = Context.Request.Query["ordenarPor"]
+                         })"
+                   class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                   title="Última página">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            }
+        </nav>
+        
+        <!-- Selector de items por página (opcional) -->
+        @if (ViewBag.MostrarSelectorTamanio == true)
+        {
+            <div class="flex items-center gap-3 text-sm text-gray-600">
+                <span>Mostrar:</span>
+                <select onchange="window.location.href = '@Url.Action(ViewContext.RouteData.Values["action"]?.ToString())?tamanioPagina=' + this.value + '&busqueda=@Context.Request.Query["busqueda"]&categoria=@Context.Request.Query["categoria"]&ordenarPor=@Context.Request.Query["ordenarPor"]'"
+                        class="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                    <option value="12" selected="@(Model.TamanioPagina == 12)">12</option>
+                    <option value="24" selected="@(Model.TamanioPagina == 24)">24</option>
+                    <option value="48" selected="@(Model.TamanioPagina == 48)">48</option>
+                    <option value="96" selected="@(Model.TamanioPagina == 96)">96</option>
+                </select>
+                <span>por página</span>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <!-- Solo una página - mostrar info sin controles -->
+    @if (Model.TotalItems > 0)
+    {
+        <div class="text-center py-4 text-sm text-gray-600">
+            Mostrando todos los <span class="font-semibold text-orange-600">@Model.TotalItems</span> resultados
+        </div>
+    }
+}

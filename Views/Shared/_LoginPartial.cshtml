@@ -1,0 +1,95 @@
+@using System.Security.Claims
+
+<script>
+    // Función para verificar si hay token JWT
+    function tieneTokenJWT() {
+        return localStorage.getItem('authToken') !== null;
+    }
+
+    // Función para obtener datos del usuario desde el token (opcional)
+    function obtenerUsuarioDelToken() {
+        const token = localStorage.getItem('authToken');
+        if (!token) return null;
+        
+        try {
+            // Decodificar el payload del token JWT
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return {
+                name: payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"],
+                role: payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+</script>
+
+<!-- Navbar dinámico que funciona con JWT -->
+<ul class="navbar-nav" id="navbarAuth">
+    <!-- Se llenará dinámicamente con JavaScript -->
+</ul>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const navbarAuth = document.getElementById('navbarAuth');
+        const usuario = obtenerUsuarioDelToken();
+        
+        if (usuario && tieneTokenJWT()) {
+            // Usuario autenticado con JWT
+            navbarAuth.innerHTML = `
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle"></i> ${usuario.name}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <h6 class="dropdown-header">${usuario.name}</h6>
+                        </li>
+                        <li>
+                            <span class="dropdown-item-text small text-muted">
+                                ${usuario.role}
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="/Persona/Edit">
+                                <i class="fas fa-user-edit"></i> Mi Perfil
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" onclick="logoutJWT()">
+                                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            `;
+        } else {
+            // Usuario no autenticado
+            navbarAuth.innerHTML = `
+                <li class="nav-item">
+                    <a class="nav-link" href="/Account/Login">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-outline-light ms-2" href="/Account/Register">
+                        Registrarse
+                    </a>
+                </li>
+            `;
+        }
+    });
+
+    function logoutJWT() {
+        if (confirm('¿Cerrar sesión?')) {
+            // Eliminar token JWT
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            
+            // Redirigir al login
+            window.location.href = '/Account/Login';
+        }
+    }
+</script>

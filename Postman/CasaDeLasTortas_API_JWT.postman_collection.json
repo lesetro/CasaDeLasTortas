@@ -1,0 +1,689 @@
+{
+  "info": {
+    "_postman_id": "casa-tortas-api-jwt",
+    "name": "Casa de las Tortas - API JWT",
+    "description": "Colección completa de endpoints para el API de Casa de las Tortas con autenticación JWT",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "1.1 Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Guardar token automáticamente si el login es exitoso",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.token);",
+                  "        console.log('Token guardado exitosamente');",
+                  "        console.log('Usuario:', jsonData.user.nombre);",
+                  "        console.log('Rol:', jsonData.user.rol);",
+                  "    }",
+                  "} else {",
+                  "    console.log('Login fallido');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vendedor@test.com\",\n  \"password\": \"Vendedor123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/account/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "login"]
+            },
+            "description": "Autenticación de usuario. Retorna JWT token.\n\n**Roles disponibles:**\n- Vendedor\n- Comprador\n\n**Credenciales de prueba:**\n- Vendedor: vendedor@test.com / Vendedor123!\n- Comprador: comprador@test.com / Comprador123!"
+          },
+          "response": []
+        },
+        {
+          "name": "1.2 Register - Vendedor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.token);",
+                  "        console.log('Registro exitoso - Token guardado');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "Nombre",
+                  "value": "Pastelería La Delicia",
+                  "type": "text",
+                  "description": "Nombre completo del vendedor"
+                },
+                {
+                  "key": "Email",
+                  "value": "ladelicia@example.com",
+                  "type": "text",
+                  "description": "Email único"
+                },
+                {
+                  "key": "Password",
+                  "value": "Password123!",
+                  "type": "text",
+                  "description": "Mínimo 8 caracteres, 1 mayúscula, 1 número"
+                },
+                {
+                  "key": "ConfirmPassword",
+                  "value": "Password123!",
+                  "type": "text"
+                },
+                {
+                  "key": "Telefono",
+                  "value": "2664123456",
+                  "type": "text"
+                },
+                {
+                  "key": "Rol",
+                  "value": "Vendedor",
+                  "type": "text",
+                  "description": "Vendedor o Comprador"
+                },
+                {
+                  "key": "NombreComercial",
+                  "value": "La Delicia",
+                  "type": "text",
+                  "description": "Requerido para Vendedor"
+                },
+                {
+                  "key": "Descripcion",
+                  "value": "Las mejores tortas artesanales de Villa Mercedes",
+                  "type": "text",
+                  "description": "Opcional para Vendedor"
+                },
+                {
+                  "key": "AvatarFile",
+                  "type": "file",
+                  "src": [],
+                  "description": "Imagen opcional (jpg, png, gif - máx 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/account/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "register"]
+            },
+            "description": "Registro de nuevo vendedor con nombre comercial"
+          },
+          "response": []
+        },
+        {
+          "name": "1.3 Register - Comprador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.token);",
+                  "        console.log('Registro exitoso - Token guardado');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "Nombre",
+                  "value": "María González",
+                  "type": "text"
+                },
+                {
+                  "key": "Email",
+                  "value": "maria.gonzalez@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "Password",
+                  "value": "Password123!",
+                  "type": "text"
+                },
+                {
+                  "key": "ConfirmPassword",
+                  "value": "Password123!",
+                  "type": "text"
+                },
+                {
+                  "key": "Telefono",
+                  "value": "2664789012",
+                  "type": "text"
+                },
+                {
+                  "key": "Rol",
+                  "value": "Comprador",
+                  "type": "text"
+                },
+                {
+                  "key": "Direccion",
+                  "value": "Av. Mitre 456, Villa Mercedes",
+                  "type": "text",
+                  "description": "Requerido para Comprador"
+                },
+                {
+                  "key": "AvatarFile",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/account/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "register"]
+            },
+            "description": "Registro de nuevo comprador con dirección"
+          },
+          "response": []
+        },
+        {
+          "name": "1.4 Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.token) {",
+                  "        pm.collectionVariables.set('token', jsonData.token);",
+                  "        console.log('Token renovado exitosamente');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/account/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "refresh-token"]
+            },
+            "description": "Renovar token JWT sin hacer login nuevamente.\nÚtil para mantener la sesión activa."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints de autenticación y registro"
+    },
+    {
+      "name": "2. User Profile",
+      "item": [
+        {
+          "name": "2.1 Get Current User (me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/account/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "me"]
+            },
+            "description": "Obtener información básica del usuario autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "2.2 Get Full Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/account/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "profile"]
+            },
+            "description": "Obtener perfil completo incluyendo datos de Vendedor/Comprador"
+          },
+          "response": []
+        },
+        {
+          "name": "2.3 Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "Nombre",
+                  "value": "Nombre Actualizado",
+                  "type": "text"
+                },
+                {
+                  "key": "Email",
+                  "value": "nuevo.email@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "Telefono",
+                  "value": "2664999888",
+                  "type": "text"
+                },
+                {
+                  "key": "AvatarFile",
+                  "type": "file",
+                  "src": [],
+                  "description": "Nuevo avatar (opcional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/account/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "profile"]
+            },
+            "description": "Actualizar información del perfil"
+          },
+          "response": []
+        },
+        {
+          "name": "2.4 Change Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword456!\",\n  \"confirmPassword\": \"NewPassword456!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/account/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "change-password"]
+            },
+            "description": "Cambiar contraseña del usuario autenticado"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gestión de perfil de usuario"
+    },
+    {
+      "name": "3. Validation",
+      "item": [
+        {
+          "name": "3.1 Check Email Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/account/check-email?email=test@example.com",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "check-email"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "test@example.com",
+                  "description": "Email a verificar"
+                }
+              ]
+            },
+            "description": "Verificar si un email está disponible para registro"
+          },
+          "response": []
+        },
+        {
+          "name": "3.2 Check Nombre Comercial",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/account/check-nombre-comercial?nombreComercial=La%20Delicia",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "check-nombre-comercial"],
+              "query": [
+                {
+                  "key": "nombreComercial",
+                  "value": "La Delicia",
+                  "description": "Nombre comercial a verificar"
+                }
+              ]
+            },
+            "description": "Verificar si un nombre comercial está disponible (para vendedores)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para validaciones previas al registro"
+    },
+    {
+      "name": "4. Password Recovery",
+      "item": [
+        {
+          "name": "4.1 Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/account/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "account", "forgot-password"]
+            },
+            "description": "Solicitar reseteo de contraseña.\n\nNota: Por seguridad, siempre retorna el mismo mensaje sin revelar si el email existe."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para recuperación de contraseña"
+    },
+    {
+      "name": "5. Testing Examples",
+      "item": [
+        {
+          "name": "5.1 Test - Login Vendedor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has token', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.token).to.exist;",
+                  "    pm.expect(jsonData.user.rol).to.eql('Vendedor');",
+                  "    ",
+                  "    // Guardar token",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vendedor@test.com\",\n  \"password\": \"Vendedor123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/account/login",
+            "description": "Test completo de login con verificaciones automáticas"
+          },
+          "response": []
+        },
+        {
+          "name": "5.2 Test - Get Profile After Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Profile contains rolData', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.profile.rolData).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/account/profile"
+          },
+          "response": []
+        },
+        {
+          "name": "5.3 Test - Invalid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Error message present', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.false;",
+                  "    pm.expect(jsonData.message).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"wrong@test.com\",\n  \"password\": \"WrongPassword123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/account/login"
+          },
+          "response": []
+        },
+        {
+          "name": "5.4 Test - Unauthorized Access",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/account/me",
+            "description": "Intentar acceder sin token - debe fallar"
+          },
+          "response": []
+        }
+      ],
+      "description": "Ejemplos de testing con validaciones automáticas"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script global que se ejecuta antes de cada request",
+          "console.log('Request a:', pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script global que se ejecuta después de cada request",
+          "console.log('Response status:', pm.response.code);"
+        ]
+      }
+    }
+  ]
+}

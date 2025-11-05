@@ -1,0 +1,320 @@
+@model dynamic
+@{
+    var estadisticas = Model.Estadisticas ?? Model;
+    
+    // Estadísticas principales
+    var totalTortas = estadisticas.TotalTortas ?? 0;
+    var totalVendedores = estadisticas.TotalVendedores ?? 0;
+    var ventasHoy = estadisticas.VentasHoy ?? 0;
+    var tortasNuevas = estadisticas.TortasNuevas ?? estadisticas.TortasNuevasHoy ?? 0;
+    
+    // Estadísticas opcionales adicionales
+    var totalCompradores = estadisticas.TotalCompradores ?? null;
+    var ventasMes = estadisticas.VentasMes ?? null;
+    var promedioCalificacion = estadisticas.PromedioCalificacion ?? null;
+    var pedidosPendientes = estadisticas.PedidosPendientes ?? null;
+    
+    // Configuración de visualización
+    var tituloSeccion = ViewBag.TituloEstadisticas ?? "📊 Estadísticas en Tiempo Real";
+    var tipoLayout = ViewBag.LayoutEstadisticas ?? "grid"; // grid, horizontal, compact
+    var mostrarAnimaciones = ViewBag.AnimarEstadisticas ?? true;
+}
+
+@if (tipoLayout == "hero")
+{
+    <!-- Layout tipo Hero - Para página principal -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        
+        <!-- Tortas Disponibles -->
+        <div class="bg-white bg-opacity-20 rounded-lg p-4 md:p-6 backdrop-blur-sm text-center transform hover:scale-105 transition duration-300">
+            <div class="text-3xl md:text-4xl font-bold mb-1 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                @totalTortas
+            </div>
+            <div class="text-xs md:text-sm opacity-90">Tortas Disponibles</div>
+            <div class="text-2xl mt-2">🎂</div>
+        </div>
+        
+        <!-- Vendedores -->
+        <div class="bg-white bg-opacity-20 rounded-lg p-4 md:p-6 backdrop-blur-sm text-center transform hover:scale-105 transition duration-300">
+            <div class="text-3xl md:text-4xl font-bold mb-1 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                @totalVendedores
+            </div>
+            <div class="text-xs md:text-sm opacity-90">Vendedores Activos</div>
+            <div class="text-2xl mt-2">👨‍🍳</div>
+        </div>
+        
+        <!-- Ventas Hoy -->
+        <div class="bg-white bg-opacity-20 rounded-lg p-4 md:p-6 backdrop-blur-sm text-center transform hover:scale-105 transition duration-300">
+            <div class="text-3xl md:text-4xl font-bold mb-1 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                @ventasHoy
+            </div>
+            <div class="text-xs md:text-sm opacity-90">Ventas Hoy</div>
+            <div class="text-2xl mt-2">💰</div>
+        </div>
+        
+        <!-- Tortas Nuevas -->
+        <div class="bg-white bg-opacity-20 rounded-lg p-4 md:p-6 backdrop-blur-sm text-center transform hover:scale-105 transition duration-300">
+            <div class="text-3xl md:text-4xl font-bold mb-1 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                @tortasNuevas
+            </div>
+            <div class="text-xs md:text-sm opacity-90">Nuevas Esta Semana</div>
+            <div class="text-2xl mt-2">✨</div>
+        </div>
+    </div>
+}
+else if (tipoLayout == "horizontal")
+{
+    <!-- Layout Horizontal - Para headers de secciones -->
+    <div class="bg-gradient-to-r from-orange-50 to-pink-50 rounded-lg shadow-md p-6 mb-8">
+        <div class="flex flex-wrap justify-around items-center gap-6">
+            
+            <div class="text-center">
+                <div class="text-4xl font-bold text-orange-600 mb-2">@totalTortas</div>
+                <div class="text-sm text-gray-600 flex items-center gap-2">
+                    <span>🎂</span>
+                    <span>Tortas Publicadas</span>
+                </div>
+            </div>
+            
+            <div class="hidden md:block h-12 w-px bg-gray-300"></div>
+            
+            <div class="text-center">
+                <div class="text-4xl font-bold text-pink-600 mb-2">@totalVendedores</div>
+                <div class="text-sm text-gray-600 flex items-center gap-2">
+                    <span>👨‍🍳</span>
+                    <span>Vendedores</span>
+                </div>
+            </div>
+            
+            <div class="hidden md:block h-12 w-px bg-gray-300"></div>
+            
+            <div class="text-center">
+                <div class="text-4xl font-bold text-green-600 mb-2">@ventasHoy</div>
+                <div class="text-sm text-gray-600 flex items-center gap-2">
+                    <span>💵</span>
+                    <span>Ventas Hoy</span>
+                </div>
+            </div>
+            
+            @if (tortasNuevas > 0)
+            {
+                <div class="hidden lg:block h-12 w-px bg-gray-300"></div>
+                
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-purple-600 mb-2">@tortasNuevas</div>
+                    <div class="text-sm text-gray-600 flex items-center gap-2">
+                        <span>✨</span>
+                        <span>Nuevas</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (tipoLayout == "compact")
+{
+    <!-- Layout Compacto - Para sidebars -->
+    <div class="bg-white rounded-lg shadow-md p-4 space-y-3">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span>📊</span>
+            <span>Stats Rápidas</span>
+        </h3>
+        
+        <div class="flex justify-between items-center p-2 bg-orange-50 rounded">
+            <span class="text-sm text-gray-600">🎂 Tortas</span>
+            <span class="font-bold text-orange-600">@totalTortas</span>
+        </div>
+        
+        <div class="flex justify-between items-center p-2 bg-pink-50 rounded">
+            <span class="text-sm text-gray-600">👨‍🍳 Vendedores</span>
+            <span class="font-bold text-pink-600">@totalVendedores</span>
+        </div>
+        
+        <div class="flex justify-between items-center p-2 bg-green-50 rounded">
+            <span class="text-sm text-gray-600">💰 Ventas Hoy</span>
+            <span class="font-bold text-green-600">@ventasHoy</span>
+        </div>
+        
+        @if (tortasNuevas > 0)
+        {
+            <div class="flex justify-between items-center p-2 bg-purple-50 rounded">
+                <span class="text-sm text-gray-600">✨ Nuevas</span>
+                <span class="font-bold text-purple-600">@tortasNuevas</span>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <!-- Layout Grid por defecto - Completo con todas las estadísticas -->
+    <section class="container mx-auto px-4 mb-12">
+        
+        @if (!string.IsNullOrEmpty(tituloSeccion))
+        {
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">@tituloSeccion</h2>
+        }
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- Card: Tortas Totales -->
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow-lg p-6 transform hover:scale-105 transition duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-5xl">🎂</div>
+                    <div class="bg-white bg-opacity-20 rounded-full px-3 py-1 text-sm font-semibold backdrop-blur-sm">
+                        Total
+                    </div>
+                </div>
+                <div class="text-4xl font-bold mb-2 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                    @totalTortas
+                </div>
+                <div class="text-sm opacity-90">Tortas Disponibles</div>
+                <div class="mt-4 pt-4 border-t border-white border-opacity-20">
+                    <a asp-controller="Home" asp-action="Index" class="text-sm hover:underline flex items-center gap-2">
+                        Ver catálogo
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Card: Vendedores -->
+            <div class="bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-lg shadow-lg p-6 transform hover:scale-105 transition duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-5xl">👨‍🍳</div>
+                    <div class="bg-white bg-opacity-20 rounded-full px-3 py-1 text-sm font-semibold backdrop-blur-sm">
+                        Activos
+                    </div>
+                </div>
+                <div class="text-4xl font-bold mb-2 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                    @totalVendedores
+                </div>
+                <div class="text-sm opacity-90">Vendedores Verificados</div>
+                <div class="mt-4 pt-4 border-t border-white border-opacity-20">
+                    <a asp-controller="Vendedor" asp-action="Index" class="text-sm hover:underline flex items-center gap-2">
+                        Ver vendedores
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Card: Ventas Hoy -->
+            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-lg p-6 transform hover:scale-105 transition duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-5xl">💰</div>
+                    <div class="bg-white bg-opacity-20 rounded-full px-3 py-1 text-sm font-semibold backdrop-blur-sm">
+                        Hoy
+                    </div>
+                </div>
+                <div class="text-4xl font-bold mb-2 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                    @ventasHoy
+                </div>
+                <div class="text-sm opacity-90">Ventas Realizadas</div>
+                
+                @if (ventasMes != null)
+                {
+                    <div class="mt-4 pt-4 border-t border-white border-opacity-20">
+                        <div class="text-xs opacity-75">Este mes: @ventasMes ventas</div>
+                    </div>
+                }
+            </div>
+            
+            <!-- Card: Tortas Nuevas -->
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-lg p-6 transform hover:scale-105 transition duration-300">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-5xl">✨</div>
+                    <div class="bg-white bg-opacity-20 rounded-full px-3 py-1 text-sm font-semibold backdrop-blur-sm">
+                        Nuevas
+                    </div>
+                </div>
+                <div class="text-4xl font-bold mb-2 @(mostrarAnimaciones ? "animate-pulse" : "")">
+                    @tortasNuevas
+                </div>
+                <div class="text-sm opacity-90">Esta Semana</div>
+                <div class="mt-4 pt-4 border-t border-white border-opacity-20">
+                    <a asp-controller="Home" asp-action="Index" asp-route-ordenarPor="Nuevas" class="text-sm hover:underline flex items-center gap-2">
+                        Ver novedades
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estadísticas Adicionales (si están disponibles) -->
+        @if (totalCompradores != null || promedioCalificacion != null || pedidosPendientes != null)
+        {
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                
+                @if (totalCompradores != null)
+                {
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <div class="text-3xl mb-2">🛒</div>
+                        <div class="text-3xl font-bold text-blue-600 mb-1">@totalCompradores</div>
+                        <div class="text-sm text-gray-600">Compradores Registrados</div>
+                    </div>
+                }
+                
+                @if (promedioCalificacion != null)
+                {
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <div class="text-3xl mb-2">⭐</div>
+                        <div class="text-3xl font-bold text-yellow-600 mb-1">@promedioCalificacion.ToString("F1")</div>
+                        <div class="text-sm text-gray-600">Calificación Promedio</div>
+                    </div>
+                }
+                
+                @if (pedidosPendientes != null)
+                {
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <div class="text-3xl mb-2">⏳</div>
+                        <div class="text-3xl font-bold text-orange-600 mb-1">@pedidosPendientes</div>
+                        <div class="text-sm text-gray-600">Pedidos Pendientes</div>
+                    </div>
+                }
+            </div>
+        }
+        
+        <!-- Gráfico de tendencias (placeholder) -->
+        @if (ViewBag.MostrarGrafico == true)
+        {
+            <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+                <h3 class="text-xl font-bold mb-4">📈 Tendencias de Ventas</h3>
+                <div class="h-64 bg-gray-50 rounded flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="text-4xl mb-2">📊</div>
+                        <p>Gráfico de tendencias</p>
+                        <p class="text-sm">(Implementar con Chart.js)</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </section>
+}
+
+@section Scripts {
+    @if (mostrarAnimaciones)
+    {
+        <script>
+            // Animación de contadores
+            document.addEventListener('DOMContentLoaded', function() {
+                const animateCounters = document.querySelectorAll('.animate-pulse');
+                
+                animateCounters.forEach(counter => {
+                    const target = parseInt(counter.textContent);
+                    let current = 0;
+                    const increment = target / 50; // 50 pasos
+                    const duration = 1500; // 1.5 segundos
+                    const stepTime = duration / 50;
+                    
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            counter.textContent = target;
+                            clearInterval(timer);
+                        } else {
+                            counter.textContent = Math.floor(current);
+                        }
+                    }, stepTime);
+                });
+            });
+        </script>
+    }
+}

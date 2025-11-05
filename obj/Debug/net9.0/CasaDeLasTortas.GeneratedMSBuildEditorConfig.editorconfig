@@ -1,0 +1,201 @@
+is_global = true
+build_property.TargetFramework = net9.0
+build_property.TargetFramework = net9.0
+build_property.TargetPlatformMinVersion = 
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = CasaDeLasTortas
+build_property.RootNamespace = CasaDeLasTortas
+build_property.ProjectDir = C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 9.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 9.0
+build_property.EnableCodeStyleSeverity = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Account/AccessDenied.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxBY2Nlc3NEZW5pZWQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Account/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Account/Profile.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxQcm9maWxlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Account/Register.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZWdpc3Rlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Comprador/dashboardVue.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tcHJhZG9yXGRhc2hib2FyZFZ1ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/About.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxBYm91dC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Contact.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxDb250YWN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Error.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxFcnJvci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/IndexAdmin.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleEFkbWluLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Parcial/_Estadisticas.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQYXJjaWFsXF9Fc3RhZGlzdGljYXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Parcial/_FiltrosBusqueda.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQYXJjaWFsXF9GaWx0cm9zQnVzcXVlZGEuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Parcial/_TortaCard.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQYXJjaWFsXF9Ub3J0YUNhcmQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Parcial/_TortasDestacadas.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQYXJjaWFsXF9Ub3J0YXNEZXN0YWNhZGFzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Privacy.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Home/Terms.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxUZXJtcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/ImagenTorta/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW1hZ2VuVG9ydGFcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/ImagenTorta/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW1hZ2VuVG9ydGFcRGVsZXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/ImagenTorta/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW1hZ2VuVG9ydGFcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/ImagenTorta/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW1hZ2VuVG9ydGFcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Pago/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGFnb1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Pago/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGFnb1xEZWxldGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Pago/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGFnb1xEZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Pago/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGFnb1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Pago/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGFnb1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Persona/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVyc29uYVxDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Persona/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVyc29uYVxEZWxldGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Persona/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVyc29uYVxEZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Persona/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVyc29uYVxFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Persona/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVyc29uYVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Shared/Error.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Shared/_LoginPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Mb2dpblBhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Shared/_PaginacionPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9QYWdpbmFjaW9uUGFydGlhbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Shared/_ValidationScriptsPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Torta/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVG9ydGFcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Torta/Delete.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVG9ydGFcRGVsZXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Torta/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVG9ydGFcRGV0YWlscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Torta/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVG9ydGFcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Torta/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVG9ydGFcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Vendedor/DashboardVue.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVuZGVkb3JcRGFzaGJvYXJkVnVlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = b-wmv106rkwg

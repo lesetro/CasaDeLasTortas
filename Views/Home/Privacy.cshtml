@@ -1,0 +1,185 @@
+@{
+    ViewData["Title"] = "Política de Privacidad";
+}
+
+<div class="container mx-auto px-4 py-12 max-w-4xl">
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">🔒 Política de Privacidad</h1>
+        <p class="text-lg text-gray-600">
+            Última actualización: @DateTime.Now.ToString("dd/MM/yyyy")
+        </p>
+    </div>
+    
+    <!-- Contenido -->
+    <div class="bg-white rounded-lg shadow-md p-8 space-y-8">
+        
+        <!-- Introducción -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Introducción</h2>
+            <p class="text-gray-700 leading-relaxed">
+                En Casa de las Tortas, valoramos y respetamos tu privacidad. Esta política describe 
+                cómo recopilamos, usamos y protegemos tu información personal cuando utilizas nuestra 
+                plataforma.
+            </p>
+        </section>
+        
+        <!-- Información que recopilamos -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📋 Información que Recopilamos</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Información de Cuenta</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                        <li>Nombre completo</li>
+                        <li>Correo electrónico</li>
+                        <li>Contraseña (encriptada)</li>
+                        <li>Foto de perfil (opcional)</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Información de Vendedor</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                        <li>Nombre comercial</li>
+                        <li>Especialidad</li>
+                        <li>Información de productos</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Información de Comprador</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                        <li>Dirección de entrega</li>
+                        <li>Teléfono de contacto</li>
+                        <li>Historial de compras</li>
+                        <li>Preferencias de productos</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Cómo usamos la información -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">💡 Cómo Usamos tu Información</h2>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                <li>Procesar y gestionar tus pedidos</li>
+                <li>Facilitar la comunicación entre vendedores y compradores</li>
+                <li>Mejorar nuestros servicios y experiencia de usuario</li>
+                <li>Enviar notificaciones importantes sobre tus pedidos</li>
+                <li>Personalizar recomendaciones de productos</li>
+                <li>Prevenir fraudes y garantizar la seguridad</li>
+                <li>Cumplir con obligaciones legales</li>
+            </ul>
+        </section>
+        
+        <!-- Protección de datos -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🛡️ Protección de tus Datos</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Implementamos medidas de seguridad técnicas y organizativas para proteger tu información:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                <li>Encriptación SSL/TLS para todas las transmisiones de datos</li>
+                <li>Contraseñas hasheadas con algoritmos seguros</li>
+                <li>Autenticación JWT para sesiones seguras</li>
+                <li>Acceso restringido a información personal</li>
+                <li>Auditorías de seguridad regulares</li>
+                <li>Copias de seguridad automáticas</li>
+            </ul>
+        </section>
+        
+        <!-- Compartir información -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔄 Compartir Información</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Solo compartimos tu información en las siguientes circunstancias:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                <li><strong>Con vendedores:</strong> Para procesar y entregar tus pedidos</li>
+                <li><strong>Con procesadores de pago:</strong> Para completar transacciones</li>
+                <li><strong>Por requerimiento legal:</strong> Cuando la ley lo exija</li>
+                <li><strong>Con tu consentimiento:</strong> En cualquier otro caso</li>
+            </ul>
+            <p class="text-gray-700 leading-relaxed mt-4">
+                <strong>Nunca vendemos tu información personal a terceros.</strong>
+            </p>
+        </section>
+        
+        <!-- Cookies -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🍪 Cookies y Tecnologías Similares</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Utilizamos cookies para mejorar tu experiencia:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                <li><strong>Cookies esenciales:</strong> Para el funcionamiento del sitio</li>
+                <li><strong>Cookies de sesión:</strong> Para mantener tu sesión activa</li>
+                <li><strong>Cookies de preferencias:</strong> Para recordar tus ajustes</li>
+                <li><strong>Cookies analíticas:</strong> Para entender el uso del sitio</li>
+            </ul>
+        </section>
+        
+        <!-- Tus derechos -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">✅ Tus Derechos</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Tienes derecho a:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                <li><strong>Acceder:</strong> A tu información personal</li>
+                <li><strong>Rectificar:</strong> Información incorrecta o desactualizada</li>
+                <li><strong>Eliminar:</strong> Tu cuenta y datos asociados</li>
+                <li><strong>Portabilidad:</strong> Exportar tus datos</li>
+                <li><strong>Oposición:</strong> Al procesamiento de tus datos</li>
+                <li><strong>Retirar consentimiento:</strong> En cualquier momento</li>
+            </ul>
+        </section>
+        
+        <!-- Menores de edad -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">👶 Menores de Edad</h2>
+            <p class="text-gray-700 leading-relaxed">
+                Nuestra plataforma no está dirigida a menores de 18 años. No recopilamos 
+                intencionalmente información de menores. Si descubres que un menor ha proporcionado 
+                información, contáctanos inmediatamente.
+            </p>
+        </section>
+        
+        <!-- Cambios a esta política -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Cambios a esta Política</h2>
+            <p class="text-gray-700 leading-relaxed">
+                Podemos actualizar esta política periódicamente. Te notificaremos sobre cambios 
+                significativos por correo electrónico o mediante un aviso en nuestro sitio web.
+            </p>
+        </section>
+        
+        <!-- Contacto -->
+        <section class="bg-orange-50 rounded-lg p-6 border-l-4 border-orange-500">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📧 Contacto</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Si tienes preguntas sobre esta política de privacidad o sobre cómo manejamos tus datos:
+            </p>
+            <div class="space-y-2 text-gray-700">
+                <p><strong>Email:</strong> privacidad@casadelastortas.com</p>
+                <p><strong>Teléfono:</strong> +54 266 123-4567</p>
+                <p><strong>Dirección:</strong> Av. Principal 123, Villa Mercedes, San Luis, Argentina</p>
+            </div>
+            <div class="mt-4">
+                <a asp-controller="Home" asp-action="Contact" 
+                   class="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition">
+                    Formulario de contacto
+                </a>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Botón volver -->
+    <div class="text-center mt-8">
+        <a asp-controller="Home" asp-action="Index" 
+           class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-semibold transition">
+            ← Volver al inicio
+        </a>
+    </div>
+</div>

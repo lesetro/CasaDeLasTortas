@@ -1,0 +1,313 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Panel de Administración";
+}
+
+<!-- Header del Admin -->
+<section class="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-12 mb-8">
+    <div class="container mx-auto px-4">
+        <h1 class="text-4xl font-bold mb-2">🎛️ Panel de Administración</h1>
+        <p class="text-xl opacity-90">Casa de las Tortas</p>
+    </div>
+</section>
+
+<!-- Métricas principales -->
+<section class="container mx-auto px-4 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Tortas -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-4xl">🎂</div>
+                <div class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-semibold">
+                    Total
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">@Model.TotalTortas</h3>
+            <p class="text-gray-600">Tortas registradas</p>
+            <div class="mt-4">
+                <a asp-controller="Torta" asp-action="Index" class="text-blue-600 hover:underline text-sm">
+                    Ver todas →
+                </a>
+            </div>
+        </div>
+        
+        <!-- Vendedores -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-4xl">👨‍🍳</div>
+                <div class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm font-semibold">
+                    Activos
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">@Model.TotalVendedores</h3>
+            <p class="text-gray-600">Vendedores</p>
+            <div class="mt-4">
+                <a asp-controller="Vendedor" asp-action="Index" class="text-green-600 hover:underline text-sm">
+                    Gestionar →
+                </a>
+            </div>
+        </div>
+        
+        <!-- Compradores -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-4xl">🛒</div>
+                <div class="bg-purple-100 text-purple-600 px-3 py-1 rounded-full text-sm font-semibold">
+                    Usuarios
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">@Model.TotalCompradores</h3>
+            <p class="text-gray-600">Compradores</p>
+            <div class="mt-4">
+                <a asp-controller="Comprador" asp-action="Index" class="text-purple-600 hover:underline text-sm">
+                    Ver lista →
+                </a>
+            </div>
+        </div>
+        
+        <!-- Pagos Pendientes -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-4xl">⏳</div>
+                <div class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm font-semibold">
+                    Pendientes
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold mb-1">@Model.PagosPendientes</h3>
+            <p class="text-gray-600">Pagos por revisar</p>
+            <div class="mt-4">
+                <a asp-controller="Pago" asp-action="Index" asp-route-estado="Pendiente" class="text-orange-600 hover:underline text-sm">
+                    Revisar →
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Ventas del día y mes -->
+<section class="container mx-auto px-4 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Ventas Hoy -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold">📈 Ventas Hoy</h3>
+                <div class="text-3xl">💵</div>
+            </div>
+            <div class="text-4xl font-bold mb-2">$@Model.VentasHoy.ToString("N0")</div>
+            <p class="opacity-90">Ingresos del día actual</p>
+        </div>
+        
+        <!-- Ventas del Mes -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold">📊 Ventas del Mes</h3>
+                <div class="text-3xl">💰</div>
+            </div>
+            <div class="text-4xl font-bold mb-2">$@Model.VentasMes.ToString("N0")</div>
+            <p class="opacity-90">Ingresos mensuales</p>
+        </div>
+        
+        <!-- Tortas Nuevas -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold">✨ Nuevas Hoy</h3>
+                <div class="text-3xl">🎂</div>
+            </div>
+            <div class="text-4xl font-bold mb-2">@Model.TortasNuevasHoy</div>
+            <p class="opacity-90">Tortas publicadas hoy</p>
+        </div>
+    </div>
+</section>
+
+<!-- Acciones rápidas -->
+<section class="container mx-auto px-4 mb-8">
+    <h2 class="text-2xl font-bold mb-6">⚡ Acciones Rápidas</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <a asp-controller="Persona" asp-action="Index" 
+           class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition">
+            <div class="text-4xl mb-2">👥</div>
+            <div class="font-semibold text-sm">Usuarios</div>
+        </a>
+        
+        <a asp-controller="Vendedor" asp-action="Index" 
+           class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition">
+            <div class="text-4xl mb-2">👨‍🍳</div>
+            <div class="font-semibold text-sm">Vendedores</div>
+        </a>
+        
+        <a asp-controller="Comprador" asp-action="Index" 
+           class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition">
+            <div class="text-4xl mb-2">🛒</div>
+            <div class="font-semibold text-sm">Compradores</div>
+        </a>
+        
+        <a asp-controller="Torta" asp-action="Index" 
+           class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition">
+            <div class="text-4xl mb-2">🎂</div>
+            <div class="font-semibold text-sm">Tortas</div>
+        </a>
+        
+        <a asp-controller="Pago" asp-action="Index" 
+           class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition">
+            <div class="text-4xl mb-2">💳</div>
+            <div class="font-semibold text-sm">Pagos</div>
+        </a>
+        
+        <a asp-controller="Home" asp-action="ReportesAdmin" 
+           class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition">
+            <div class="text-4xl mb-2">📊</div>
+            <div class="font-semibold text-sm">Reportes</div>
+        </a>
+    </div>
+</section>
+
+<!-- Tablas de resumen -->
+<section class="container mx-auto px-4 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Últimas transacciones -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold mb-4">💳 Últimas Transacciones</h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div>
+                        <div class="font-semibold">Pago #1234</div>
+                        <div class="text-sm text-gray-600">Comprador: Juan Pérez</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-green-600">$450.00</div>
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Completado</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div>
+                        <div class="font-semibold">Pago #1233</div>
+                        <div class="text-sm text-gray-600">Comprador: María García</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-orange-600">$320.00</div>
+                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Pendiente</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div>
+                        <div class="font-semibold">Pago #1232</div>
+                        <div class="text-sm text-gray-600">Comprador: Carlos López</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-green-600">$590.00</div>
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Completado</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <a asp-controller="Pago" asp-action="Index" class="text-blue-600 hover:underline">
+                    Ver todos los pagos →
+                </a>
+            </div>
+        </div>
+        
+        <!-- Vendedores top -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold mb-4">🏆 Top Vendedores del Mes</h3>
+            <div class="space-y-3">
+                <div class="flex items-center gap-3 p-3 bg-yellow-50 rounded border-l-4 border-yellow-500">
+                    <div class="text-3xl">🥇</div>
+                    <div class="flex-1">
+                        <div class="font-semibold">Delicias María</div>
+                        <div class="text-sm text-gray-600">45 ventas</div>
+                    </div>
+                    <div class="font-bold text-yellow-600">$12,450</div>
+                </div>
+                
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded border-l-4 border-gray-400">
+                    <div class="text-3xl">🥈</div>
+                    <div class="flex-1">
+                        <div class="font-semibold">Tortas Premium</div>
+                        <div class="text-sm text-gray-600">38 ventas</div>
+                    </div>
+                    <div class="font-bold text-gray-600">$10,200</div>
+                </div>
+                
+                <div class="flex items-center gap-3 p-3 bg-orange-50 rounded border-l-4 border-orange-700">
+                    <div class="text-3xl">🥉</div>
+                    <div class="flex-1">
+                        <div class="font-semibold">El Horno de Ana</div>
+                        <div class="text-sm text-gray-600">32 ventas</div>
+                    </div>
+                    <div class="font-bold text-orange-700">$8,900</div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <a asp-controller="Vendedor" asp-action="Index" class="text-blue-600 hover:underline">
+                    Ver ranking completo →
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Gráficos (placeholder - se pueden implementar con Chart.js) -->
+<section class="container mx-auto px-4 mb-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-xl font-bold mb-4">📈 Ventas de los Últimos 7 Días</h3>
+        <div class="h-64 flex items-center justify-center bg-gray-50 rounded">
+            <p class="text-gray-500">[ Aquí iría un gráfico con Chart.js o similar ]</p>
+        </div>
+    </div>
+</section>
+
+<!-- Actividad reciente -->
+<section class="container mx-auto px-4 mb-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-xl font-bold mb-4">🔔 Actividad Reciente</h3>
+        <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded">
+                <div class="text-2xl">👤</div>
+                <div>
+                    <div class="font-semibold">Nuevo usuario registrado</div>
+                    <div class="text-sm text-gray-600">Ana Rodríguez se registró como compradora</div>
+                    <div class="text-xs text-gray-400 mt-1">Hace 5 minutos</div>
+                </div>
+            </div>
+            
+            <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded">
+                <div class="text-2xl">🎂</div>
+                <div>
+                    <div class="font-semibold">Nueva torta publicada</div>
+                    <div class="text-sm text-gray-600">"Torta Tres Leches" por Delicias María</div>
+                    <div class="text-xs text-gray-400 mt-1">Hace 15 minutos</div>
+                </div>
+            </div>
+            
+            <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded">
+                <div class="text-2xl">💳</div>
+                <div>
+                    <div class="font-semibold">Pago completado</div>
+                    <div class="text-sm text-gray-600">$450.00 - Pedido #1234</div>
+                    <div class="text-xs text-gray-400 mt-1">Hace 30 minutos</div>
+                </div>
+            </div>
+            
+            <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded">
+                <div class="text-2xl">⭐</div>
+                <div>
+                    <div class="font-semibold">Nueva calificación</div>
+                    <div class="text-sm text-gray-600">5 estrellas para "Torta de Chocolate"</div>
+                    <div class="text-xs text-gray-400 mt-1">Hace 1 hora</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Actualización en tiempo real usando SignalR (opcional)
+        console.log('Admin Dashboard loaded');
+        
+        // Aquí puedes agregar conexión a SignalR para notificaciones en tiempo real
+    </script>
+}

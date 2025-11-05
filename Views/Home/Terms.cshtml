@@ -1,0 +1,267 @@
+@{
+    ViewData["Title"] = "Términos y Condiciones";
+}
+
+<div class="container mx-auto px-4 py-12 max-w-4xl">
+    
+    <!-- Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">📜 Términos y Condiciones</h1>
+        <p class="text-lg text-gray-600">
+            Última actualización: @DateTime.Now.ToString("dd/MM/yyyy")
+        </p>
+    </div>
+    
+    <!-- Contenido -->
+    <div class="bg-white rounded-lg shadow-md p-8 space-y-8">
+        
+        <!-- Introducción -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">1. Introducción</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Bienvenido a Casa de las Tortas. Estos términos y condiciones rigen el uso de nuestra 
+                plataforma web y los servicios que ofrecemos. Al acceder y utilizar nuestro sitio, 
+                aceptas cumplir con estos términos en su totalidad.
+            </p>
+            <p class="text-gray-700 leading-relaxed">
+                Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar nuestros 
+                servicios.
+            </p>
+        </section>
+        
+        <!-- Definiciones -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">2. Definiciones</h2>
+            <ul class="space-y-3 text-gray-700">
+                <li>
+                    <strong>Plataforma:</strong> Se refiere al sitio web Casa de las Tortas y todos 
+                    sus servicios asociados.
+                </li>
+                <li>
+                    <strong>Usuario:</strong> Cualquier persona que acceda a la plataforma.
+                </li>
+                <li>
+                    <strong>Vendedor:</strong> Usuario registrado que ofrece productos (tortas) para 
+                    la venta.
+                </li>
+                <li>
+                    <strong>Comprador:</strong> Usuario registrado que adquiere productos a través de 
+                    la plataforma.
+                </li>
+                <li>
+                    <strong>Producto:</strong> Tortas y productos relacionados ofrecidos por los vendedores.
+                </li>
+            </ul>
+        </section>
+        
+        <!-- Registro y Cuenta -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">3. Registro y Cuenta de Usuario</h2>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">3.1 Requisitos</h3>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>Debes ser mayor de 18 años para crear una cuenta</li>
+                <li>Debes proporcionar información veraz y actualizada</li>
+                <li>Eres responsable de mantener la confidencialidad de tu contraseña</li>
+                <li>Una persona solo puede tener una cuenta activa</li>
+            </ul>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">3.2 Responsabilidades</h3>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Eres responsable de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos 
+                inmediatamente si sospechas de uso no autorizado.
+            </p>
+        </section>
+        
+        <!-- Para Vendedores -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">4. Términos para Vendedores</h2>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">4.1 Publicación de Productos</h3>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>Solo puedes vender productos que estén legalmente permitidos</li>
+                <li>Las descripciones deben ser precisas y no engañosas</li>
+                <li>Las imágenes deben representar fielmente el producto</li>
+                <li>Los precios deben incluir todos los costos aplicables</li>
+                <li>Debes especificar claramente los tiempos de preparación y entrega</li>
+            </ul>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">4.2 Obligaciones</h3>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>Cumplir con todas las regulaciones sanitarias aplicables</li>
+                <li>Mantener estándares de calidad consistentes</li>
+                <li>Responder a consultas de compradores en tiempo razonable</li>
+                <li>Entregar los productos en las condiciones y tiempos acordados</li>
+                <li>Mantener tu información de contacto actualizada</li>
+            </ul>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">4.3 Comisiones</h3>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Casa de las Tortas cobra una comisión del <strong>5%</strong> sobre cada venta 
+                completada. Esta comisión se descuenta automáticamente del monto del pago.
+            </p>
+        </section>
+        
+        <!-- Para Compradores -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">5. Términos para Compradores</h2>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">5.1 Compras</h3>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>Al realizar un pedido, aceptas pagar el precio total indicado</li>
+                <li>Los pedidos están sujetos a disponibilidad del vendedor</li>
+                <li>Debes proporcionar información de entrega precisa</li>
+                <li>Los tiempos de entrega son aproximados y pueden variar</li>
+            </ul>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">5.2 Pagos</h3>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>Los pagos deben realizarse a través de los métodos aceptados en la plataforma</li>
+                <li>Los reembolsos están sujetos a nuestra política de devoluciones</li>
+                <li>Eres responsable de cualquier cargo adicional (impuestos, envío, etc.)</li>
+            </ul>
+        </section>
+        
+        <!-- Política de Cancelación y Devoluciones -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">6. Cancelaciones y Devoluciones</h2>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">6.1 Cancelación por el Comprador</h3>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li><strong>Antes de 48 horas:</strong> Reembolso del 100%</li>
+                <li><strong>24-48 horas antes:</strong> Reembolso del 50%</li>
+                <li><strong>Menos de 24 horas:</strong> Sin reembolso</li>
+            </ul>
+            
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">6.2 Productos Defectuosos</h3>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Si el producto recibido está defectuoso o no coincide con la descripción, 
+                tienes <strong>24 horas</strong> desde la recepción para reportarlo y solicitar 
+                un reembolso completo.
+            </p>
+        </section>
+        
+        <!-- Propiedad Intelectual -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">7. Propiedad Intelectual</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Todo el contenido de la plataforma (diseño, logos, textos, gráficos) es propiedad 
+                de Casa de las Tortas o sus licenciantes y está protegido por leyes de propiedad 
+                intelectual.
+            </p>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Al publicar contenido (fotos, descripciones), otorgas a Casa de las Tortas una 
+                licencia no exclusiva para usar, reproducir y mostrar dicho contenido en la plataforma.
+            </p>
+        </section>
+        
+        <!-- Conducta Prohibida -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">8. Conducta Prohibida</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Está prohibido:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>Usar la plataforma para actividades ilegales</li>
+                <li>Publicar contenido falso, engañoso o difamatorio</li>
+                <li>Interferir con el funcionamiento de la plataforma</li>
+                <li>Acosar, amenazar o discriminar a otros usuarios</li>
+                <li>Intentar acceder a cuentas de otros usuarios</li>
+                <li>Realizar transacciones fuera de la plataforma para evadir comisiones</li>
+                <li>Crear cuentas falsas o múltiples cuentas</li>
+            </ul>
+        </section>
+        
+        <!-- Responsabilidad -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">9. Limitación de Responsabilidad</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Casa de las Tortas actúa como intermediario entre vendedores y compradores. 
+                <strong>No somos responsables de:</strong>
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>La calidad, seguridad o legalidad de los productos ofrecidos</li>
+                <li>La capacidad de los vendedores para completar las transacciones</li>
+                <li>Disputas entre vendedores y compradores</li>
+                <li>Daños indirectos, incidentales o consecuentes</li>
+            </ul>
+            <p class="text-gray-700 leading-relaxed">
+                Sin embargo, facilitaremos la resolución de conflictos y tomaremos medidas contra 
+                usuarios que violen estos términos.
+            </p>
+        </section>
+        
+        <!-- Suspensión y Terminación -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">10. Suspensión y Terminación</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Nos reservamos el derecho de suspender o terminar tu cuenta si:
+            </p>
+            <ul class="list-disc list-inside text-gray-700 space-y-2 ml-4 mb-4">
+                <li>Violas estos términos y condiciones</li>
+                <li>Proporcionas información falsa</li>
+                <li>Realizas actividades fraudulentas</li>
+                <li>Recibes múltiples quejas de otros usuarios</li>
+            </ul>
+        </section>
+        
+        <!-- Modificaciones -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">11. Modificaciones</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Podemos modificar estos términos en cualquier momento. Los cambios entrarán en 
+                vigor inmediatamente después de su publicación. Es tu responsabilidad revisar 
+                estos términos periódicamente.
+            </p>
+            <p class="text-gray-700 leading-relaxed">
+                El uso continuado de la plataforma después de cambios constituye aceptación de 
+                los nuevos términos.
+            </p>
+        </section>
+        
+        <!-- Ley Aplicable -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">12. Ley Aplicable</h2>
+            <p class="text-gray-700 leading-relaxed">
+                Estos términos se regirán e interpretarán de acuerdo con las leyes de la 
+                República Argentina. Cualquier disputa se resolverá en los tribunales de 
+                Villa Mercedes, San Luis, Argentina.
+            </p>
+        </section>
+        
+        <!-- Contacto -->
+        <section class="bg-orange-50 rounded-lg p-6 border-l-4 border-orange-500">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">13. Contacto</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                Si tienes preguntas sobre estos términos y condiciones:
+            </p>
+            <div class="space-y-2 text-gray-700">
+                <p><strong>Email:</strong> legal@casadelastortas.com</p>
+                <p><strong>Teléfono:</strong> +54 266 123-4567</p>
+                <p><strong>Dirección:</strong> Av. Principal 123, Villa Mercedes, San Luis, Argentina</p>
+            </div>
+            <div class="mt-4">
+                <a asp-controller="Home" asp-action="Contact" 
+                   class="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition">
+                    Contactar soporte legal
+                </a>
+            </div>
+        </section>
+        
+        <!-- Aceptación -->
+        <section class="bg-blue-50 rounded-lg p-6 border border-blue-200">
+            <p class="text-gray-700 leading-relaxed">
+                <strong>Al usar Casa de las Tortas, confirmas que has leído, entendido y aceptado 
+                estos Términos y Condiciones en su totalidad.</strong>
+            </p>
+        </section>
+    </div>
+    
+    <!-- Botón volver -->
+    <div class="text-center mt-8">
+        <a asp-controller="Home" asp-action="Index" 
+           class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-semibold transition">
+            ← Volver al inicio
+        </a>
+    </div>
+</div>

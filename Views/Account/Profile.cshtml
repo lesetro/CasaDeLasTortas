@@ -1,0 +1,439 @@
+@{
+    ViewData["Title"] = "Mi Perfil";
+    Layout = "_Layout";
+}
+
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+            <p class="mt-2 text-gray-600">Gestiona tu información personal y configuración de cuenta</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Columna izquierda - Información personal -->
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-5 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Información Personal</h3>
+                    </div>
+                    <div class="p-6">
+                        <form id="profileForm">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Nombre -->
+                                <div>
+                                    <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Nombre Completo
+                                    </label>
+                                    <input type="text" id="nombre" name="nombre" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                </div>
+
+                                <!-- Email -->
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Email
+                                    </label>
+                                    <input type="email" id="email" name="email" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                </div>
+
+                                <!-- Teléfono -->
+                                <div>
+                                    <label for="telefono" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Teléfono
+                                    </label>
+                                    <input type="tel" id="telefono" name="telefono" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                </div>
+
+                                <!-- Rol (solo lectura) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Tipo de Cuenta
+                                    </label>
+                                    <div id="rolDisplay" class="px-3 py-2 bg-gray-100 rounded-md text-gray-700">
+                                        Cargando...
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Información específica del rol -->
+                            <div id="rolSpecificInfo" class="mt-6 p-4 bg-gray-50 rounded-lg">
+                                <!-- Se llena dinámicamente según el rol -->
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="mt-8 flex justify-end space-x-3">
+                                <button type="button" id="cancelBtn" 
+                                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                                    Cancelar
+                                </button>
+                                <button type="submit" 
+                                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Cambio de contraseña -->
+                <div class="mt-6 bg-white shadow rounded-lg">
+                    <div class="px-6 py-5 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Cambiar Contraseña</h3>
+                    </div>
+                    <div class="p-6">
+                        <form id="changePasswordForm">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Contraseña Actual
+                                    </label>
+                                    <input type="password" id="currentPassword" name="currentPassword" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" required>
+                                </div>
+
+                                <div>
+                                    <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Nueva Contraseña
+                                    </label>
+                                    <input type="password" id="newPassword" name="newPassword" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" required>
+                                </div>
+
+                                <div>
+                                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Confirmar Nueva Contraseña
+                                    </label>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" required>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" 
+                                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                                    Cambiar Contraseña
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna derecha - Avatar y estadísticas -->
+            <div class="space-y-6">
+                <!-- Avatar -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <div class="flex flex-col items-center">
+                        <div class="relative">
+                            <img id="avatarImage" 
+                                 class="w-32 h-32 rounded-full object-cover border-4 border-gray-200" 
+                                 src="" 
+                                 alt="Avatar">
+                            <button id="changeAvatarBtn" 
+                                    class="absolute bottom-0 right-0 bg-orange-600 text-white p-2 rounded-full shadow-lg hover:bg-orange-700 transition">
+                                <i class="fas fa-camera text-sm"></i>
+                            </button>
+                            <input type="file" id="avatarFile" class="hidden" accept="image/*">
+                        </div>
+                        <h3 id="userName" class="mt-4 text-xl font-semibold text-gray-900">Cargando...</h3>
+                        <p id="userEmail" class="text-gray-600">Cargando...</p>
+                    </div>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">Estadísticas</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Miembro desde</span>
+                            <span id="memberSince" class="font-medium">Cargando...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Último acceso</span>
+                            <span id="lastAccess" class="font-medium">Cargando...</span>
+                        </div>
+                        <div id="vendedorStats" class="hidden">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tortas activas</span>
+                                <span class="font-medium text-green-600">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Ventas totales</span>
+                                <span class="font-medium text-green-600">-</span>
+                            </div>
+                        </div>
+                        <div id="compradorStats" class="hidden">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Compras realizadas</span>
+                                <span class="font-medium text-blue-600">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Pedidos activos</span>
+                                <span class="font-medium text-blue-600">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let userData = {};
+        let originalData = {};
+
+        // Cargar datos del usuario
+        async function loadUserData() {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    window.location.href = '/Account/Login';
+                    return;
+                }
+
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar datos del usuario');
+                }
+
+                userData = await response.json();
+                originalData = { ...userData };
+                displayUserData();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar los datos del perfil');
+            }
+        }
+
+        // Mostrar datos del usuario
+        function displayUserData() {
+            // Información básica
+            document.getElementById('nombre').value = userData.nombre || '';
+            document.getElementById('email').value = userData.email || '';
+            document.getElementById('telefono').value = userData.telefono || '';
+            document.getElementById('rolDisplay').textContent = getRolDisplayName(userData.rol);
+            
+            // Avatar
+            const avatarImg = document.getElementById('avatarImage');
+            if (userData.avatar) {
+                avatarImg.src = userData.avatar;
+            } else {
+                avatarImg.src = '/images/default-avatar.png';
+            }
+
+            // Información de perfil
+            document.getElementById('userName').textContent = userData.nombre || 'Usuario';
+            document.getElementById('userEmail').textContent = userData.email || '';
+            document.getElementById('memberSince').textContent = new Date(userData.fechaRegistro).toLocaleDateString();
+            document.getElementById('lastAccess').textContent = userData.ultimoAcceso ? 
+                new Date(userData.ultimoAcceso).toLocaleDateString() : 'Nunca';
+
+            // Información específica del rol
+            displayRolSpecificInfo();
+        }
+
+        // Mostrar información específica del rol
+        function displayRolSpecificInfo() {
+            const container = document.getElementById('rolSpecificInfo');
+            const vendedorStats = document.getElementById('vendedorStats');
+            const compradorStats = document.getElementById('compradorStats');
+
+            vendedorStats.classList.add('hidden');
+            compradorStats.classList.add('hidden');
+
+            if (userData.rol === 'Vendedor' && userData.rolData) {
+                container.innerHTML = `
+                    <h4 class="font-medium text-gray-900 mb-3">Información del Vendedor</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nombre Comercial</label>
+                            <input type="text" name="nombreComercial" value="${userData.rolData.nombreComercial || ''}" 
+                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Especialidad</label>
+                            <input type="text" name="especialidad" value="${userData.rolData.especialidad || ''}" 
+                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                            <textarea name="descripcion" rows="3" 
+                                      class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">${userData.rolData.descripcion || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+                vendedorStats.classList.remove('hidden');
+            } else if (userData.rol === 'Comprador' && userData.rolData) {
+                container.innerHTML = `
+                    <h4 class="font-medium text-gray-900 mb-3">Información de Entrega</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Dirección</label>
+                            <input type="text" name="direccion" value="${userData.rolData.direccion || ''}" 
+                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Ciudad</label>
+                            <input type="text" name="ciudad" value="${userData.rolData.ciudad || ''}" 
+                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Código Postal</label>
+                            <input type="text" name="codigoPostal" value="${userData.rolData.codigoPostal || ''}" 
+                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+                `;
+                compradorStats.classList.remove('hidden');
+            } else {
+                container.innerHTML = '<p class="text-gray-500">No hay información adicional para mostrar.</p>';
+            }
+        }
+
+        // Helper para mostrar nombre del rol
+        function getRolDisplayName(rol) {
+            const roles = {
+                'Vendedor': '👨‍🍳 Vendedor',
+                'Comprador': '🛒 Comprador', 
+                'Admin': '⚙️ Administrador'
+            };
+            return roles[rol] || rol;
+        }
+
+        // Event Listeners
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await updateProfile();
+        });
+
+        document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await changePassword();
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', function() {
+            userData = { ...originalData };
+            displayUserData();
+        });
+
+        document.getElementById('changeAvatarBtn').addEventListener('click', function() {
+            document.getElementById('avatarFile').click();
+        });
+
+        document.getElementById('avatarFile').addEventListener('change', async function(e) {
+            if (e.target.files.length > 0) {
+                await updateAvatar(e.target.files[0]);
+            }
+        });
+
+        // Funciones para actualizar datos
+        async function updateProfile() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const formData = new FormData();
+
+                // Agregar datos básicos
+                formData.append('Nombre', document.getElementById('nombre').value);
+                formData.append('Email', document.getElementById('email').value);
+                formData.append('Telefono', document.getElementById('telefono').value);
+
+                // Agregar avatar si hay uno nuevo
+                const avatarFile = document.getElementById('avatarFile').files[0];
+                if (avatarFile) {
+                    formData.append('AvatarFile', avatarFile);
+                }
+
+                const response = await fetch('/api/account/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('Perfil actualizado exitosamente');
+                    await loadUserData(); // Recargar datos
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Error al actualizar perfil');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al actualizar el perfil');
+            }
+        }
+
+        async function changePassword() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const formData = {
+                    currentPassword: document.getElementById('currentPassword').value,
+                    newPassword: document.getElementById('newPassword').value
+                };
+
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert('Contraseña cambiada exitosamente');
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Error al cambiar contraseña');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cambiar la contraseña');
+            }
+        }
+
+        async function updateAvatar(file) {
+            try {
+                const token = localStorage.getItem('authToken');
+                const formData = new FormData();
+                formData.append('AvatarFile', file);
+
+                const response = await fetch('/api/account/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('avatarImage').src = result.user.avatar;
+                    alert('Avatar actualizado exitosamente');
+                } else {
+                    alert('Error al actualizar avatar');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al actualizar avatar');
+            }
+        }
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', loadUserData);
+    </script>
+}

@@ -1,0 +1,407 @@
+@{
+    ViewData["Title"] = "Registrarse";
+    Layout = "_Layout";
+}
+
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-orange-100">
+                <i class="fas fa-birthday-cake text-2xl text-orange-600"></i>
+            </div>
+            <h1 class="mt-4 text-3xl font-extrabold text-gray-900">
+                Crear Cuenta
+            </h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Únete a Casa de las Tortas y descubre un mundo de sabores
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">Información Personal</h2>
+            </div>
+            
+            <div class="p-6">
+                <form id="registerForm" class="space-y-6">
+                    <!-- Información Básica -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Nombre -->
+                        <div>
+                            <label for="nombre" class="block text-sm font-medium text-gray-700">
+                                Nombre Completo *
+                            </label>
+                            <input type="text" id="nombre" name="nombre" required
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                                   placeholder="Juan Pérez">
+                            <div id="nombreError" class="mt-1 text-sm text-red-600 hidden"></div>
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">
+                                Email *
+                            </label>
+                            <input type="email" id="email" name="email" required
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                                   placeholder="tu@email.com">
+                            <div id="emailError" class="mt-1 text-sm text-red-600 hidden"></div>
+                        </div>
+
+                        <!-- Teléfono -->
+                        <div>
+                            <label for="telefono" class="block text-sm font-medium text-gray-700">
+                                Teléfono
+                            </label>
+                            <input type="tel" id="telefono" name="telefono"
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                                   placeholder="+54 266 123-4567">
+                            <div id="telefonoError" class="mt-1 text-sm text-red-600 hidden"></div>
+                        </div>
+
+                        <!-- Rol -->
+                        <div>
+                            <label for="rol" class="block text-sm font-medium text-gray-700">
+                                Tipo de Cuenta *
+                            </label>
+                            <select id="rol" name="rol" required
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
+                                <option value="">Selecciona un tipo</option>
+                                <option value="Vendedor">Vendedor</option>
+                                <option value="Comprador">Comprador</option>
+                            </select>
+                            <div id="rolError" class="mt-1 text-sm text-red-600 hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- Contraseñas -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Contraseña -->
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">
+                                Contraseña *
+                            </label>
+                            <div class="mt-1 relative">
+                                <input type="password" id="password" name="password" required
+                                       class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                                       placeholder="Mínimo 6 caracteres">
+                                <button type="button" onclick="togglePasswordVisibility('password', 'passwordToggle')" 
+                                        class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <i id="passwordToggle" class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+                                </button>
+                            </div>
+                            <div id="passwordError" class="mt-1 text-sm text-red-600 hidden"></div>
+                        </div>
+
+                        <!-- Confirmar Contraseña -->
+                        <div>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
+                                Confirmar Contraseña *
+                            </label>
+                            <div class="mt-1 relative">
+                                <input type="password" id="confirmPassword" name="confirmPassword" required
+                                       class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                                       placeholder="Repite tu contraseña">
+                                <button type="button" onclick="togglePasswordVisibility('confirmPassword', 'confirmPasswordToggle')" 
+                                        class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <i id="confirmPasswordToggle" class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+                                </button>
+                            </div>
+                            <div id="confirmPasswordError" class="mt-1 text-sm text-red-600 hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- Campos específicos por rol -->
+                    <div id="vendedorFields" class="hidden bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-orange-800 mb-3">
+                            <i class="fas fa-store mr-2"></i>Información del Vendedor
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="nombreComercial" class="block text-sm font-medium text-orange-700">
+                                    Nombre Comercial *
+                                </label>
+                                <input type="text" id="nombreComercial" name="nombreComercial"
+                                       class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                                       placeholder="Mi Tortería Artesanal">
+                                <div id="nombreComercialError" class="mt-1 text-sm text-red-600 hidden"></div>
+                            </div>
+                            <div>
+                                <label for="descripcion" class="block text-sm font-medium text-orange-700">
+                                    Descripción
+                                </label>
+                                <textarea id="descripcion" name="descripcion" rows="3"
+                                          class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                                          placeholder="Cuéntanos sobre tu negocio..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="compradorFields" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-blue-800 mb-3">
+                            <i class="fas fa-map-marker-alt mr-2"></i>Información de Entrega
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="direccion" class="block text-sm font-medium text-blue-700">
+                                    Dirección *
+                                </label>
+                                <input type="text" id="direccion" name="direccion"
+                                       class="mt-1 block w-full border border-blue-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                       placeholder="Calle Principal 123">
+                                <div id="direccionError" class="mt-1 text-sm text-red-600 hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Términos y Condiciones -->
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="acceptTerms" name="acceptTerms" type="checkbox" required
+                                   class="focus:ring-orange-500 h-4 w-4 text-orange-600 border-gray-300 rounded">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="acceptTerms" class="font-medium text-gray-700">
+                                Acepto los 
+                                <a asp-controller="Home" asp-action="Terms" target="_blank" class="text-orange-600 hover:text-orange-500">
+                                    Términos y Condiciones
+                                </a>
+                                y la 
+                                <a asp-controller="Home" asp-action="Privacy" target="_blank" class="text-orange-600 hover:text-orange-500">
+                                    Política de Privacidad
+                                </a>
+                            </label>
+                            <div id="termsError" class="mt-1 text-sm text-red-600 hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- Error General -->
+                    <div id="formError" class="hidden">
+                        <div class="bg-red-50 border border-red-200 rounded-md p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-red-800">Error</h3>
+                                    <div class="mt-2 text-sm text-red-700">
+                                        <p id="errorMessage"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="flex justify-end space-x-3">
+                        <a asp-action="Login" 
+                           class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Volver al Login
+                        </a>
+                        <button type="submit" id="registerButton"
+                                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition">
+                            <span id="registerButtonText">Crear Cuenta</span>
+                            <span id="registerSpinner" class="hidden ml-2">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId, toggleIconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(toggleIconId);
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Show/hide role-specific fields
+        document.getElementById('rol').addEventListener('change', function() {
+            const role = this.value;
+            
+            // Hide all role-specific fields
+            document.getElementById('vendedorFields').classList.add('hidden');
+            document.getElementById('compradorFields').classList.add('hidden');
+            
+            // Show relevant fields
+            if (role === 'Vendedor') {
+                document.getElementById('vendedorFields').classList.remove('hidden');
+            } else if (role === 'Comprador') {
+                document.getElementById('compradorFields').classList.remove('hidden');
+            }
+        });
+
+        // Clear errors
+        function clearErrors() {
+            const errorElements = document.querySelectorAll('[id$="Error"]');
+            errorElements.forEach(el => el.classList.add('hidden'));
+            document.getElementById('formError').classList.add('hidden');
+        }
+
+        // Show error
+        function showError(field, message) {
+            const errorElement = document.getElementById(field + 'Error');
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.remove('hidden');
+            }
+        }
+
+        // Show form error
+        function showFormError(message) {
+            const formError = document.getElementById('formError');
+            document.getElementById('errorMessage').textContent = message;
+            formError.classList.remove('hidden');
+        }
+
+        // Validate form
+        function validateForm(formData) {
+            clearErrors();
+            
+            let isValid = true;
+
+            // Required fields
+            const requiredFields = ['nombre', 'email', 'password', 'confirmPassword', 'rol'];
+            requiredFields.forEach(field => {
+                if (!formData.get(field)) {
+                    showError(field, 'Este campo es requerido');
+                    isValid = false;
+                }
+            });
+
+            // Email format
+            const email = formData.get('email');
+            if (email && !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email)) {
+                showError('email', 'Formato de email inválido');
+                isValid = false;
+            }
+
+            // Password match
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            if (password && confirmPassword && password !== confirmPassword) {
+                showError('confirmPassword', 'Las contraseñas no coinciden');
+                isValid = false;
+            }
+
+            // Password length
+            if (password && password.length < 6) {
+                showError('password', 'La contraseña debe tener al menos 6 caracteres');
+                isValid = false;
+            }
+
+            // Role-specific required fields
+            const role = formData.get('rol');
+            if (role === 'Vendedor' && !formData.get('nombreComercial')) {
+                showError('nombreComercial', 'El nombre comercial es requerido para vendedores');
+                isValid = false;
+            }
+            if (role === 'Comprador' && !formData.get('direccion')) {
+                showError('direccion', 'La dirección es requerida para compradores');
+                isValid = false;
+            }
+
+            // Terms acceptance
+            if (!document.getElementById('acceptTerms').checked) {
+                showError('terms', 'Debes aceptar los términos y condiciones');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Handle registration
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            if (!validateForm(formData)) {
+                return;
+            }
+
+            const registerButton = document.getElementById('registerButton');
+            const registerButtonText = document.getElementById('registerButtonText');
+            const registerSpinner = document.getElementById('registerSpinner');
+
+            // Show loading state
+            registerButton.disabled = true;
+            registerButtonText.textContent = 'Creando cuenta...';
+            registerSpinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nombre: formData.get('nombre'),
+                        email: formData.get('email'),
+                        telefono: formData.get('telefono'),
+                        password: formData.get('password'),
+                        rol: formData.get('rol'),
+                        nombreComercial: formData.get('nombreComercial'),
+                        descripcion: formData.get('descripcion'),
+                        direccion: formData.get('direccion')
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Registration successful
+                    localStorage.setItem('authToken', data.token);
+                    
+                    registerButtonText.textContent = '¡Cuenta creada! Redirigiendo...';
+                    
+                    setTimeout(() => {
+                        // Redirect to appropriate page based on role
+                        const role = formData.get('rol');
+                        if (role === 'Vendedor') {
+                            window.location.href = '/Vendedor/DashboardVue';
+                        } else {
+                            window.location.href = '/';
+                        }
+                    }, 1500);
+                    
+                } else {
+                    throw new Error(data.message || 'Error al crear la cuenta');
+                }
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                
+                showFormError(error.message || 'Error de conexión. Intenta nuevamente.');
+                
+                // Reset button state
+                registerButton.disabled = false;
+                registerButtonText.textContent = 'Crear Cuenta';
+                registerSpinner.classList.add('hidden');
+            }
+        });
+
+        // Auto-focus first field
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('nombre').focus();
+        });
+    </script>
+}
