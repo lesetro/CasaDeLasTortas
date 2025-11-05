@@ -294,13 +294,13 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 
-// CORS - IMPORTANTE: Debe ir después de UseRouting y antes de UseAuthentication
+// CORS 
 app.UseCors(app.Environment.IsDevelopment() ? "AllowDevelopment" : "Production");
 
 app.UseSession();
 app.UseAuthentication();
 
-// 🔥 AGREGAR MIDDLEWARE JWT AQUÍ - ANTES DE UseAuthorization
+
 //app.UseMiddleware<JwtMiddleware>();
 
 app.UseAuthorization();

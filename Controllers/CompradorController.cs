@@ -12,64 +12,45 @@ namespace CasaDeLasTortas.Controllers
         }
 
         /// <summary>
-        /// Dashboard Vue.js - La autenticación se maneja en el cliente
+        /// Dashboard Vue.js - La autenticación y navegación se maneja en el cliente
         /// </summary>
         [HttpGet]
         public IActionResult DashboardVue()
         {
-            _logger.LogInformation(" Sirviendo vista DashboardVue del Comprador (autenticación en cliente)");
-            
-            // Solo servimos la vista, Vue.js manejará la autenticación
+            _logger.LogInformation("📍 Sirviendo vista DashboardVue del Comprador");
+
+            // Solo servimos la vista, Vue.js manejará TODO
             return View();
         }
 
         /// <summary>
-        /// Vista principal del comprador (alias para DashboardVue)
+        /// Vista principal - alias para DashboardVue
         /// </summary>
         [HttpGet]
         public IActionResult Index()
         {
-            _logger.LogInformation(" Sirviendo vista Index del Comprador");
+            _logger.LogInformation("📍 Sirviendo vista Index del Comprador");
             return View("DashboardVue");
         }
 
-        /// <summary>
-        /// Perfil del comprador (también manejado por Vue.js)
-        /// </summary>
         [HttpGet]
-        public IActionResult Perfil()
-        {
-            _logger.LogInformation(" Sirviendo vista Perfil del Comprador (manejado por Vue.js)");
-            return View("DashboardVue");
-        }
-
-        /// <summary>
-        /// Historial de compras (manejado por Vue.js)
-        /// </summary>
-        [HttpGet]
-        public IActionResult Historial()
-        {
-            _logger.LogInformation(" Sirviendo vista Historial del Comprador (manejado por Vue.js)");
-            return View("DashboardVue");
-        }
-
-        /// <summary>
-        /// Catálogo de tortas (manejado por Vue.js)
-        /// </summary>
-        [HttpGet]
+        [Route("Catalogo")]
         public IActionResult Catalogo()
         {
-            _logger.LogInformation(" Sirviendo vista Catalogo del Comprador (manejado por Vue.js)");
             return View("DashboardVue");
         }
 
-        /// <summary>
-        /// Carrito de compras (manejado por Vue.js)
-        /// </summary>
         [HttpGet]
+        [Route("Carrito")]
         public IActionResult Carrito()
         {
-            _logger.LogInformation(" Sirviendo vista Carrito del Comprador (manejado por Vue.js)");
+            return View("DashboardVue");
+        }
+
+        [HttpGet]
+        [Route("Historial")]
+        public IActionResult Historial()
+        {
             return View("DashboardVue");
         }
     }

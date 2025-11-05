@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CasaDeLasTortas")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a8cb01248000a9e79f4d88daec48c3908568caa8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b1c7ce378233c48cd4b379d86854d147eccffe66")]
 [assembly: System.Reflection.AssemblyProductAttribute("CasaDeLasTortas")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CasaDeLasTortas")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

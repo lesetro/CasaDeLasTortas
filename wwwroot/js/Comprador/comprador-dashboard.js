@@ -500,26 +500,27 @@ ${pedido.observaciones ? `Observaciones: ${pedido.observaciones}` : ''}
             }
         },
         
-        verTodosLosPedidos() {
+       verTodosLosPedidos() {
             this.mostrarMensaje('Navegando a historial completo...', 'info');
-            // Aquí se cambiaría la vista al historial completo
+            
+            this.$parent.cambiarVista('historial');
         },
-        
+
         irATortas() {
             this.mostrarMensaje('Navegando al catálogo...', 'info');
-            // Aquí se cambiaría la vista al catálogo
+            
+            this.$parent.cambiarVista('catalogo');
         },
-        
+
         verFavoritos() {
             this.mostrarMensaje('Navegando a favoritos...', 'info');
-        },
-        
+            
+            },
+
         verCarrito() {
             this.mostrarMensaje('Navegando al carrito...', 'info');
-        },
-        
-        contactarSoporte() {
-            this.mostrarMensaje('Contactando soporte...', 'info');
+            
+            this.$parent.cambiarVista('carrito');
         },
         
         formatMoneda(valor) {
@@ -1250,6 +1251,94 @@ const PerfilComprador = {
     }
 };
 
+// ==================== COMPONENTES FALTANTES ====================
+
+// Componente Carrito de Compras (simplificado)
+const CarritoCompras = {
+    name: 'CarritoCompras',
+    template: `
+        <div class="carrito-compras">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>Mi Carrito de Compras
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-shopping-cart fa-3x mb-3 opacity-50"></i>
+                        <h5>Tu carrito está vacío</h5>
+                        <p>Agrega productos desde el catálogo</p>
+                        <button class="btn btn-primary mt-3" @click="$parent.cambiarVista('catalogo')">
+                            <i class="fas fa-store me-2"></i>Ir al Catálogo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            carrito: []
+        }
+    }
+};
+
+// Componente Detalle de Compra (simplificado)
+const DetalleCompra = {
+    name: 'DetalleCompra',
+    template: `
+        <div class="detalle-compra">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>Detalle de Compra
+                    </h5>
+                    <button class="btn btn-outline-secondary btn-sm" @click="$parent.cambiarVista('historial')">
+                        <i class="fas fa-arrow-left me-1"></i>Volver
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-receipt fa-3x mb-3 opacity-50"></i>
+                        <h5>Selecciona una compra para ver los detalles</h5>
+                        <p>Ve al historial y haz clic en "Ver Detalle"</p>
+                        <button class="btn btn-primary mt-3" @click="$parent.cambiarVista('historial')">
+                            <i class="fas fa-history me-2"></i>Ir al Historial
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `
+};
+
+// Componente Cancelar Compra (simplificado)
+const CancelarCompra = {
+    name: 'CancelarCompra',
+    template: `
+        <div class="cancelar-compra">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-times-circle me-2 text-danger"></i>Cancelar Compra
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3 text-warning"></i>
+                        <h5>Función de cancelación</h5>
+                        <p>Esta función se activa desde el historial de compras</p>
+                        <button class="btn btn-primary mt-3" @click="$parent.cambiarVista('historial')">
+                            <i class="fas fa-history me-2"></i>Ir al Historial
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `
+};
+
 // ==================== COMPONENTE PRINCIPAL: COMPRADOR DASHBOARD ====================
 const CompradorDashboard = {
     name: 'CompradorDashboard',
@@ -1371,7 +1460,10 @@ const CompradorDashboard = {
                 'dashboard': 'DashboardComprador',
                 'catalogo': 'CatalogoComprador',
                 'historial': 'HistorialCompras',
-                'perfil': 'PerfilComprador'
+                'perfil': 'PerfilComprador',
+                'cancelar': 'CancelarCompra',
+                'detalle': 'DetalleCompra',
+                'carrito': 'CarritoCompras'
             };
             return componentes[this.vistaActiva] || 'DashboardComprador';
         }
@@ -1502,6 +1594,9 @@ function inicializarVueComprador() {
         app.component('CatalogoComprador', CatalogoComprador);
         app.component('HistorialCompras', HistorialCompras);
         app.component('PerfilComprador', PerfilComprador);
+        app.component('CancelarCompra', CancelarCompra);
+        app.component('DetalleCompra', DetalleCompra);
+        app.component('CarritoCompras', CarritoCompras);
         
         app.mount('#app');
         console.log(' Aplicación Vue del comprador montada correctamente');

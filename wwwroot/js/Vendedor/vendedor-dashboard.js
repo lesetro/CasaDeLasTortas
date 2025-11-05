@@ -1545,6 +1545,10 @@ function inicializarVue() {
         app.component('MisTortas', MisTortas);
         app.component('MisPedidos', MisPedidos);
         app.component('PerfilVendedor', PerfilVendedor);
+        app.component('CrearTorta', CrearTorta);
+        app.component('EditarTorta', EditarTorta);
+        app.component('DetallePedido', DetallePedido);
+        
         
         app.mount('#app');
         console.log('✅ Aplicación Vue montada correctamente');

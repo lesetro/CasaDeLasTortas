@@ -8,7 +8,7 @@ namespace CasaDeLasTortas.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+   
     public class CompradorApiController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -22,7 +22,7 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Obtener todos los compradores
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        
         public async Task<IActionResult> GetAll([FromQuery] int pagina = 1, [FromQuery] int registrosPorPagina = 10)
         {
             var compradores = await _unitOfWork.CompradorRepository.GetAllAsync(pagina, registrosPorPagina);
@@ -142,7 +142,7 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Eliminar comprador (soft delete)
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        
         public async Task<IActionResult> Delete(int id)
         {
             var comprador = await _unitOfWork.CompradorRepository.GetByIdAsync(id);

@@ -26,7 +26,7 @@ namespace CasaDeLasTortas.Controllers
                 return userRole switch
                 {
                     "Vendedor" => RedirectToAction("DashboardVue", "Vendedor"),
-                    "Comprador" => RedirectToAction("Index", "Comprador"),
+                    "Comprador" => RedirectToAction("DashboardVue", "Comprador"),
                     "Admin" => RedirectToAction("Index", "Admin"),
                     _ => RedirectToAction("Index", "Home")
                 };

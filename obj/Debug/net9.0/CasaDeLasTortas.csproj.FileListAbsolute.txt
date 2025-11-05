@@ -242,4 +242,6 @@ C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\CasaDeLasTortas.genruntimeconfig.cache
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\ref\CasaDeLasTortas.dll
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\CasaDeLasTortas.sourcelink.json
-C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\henbe9hssa-p2ej9xhnoa.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\e1ulmi6cg6-9hbem5xouy.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\xqwqxa2mls-yd9sy3lh3z.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\henbe9hssa-mr3xolukmm.gz
