@@ -58,5 +58,6 @@ namespace CasaDeLasTortas.Models.Entities
         // Propiedades de navegación
         public virtual Persona Persona { get; set; }
         public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
+        public virtual ICollection<Venta> Ventas { get; set; } = new List<Venta>();
     }
 }

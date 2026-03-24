@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace CasaDeLasTortas.Controllers.Api
 {
@@ -60,7 +61,11 @@ namespace CasaDeLasTortas.Controllers.Api
                 return BadRequest(new { message = "Término de búsqueda requerido" });
 
             var tortas = await _unitOfWork.TortaRepository.SearchAsync(termino);
-            return Ok(tortas);
+            
+            // Mapear a DTOs planos para evitar referencias circulares
+            var result = tortas.Select(t => MapTortaToDto(t)).ToList();
+            
+            return Ok(result);
         }
 
         /// <summary>
@@ -70,7 +75,8 @@ namespace CasaDeLasTortas.Controllers.Api
         public async Task<IActionResult> GetByCategoria(string categoria)
         {
             var tortas = await _unitOfWork.TortaRepository.GetByCategoriaAsync(categoria);
-            return Ok(tortas);
+            var result = tortas.Select(t => MapTortaToDto(t)).ToList();
+            return Ok(result);
         }
 
         /// <summary>
@@ -80,24 +86,29 @@ namespace CasaDeLasTortas.Controllers.Api
         public async Task<IActionResult> GetByPrecio([FromQuery] decimal min, [FromQuery] decimal max)
         {
             var tortas = await _unitOfWork.TortaRepository.GetByPrecioRangoAsync(min, max);
-            return Ok(tortas);
+            var result = tortas.Select(t => MapTortaToDto(t)).ToList();
+            return Ok(result);
         }
 
         /// <summary>
-        /// Obtener tortas disponibles
+        /// 🔥 CORREGIDO: Obtener tortas disponibles - SIN referencias circulares
         /// </summary>
         [HttpGet("disponibles")]
         public async Task<IActionResult> GetDisponibles()
         {
             var tortas = await _unitOfWork.TortaRepository.GetDisponiblesAsync();
-            return Ok(tortas);
+
+            // Mapear a DTOs planos para evitar referencias circulares
+            var result = tortas.Select(t => MapTortaToDto(t)).ToList();
+
+            return Ok(result);
         }
 
         /// <summary>
         /// Crear nueva torta
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin,Vendedor")]
         public async Task<IActionResult> Create([FromBody] TortaCreateDTO dto)
         {
             if (!ModelState.IsValid)
@@ -120,7 +131,7 @@ namespace CasaDeLasTortas.Controllers.Api
                 TiempoPreparacion = dto.TiempoPreparacion,
                 Ingredientes = dto.Ingredientes,
                 Personalizable = dto.Personalizable,
-                Disponible = true, // Por defecto disponible al crear
+                Disponible = true,
                 FechaCreacion = DateTime.Now
             };
 
@@ -134,7 +145,7 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Actualizar torta existente
         /// </summary>
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin,Vendedor")]
         public async Task<IActionResult> Update(int id, [FromBody] TortaUpdateDTO dto)
         {
             if (!ModelState.IsValid)
@@ -167,7 +178,7 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Cambiar disponibilidad de torta
         /// </summary>
         [HttpPatch("{id}/disponibilidad")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin,Vendedor")]
         public async Task<IActionResult> CambiarDisponibilidad(int id, [FromBody] bool disponible)
         {
             var torta = await _unitOfWork.TortaRepository.GetByIdAsync(id);
@@ -177,7 +188,7 @@ namespace CasaDeLasTortas.Controllers.Api
 
             torta.Disponible = disponible;
             torta.FechaActualizacion = DateTime.Now;
-            
+
             _unitOfWork.TortaRepository.Update(torta);
             await _unitOfWork.SaveChangesAsync();
 
@@ -188,7 +199,7 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Eliminar torta
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin,Vendedor")]
         public async Task<IActionResult> Delete(int id)
         {
             var torta = await _unitOfWork.TortaRepository.GetByIdAsync(id);
@@ -222,13 +233,17 @@ namespace CasaDeLasTortas.Controllers.Api
         [HttpGet("{id}/estadisticas")]
         public async Task<IActionResult> GetEstadisticas(int id)
         {
-            var torta = await _unitOfWork.TortaRepository.GetByIdWithPagosAsync(id);
+            var torta = await _unitOfWork.TortaRepository.GetByIdWithDetallesCompletosAsync(id);
 
             if (torta == null)
                 return NotFound(new { message = "Torta no encontrada" });
 
-            var totalVentas = torta.Pagos?.Count ?? 0;
-            var ingresoTotal = torta.Pagos?.Sum(p => p.Monto) ?? 0;
+            var detallesCompletados = torta.DetallesVenta?
+                .Where(d => d.Venta.Pagos.Any(p => p.Estado == EstadoPago.Completado))
+                .ToList() ?? new List<DetalleVenta>();
+
+            var totalVentas = detallesCompletados.Sum(d => d.Cantidad);
+            var ingresoTotal = detallesCompletados.Sum(d => d.Subtotal);
 
             return Ok(new
             {
@@ -237,8 +252,148 @@ namespace CasaDeLasTortas.Controllers.Api
                 totalVentas,
                 ingresoTotal,
                 precio = torta.Precio,
-                disponible = torta.Disponible
+                stock = torta.Stock,
+                disponible = torta.Disponible,
+                vecesVendida = torta.VecesVendida
             });
+        }
+
+        /// <summary>
+        /// Catálogo para el dashboard del comprador
+        /// </summary>
+        [HttpGet("catalogo")]
+        public async Task<IActionResult> GetCatalogo(
+            [FromQuery] int pagina = 1,
+            [FromQuery] int registrosPorPagina = 12,
+            [FromQuery] string? categoria = null,
+            [FromQuery] string? busqueda = null)
+        {
+            IEnumerable<Torta> tortas;
+
+            if (!string.IsNullOrWhiteSpace(busqueda))
+                tortas = await _unitOfWork.TortaRepository.SearchAsync(busqueda);
+            else if (!string.IsNullOrWhiteSpace(categoria))
+                tortas = await _unitOfWork.TortaRepository.GetByCategoriaAsync(categoria);
+            else
+                tortas = await _unitOfWork.TortaRepository.GetDisponiblesAsync();
+
+            // Solo tortas disponibles con stock
+            tortas = tortas.Where(t => t.Disponible && t.Stock > 0);
+
+            var total = tortas.Count();
+
+            var paginadas = tortas
+                .Skip((pagina - 1) * registrosPorPagina)
+                .Take(registrosPorPagina)
+                .Select(t => MapTortaToDto(t))
+                .ToList();
+
+            return Ok(new
+            {
+                data = paginadas,
+                pagina,
+                registrosPorPagina,
+                totalRegistros = total,
+                totalPaginas = (int)Math.Ceiling((double)total / registrosPorPagina)
+            });
+        }
+
+        /// <summary>
+        /// Detalle de una torta para el dashboard Vue
+        /// </summary>
+        [HttpGet("catalogo/{id}")]
+        public async Task<IActionResult> GetCatalogoDetalle(int id)
+        {
+            var t = await _unitOfWork.TortaRepository.GetByIdWithDetallesCompletosAsync(id);
+            if (t == null)
+                return NotFound(new { message = "Torta no encontrada" });
+
+            return Ok(new
+            {
+                id = t.Id,
+                nombre = t.Nombre,
+                descripcion = t.Descripcion ?? "",
+                ingredientes = t.Ingredientes ?? "",
+                precio = t.Precio,
+                stock = t.Stock,
+                categoria = t.Categoria ?? "",
+                tamanio = t.Tamanio ?? "",
+                tiempoPreparacion = t.TiempoPreparacion,
+                personalizable = t.Personalizable,
+                calificacion = t.Calificacion,
+                vecesVendida = t.VecesVendida,
+                disponible = t.Disponible,
+                vendedorId = t.Vendedor?.Id ?? 0,
+                nombreVendedor = t.Vendedor?.NombreComercial ?? "Sin vendedor",
+                especialidadVendedor = t.Vendedor?.Especialidad ?? "",
+                calificacionVendedor = t.Vendedor?.Calificacion ?? 0,
+                imagenes = (t.Imagenes ?? new List<ImagenTorta>())
+                    .OrderBy(i => i.Orden)
+                    .Select(i => new { url = i.UrlImagen, esPrincipal = i.EsPrincipal })
+                    .ToList(),
+                imagenPrincipal = t.Imagenes?
+                    .Where(i => i.EsPrincipal)
+                    .Select(i => i.UrlImagen)
+                    .FirstOrDefault()
+                ?? t.Imagenes?
+                    .OrderBy(i => i.Orden)
+                    .Select(i => i.UrlImagen)
+                    .FirstOrDefault()
+            });
+        }
+
+        /// <summary>
+        /// Categorías disponibles
+        /// </summary>
+        [HttpGet("categorias")]
+        public async Task<IActionResult> GetCategorias()
+        {
+            var categorias = await _unitOfWork.TortaRepository.GetCategoriasAsync();
+            return Ok(categorias);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // 🔥 MÉTODO HELPER: Mapear Torta a DTO plano (evita referencias circulares)
+        // ═══════════════════════════════════════════════════════════════
+        private object MapTortaToDto(Torta t)
+        {
+            return new
+            {
+                id = t.Id,
+                nombre = t.Nombre,
+                descripcion = t.Descripcion ?? "",
+                precio = t.Precio,
+                stock = t.Stock,
+                categoria = t.Categoria ?? "",
+                tamanio = t.Tamanio ?? "",
+                tiempoPreparacion = t.TiempoPreparacion,
+                personalizable = t.Personalizable,
+                calificacion = t.Calificacion,
+                vecesVendida = t.VecesVendida,
+                disponible = t.Disponible,
+                vendedorId = t.Vendedor?.Id ?? 0,
+                nombreVendedor = t.Vendedor?.NombreComercial ?? "Sin vendedor",
+                // Imágenes como array plano
+                imagenes = (t.Imagenes ?? new List<ImagenTorta>())
+                    .OrderBy(i => i.Orden)
+                    .Select(i => new
+                    {
+                        id = i.Id,
+                        urlImagen = i.UrlImagen,
+                        esPrincipal = i.EsPrincipal,
+                        orden = i.Orden
+                    })
+                    .ToList(),
+                // Imagen principal directa
+                imagenPrincipal = t.Imagenes?
+                    .Where(i => i.EsPrincipal)
+                    .Select(i => i.UrlImagen)
+                    .FirstOrDefault()
+                    ?? t.Imagenes?
+                        .OrderBy(i => i.Orden)
+                        .Select(i => i.UrlImagen)
+                        .FirstOrDefault()
+            };
         }
     }
 }

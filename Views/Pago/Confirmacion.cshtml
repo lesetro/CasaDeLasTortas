@@ -1,0 +1,84 @@
+@model ConfirmacionPagoViewModel
+@{
+    ViewData["Title"] = "Pago Confirmado";
+}
+
+<div class="container py-4" style="max-width: 700px;">
+    <div class="card shadow-sm overflow-hidden">
+        <!-- Header según estado -->
+        @if (Model.Estado == EstadoPago.Completado)
+        {
+            <div class="bg-success text-white text-center py-5">
+                <i class="fas fa-check-circle fa-4x mb-3"></i>
+                <h1 class="fw-bold fs-3">¡Pago Confirmado!</h1>
+                <p class="mb-0 opacity-75">@Model.Mensaje</p>
+            </div>
+        }
+        else if (Model.Estado == EstadoPago.Pendiente)
+        {
+            <div class="bg-warning text-white text-center py-5">
+                <i class="fas fa-clock fa-4x mb-3"></i>
+                <h1 class="fw-bold fs-3">Pago Registrado</h1>
+                <p class="mb-0 opacity-75">@Model.Mensaje</p>
+            </div>
+        }
+        else
+        {
+            <div class="bg-danger text-white text-center py-5">
+                <i class="fas fa-times-circle fa-4x mb-3"></i>
+                <h1 class="fw-bold fs-3">Error en el Pago</h1>
+                <p class="mb-0 opacity-75">Hubo un problema con tu pago</p>
+            </div>
+        }
+
+        <div class="card-body p-4">
+            <!-- Detalles -->
+            <div class="card bg-light mb-4">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3"><i class="fas fa-receipt me-2"></i>Detalles de la transacción</h5>
+                    <table class="table table-borderless mb-0">
+                        <tr><td class="text-muted">Número de orden:</td><td class="fw-semibold text-end">@Model.NumeroOrden</td></tr>
+                        <tr><td class="text-muted">Fecha y hora:</td><td class="fw-semibold text-end">@Model.FechaPago.ToString("dd/MM/yyyy HH:mm")</td></tr>
+                        <tr><td class="text-muted">Método de pago:</td><td class="fw-semibold text-end">@Model.MetodoPago</td></tr>
+                        <tr class="border-top"><td class="fw-bold">Monto total:</td><td class="fw-bold text-success fs-4 text-end">$@Model.Monto.ToString("N2")</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Info según estado -->
+            @if (Model.Estado == EstadoPago.Pendiente)
+            {
+                <div class="alert alert-info small">
+                    <h6 class="fw-semibold"><i class="fas fa-info-circle me-1"></i>¿Qué sigue?</h6>
+                    <ul class="mb-0 ps-3">
+                        <li>El vendedor verificará tu pago en las próximas horas</li>
+                        <li>Recibirás una notificación cuando sea confirmado</li>
+                        <li>Una vez confirmado, comenzará la preparación</li>
+                        <li><strong>Retirás en el local</strong> cuando esté listo</li>
+                    </ul>
+                </div>
+            }
+            else if (Model.Estado == EstadoPago.Completado)
+            {
+                <div class="alert alert-success small">
+                    <h6 class="fw-semibold"><i class="fas fa-check-circle me-1"></i>¡Todo listo!</h6>
+                    <ul class="mb-0 ps-3">
+                        <li>Tu pago ha sido confirmado exitosamente</li>
+                        <li>El vendedor preparará tu pedido</li>
+                        <li><strong>Retirás en el local</strong> cuando el estado sea "Listo para retirar"</li>
+                    </ul>
+                </div>
+            }
+
+            <!-- Botones -->
+            <div class="d-flex flex-column flex-sm-row gap-3">
+                <a asp-controller="Venta" asp-action="Details" asp-route-id="@Model.VentaId" class="btn btn-primary flex-fill fw-semibold">
+                    <i class="fas fa-eye me-2"></i>Ver detalle de la compra
+                </a>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-secondary flex-fill fw-semibold">
+                    <i class="fas fa-store me-2"></i>Seguir comprando
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

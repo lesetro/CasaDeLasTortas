@@ -1,0 +1,141 @@
+@model PersonaCreateViewModel
+@{
+    ViewData["Title"] = "Crear Nueva Persona";
+}
+
+<div class="container mt-5" style="max-width: 800px;">
+    <!-- Header -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Personas</a></li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">Crear Nueva Persona</li>
+            </ol>
+        </nav>
+        <h1 class="display-5 fw-bold text-dark">
+            <i class="fas fa-user-plus text-success me-3"></i>Crear Nueva Persona
+        </h1>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card shadow">
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="row g-4">
+                    <!-- Nombre -->
+                    <div class="col-md-6">
+                        <label asp-for="Nombre" class="form-label fw-medium">Nombre <span class="text-danger">*</span></label>
+                        <input asp-for="Nombre" class="form-control" />
+                        <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Apellido -->
+                    <div class="col-md-6">
+                        <label asp-for="Apellido" class="form-label fw-medium">Apellido <span class="text-danger">*</span></label>
+                        <input asp-for="Apellido" class="form-control" />
+                        <span asp-validation-for="Apellido" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label fw-medium">Email <span class="text-danger">*</span></label>
+                        <input asp-for="Email" type="email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Teléfono -->
+                    <div class="col-md-6">
+                        <label asp-for="Telefono" class="form-label fw-medium">Teléfono</label>
+                        <input asp-for="Telefono" class="form-control" />
+                        <span asp-validation-for="Telefono" class="text-danger small"></span>
+                    </div>
+
+                    <!-- DNI -->
+                    <div class="col-md-6">
+                        <label asp-for="Dni" class="form-label fw-medium">DNI</label>
+                        <input asp-for="Dni" class="form-control" />
+                        <span asp-validation-for="Dni" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Rol -->
+                    <div class="col-md-6">
+                        <label asp-for="Rol" class="form-label fw-medium">Rol <span class="text-danger">*</span></label>
+                        <select asp-for="Rol" class="form-select">
+                            <option value="Comprador">Comprador</option>
+                            <option value="Vendedor">Vendedor</option>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <option value="Admin">Administrador</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Rol" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Contraseña -->
+                    <div class="col-md-6">
+                        <label asp-for="Password" class="form-label fw-medium">Contraseña <span class="text-danger">*</span></label>
+                        <input asp-for="Password" type="password" class="form-control" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Confirmar Contraseña -->
+                    <div class="col-md-6">
+                        <label asp-for="ConfirmPassword" class="form-label fw-medium">Confirmar Contraseña <span class="text-danger">*</span></label>
+                        <input asp-for="ConfirmPassword" type="password" class="form-control" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Dirección -->
+                    <div class="col-12">
+                        <label asp-for="Direccion" class="form-label fw-medium">Dirección</label>
+                        <input asp-for="Direccion" class="form-control" />
+                        <span asp-validation-for="Direccion" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Fecha de Nacimiento -->
+                    <div class="col-md-6">
+                        <label asp-for="FechaNacimiento" class="form-label fw-medium">Fecha de Nacimiento</label>
+                        <input asp-for="FechaNacimiento" type="date" class="form-control" />
+                        <span asp-validation-for="FechaNacimiento" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Avatar -->
+                    <div class="col-md-6">
+                        <label asp-for="AvatarFile" class="form-label fw-medium">Foto de Perfil</label>
+                        <input asp-for="AvatarFile" type="file" accept="image/*" class="form-control" />
+                        <span asp-validation-for="AvatarFile" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <!-- Términos y condiciones -->
+                <div class="mt-4">
+                    <div class="form-check">
+                        <input asp-for="AceptaTerminos" type="checkbox" class="form-check-input" />
+                        <label asp-for="AceptaTerminos" class="form-check-label">
+                            Acepto los <a asp-controller="Home" asp-action="Terms" class="text-primary text-decoration-none">términos y condiciones</a>
+                        </label>
+                    </div>
+                    <span asp-validation-for="AceptaTerminos" class="text-danger small"></span>
+                </div>
+
+                <!-- Botones -->
+                <div class="mt-4 d-flex justify-content-end gap-3">
+                    <a asp-action="Index" class="btn btn-light border px-4 py-2 fw-semibold">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success px-4 py-2 fw-semibold">
+                        <i class="fas fa-save me-2"></i>Crear Persona
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

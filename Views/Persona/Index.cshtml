@@ -1,0 +1,213 @@
+@model CasaDeLasTortas.Models.ViewModels.PersonaListViewModel
+@{
+    ViewData["Title"] = "Gestión de Personas";
+}
+
+<div class="container mt-5">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="breadcrumb-item">
+                            <a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin</a>
+                        </li>
+                    }
+                    <li class="breadcrumb-item active text-warning" aria-current="page">Personas</li>
+                </ol>
+            </nav>
+            <h1 class="display-5 fw-bold text-dark">
+                <i class="fas fa-users text-primary me-3"></i>Gestión de Personas
+            </h1>
+            <p class="text-secondary">@Model.Personas.Count personas encontradas</p>
+        </div>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-action="Create" class="btn btn-primary btn-lg fw-semibold shadow">
+                <i class="fas fa-user-plus me-2"></i>Nueva Persona
+            </a>
+        }
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6 col-lg-4">
+                    <label class="form-label fw-medium">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="fas fa-search text-secondary"></i>
+                        </span>
+                        <input type="text" name="busqueda" value="@Model.Busqueda"
+                               placeholder="Nombre o email..." class="form-control" />
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-medium">Rol</label>
+                    <select name="filtroRol" class="form-select">
+                        <option value="">Todos los roles</option>
+                        <option value="Admin"     selected="@(Model.FiltroRol == "Admin")">Administradores</option>
+                        <option value="Vendedor"  selected="@(Model.FiltroRol == "Vendedor")">Vendedores</option>
+                        <option value="Comprador" selected="@(Model.FiltroRol == "Comprador")">Compradores</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-medium">Ordenar por</label>
+                    <select name="ordenarPor" class="form-select">
+                        <option value="Nombre"           selected="@(Model.OrdenarPor == "Nombre")">Nombre A-Z</option>
+                        <option value="Nombre_desc"      selected="@(Model.OrdenarPor == "Nombre_desc")">Nombre Z-A</option>
+                        <option value="Email"            selected="@(Model.OrdenarPor == "Email")">Email</option>
+                        <option value="Rol"              selected="@(Model.OrdenarPor == "Rol")">Rol</option>
+                        <option value="FechaRegistro_desc" selected="@(Model.OrdenarPor == "FechaRegistro_desc")">Más recientes</option>
+                    </select>
+                </div>
+
+                <div class="col-md-12 col-lg-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="flex-fill btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                    <a asp-action="Index" class="btn btn-light border">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow">
+        @if (Model.Personas.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="px-4 py-3 small fw-semibold text-secondary">Usuario</th>
+                            <th class="px-4 py-3 small fw-semibold text-secondary">Email</th>
+                            <th class="px-4 py-3 text-center small fw-semibold text-secondary">Rol</th>
+                            <th class="px-4 py-3 text-center small fw-semibold text-secondary">Estado</th>
+                            <th class="px-4 py-3 text-center small fw-semibold text-secondary">Registro</th>
+                            <th class="px-4 py-3 text-center small fw-semibold text-secondary">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var persona in Model.Personas)
+                        {
+                            @* Definir colores por rol una sola vez *@
+                            var bgOpacity = persona.Rol == "Admin"     ? "rgba(220,53,69,.12)" :
+                                            persona.Rol == "Vendedor"  ? "rgba(25,135,84,.12)" :
+                                                                         "rgba(13,110,253,.12)";
+                            var iconColor = persona.Rol == "Admin"     ? "#dc3545" :
+                                            persona.Rol == "Vendedor"  ? "#198754" :
+                                                                         "#0d6efd";
+                            var badgeClass = persona.Rol == "Admin"    ? "bg-danger"  :
+                                             persona.Rol == "Vendedor" ? "bg-success" :
+                                                                         "bg-primary"; // ← antes era bg-purple (no existe en Bootstrap)
+                            var iconClass  = persona.Rol == "Admin"    ? "fa-crown"   :
+                                             persona.Rol == "Vendedor" ? "fa-store"   :
+                                                                         "fa-user";
+
+                            <tr>
+                                <!-- Avatar + Nombre -->
+                                <td class="px-4 py-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle overflow-hidden flex-shrink-0 d-flex align-items-center justify-content-center"
+                                             style="width:42px;height:42px;background:@bgOpacity">
+                                            @if (!string.IsNullOrEmpty(persona.Avatar))
+                                                {
+                                                    @* FIX: src directo en img, no en el div padre *@
+                                                    <img src="@persona.Avatar"
+                                                     alt="@persona.Nombre"
+                                                     style="width:42px;height:42px;object-fit:cover;" />
+                                            }
+                                            else
+                                            {
+                                                <i class="fas @iconClass" style="color:@iconColor"></i>
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@persona.Nombre</div>
+                                            <div class="small text-secondary">ID: @persona.Id</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Email -->
+                                <td class="px-4 py-3 text-secondary">@persona.Email</td>
+
+                                <!-- Rol -->
+                                <td class="px-4 py-3 text-center">
+                                    <span class="badge @badgeClass">@persona.Rol</span>
+                                </td>
+
+                                <!-- Estado -->
+                                <td class="px-4 py-3 text-center">
+                                    @if (persona.Activo)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Activo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Inactivo
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Fecha -->
+                                <td class="px-4 py-3 text-center small text-secondary">
+                                    @persona.FechaRegistro.ToString("dd/MM/yyyy")
+                                </td>
+
+                                <!-- Acciones -->
+                                <td class="px-4 py-3">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <a asp-action="Details" asp-route-id="@persona.Id"
+                                           class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@persona.Id"
+                                           class="btn btn-sm btn-outline-warning" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <a asp-action="Delete" asp-route-id="@persona.Id"
+                                               class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        }
+                                        <a asp-action="ChangePassword" asp-route-id="@persona.Id"
+                                           class="btn btn-sm btn-outline-secondary" title="Cambiar contraseña">
+                                            <i class="fas fa-key"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer bg-white">
+                <partial name="_Paginacion" model="Model.Paginacion" />
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-4x text-secondary opacity-50 mb-3"></i>
+                <h5 class="fw-semibold text-dark">No se encontraron personas</h5>
+                <p class="text-secondary">Intenta con otros filtros de búsqueda.</p>
+            </div>
+        }
+    </div>
+</div>

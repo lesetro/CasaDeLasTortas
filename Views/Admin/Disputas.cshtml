@@ -1,0 +1,280 @@
+@{
+    ViewData["Title"] = "Gestión de Disputas - Admin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var disputas     = ViewBag.Disputas     as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var countAbiertas  = ViewBag.CountAbiertas  ?? 0;
+    var countResueltas = ViewBag.CountResueltas ?? 0;
+    var countCerradas  = ViewBag.CountCerradas  ?? 0;
+}
+
+@section Styles {
+<style>
+    body { background-color: #f1f5f9; }
+    .admin-main { margin-left: 260px; padding: 2rem; }
+    .kpi-card   { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .dis-table th { font-size:.75rem; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; font-weight:600; border:none; }
+    .dis-table td { vertical-align:middle; border-color:#f1f5f9; }
+    .dis-table tr:last-child td { border-bottom:none; }
+    .dis-table tbody tr:hover { background:#f8fafc; }
+    @@media (max-width:991px){ .admin-main{ margin-left:0; padding:1rem; } }
+</style>
+}
+
+<partial name="_AdminSidebar" />
+
+<div class="admin-main">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-0" style="font-size:1.6rem;">
+                <i class="fas fa-exclamation-triangle text-danger me-2"></i>Disputas y Reclamos
+            </h1>
+            <p class="text-muted mb-0 small">Mediá conflictos entre compradores y vendedores</p>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Dashboard
+        </a>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-4">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">🔴 Abiertas</div>
+                <div class="fs-2 fw-bold text-danger">@countAbiertas</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">🟡 En proceso</div>
+                <div class="fs-2 fw-bold text-warning">@countResueltas</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">✅ Cerradas</div>
+                <div class="fs-2 fw-bold text-success">@countCerradas</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros rápidos -->
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        <a asp-action="Disputas" class="btn btn-sm @(ViewBag.FiltroEstado == null ? "btn-dark" : "btn-outline-secondary")">
+            Todas
+        </a>
+        <a asp-action="Disputas" asp-route-estado="Abierta"
+           class="btn btn-sm @(ViewBag.FiltroEstado == "Abierta" ? "btn-danger" : "btn-outline-danger")">
+            <i class="fas fa-circle me-1" style="font-size:.5rem;"></i>Abiertas
+        </a>
+        <a asp-action="Disputas" asp-route-estado="EnProceso"
+           class="btn btn-sm @(ViewBag.FiltroEstado == "EnProceso" ? "btn-warning" : "btn-outline-warning")">
+            <i class="fas fa-circle me-1" style="font-size:.5rem;"></i>En proceso
+        </a>
+        <a asp-action="Disputas" asp-route-estado="Resuelta"
+           class="btn btn-sm @(ViewBag.FiltroEstado == "Resuelta" ? "btn-success" : "btn-outline-success")">
+            <i class="fas fa-circle me-1" style="font-size:.5rem;"></i>Resueltas
+        </a>
+    </div>
+
+    <!-- Tabla de disputas -->
+    <div class="card border-0 rounded-3 shadow-sm">
+        @if (disputas.Any())
+        {
+            <div class="table-responsive">
+                <table class="table dis-table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Disputa</th>
+                            <th>Partes involucradas</th>
+                            <th>Motivo</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Abierta</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in disputas)
+                        {
+                            var estadoCls = (string)(d.Estado ?? "Abierta") switch {
+                                "Resuelta"  => "bg-success",
+                                "EnProceso" => "bg-warning text-dark",
+                                _           => "bg-danger"
+                            };
+
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-semibold small">#DIS-@d.Id</div>
+                                    <div class="text-muted" style="font-size:.72rem;">Orden: #@d.NumeroOrden</div>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <span class="text-muted">Comprador:</span>
+                                        <span class="fw-semibold"> @d.NombreComprador</span>
+                                    </div>
+                                    <div class="small">
+                                        <span class="text-muted">Vendedor:</span>
+                                        <span class="fw-semibold"> @d.NombreVendedor</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="small">@(d.Motivo?.Length > 60 ? d.Motivo.Substring(0, 60) + "…" : d.Motivo ?? "—")</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge @estadoCls rounded-pill">@d.Estado</span>
+                                </td>
+                                <td class="text-center text-muted small">@d.FechaCreacion?.ToString("dd/MM/yy")</td>
+                                <td class="text-center">
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalDisputa"
+                                            data-disputa-id="@d.Id"
+                                            data-comprador="@d.NombreComprador"
+                                            data-vendedor="@d.NombreVendedor"
+                                            data-motivo="@d.Motivo"
+                                            data-estado="@d.Estado"
+                                            data-orden="@d.NumeroOrden">
+                                        <i class="fas fa-gavel me-1"></i>Gestionar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-handshake fa-3x text-muted mb-3 d-block"></i>
+                <h6 class="fw-semibold text-muted">No hay disputas en este estado</h6>
+                <p class="text-muted small">¡Buenas noticias! Todo marcha bien.</p>
+            </div>
+        }
+    </div>
+
+</div><!-- /admin-main -->
+
+<!-- ── Modal: Gestionar disputa ── -->
+<div class="modal fade" id="modalDisputa" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">
+                    <i class="fas fa-gavel text-primary me-2"></i>
+                    Gestionar Disputa — Orden <span id="dOrden"></span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ResolverDisputa" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="disputaId" id="dId" />
+
+                    <!-- Info -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background:#eff6ff;">
+                                <div class="small text-muted fw-semibold mb-1">Comprador</div>
+                                <div id="dComprador" class="fw-semibold"></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background:#f0fdf4;">
+                                <div class="small text-muted fw-semibold mb-1">Vendedor</div>
+                                <div id="dVendedor" class="fw-semibold"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Motivo -->
+                    <div class="mb-3">
+                        <div class="small fw-semibold text-muted mb-1">Motivo del reclamo</div>
+                        <div id="dMotivo" class="p-3 rounded-3 small" style="background:#fef9c3; border-left:3px solid #f59e0b;"></div>
+                    </div>
+
+                    <!-- Resolución -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">
+                            Nuevo estado <span class="text-danger">*</span>
+                        </label>
+                        <select name="nuevoEstado" class="form-select" id="dEstadoSelect" required>
+                            <option value="EnProceso">🟡 Tomar el caso (En Proceso)</option>
+                            <option value="FavorComprador">✅ Resolver: Favor del Comprador</option>
+                            <option value="FavorVendedor">✅ Resolver: Favor del Vendedor</option>
+                            <option value="Resuelta">✅ Marcar como Resuelta</option>
+                            <option value="Cerrada">🔒 Cerrar sin resolución</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">
+                            Resolución / Comentario admin <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="resolucion" class="form-control" rows="3"
+                                  placeholder="Explicá tu decisión. Ambas partes recibirán esta notificación."
+                                  required></textarea>
+                    </div>
+
+                    <!-- Panel reembolso (visible si resuelve a favor del comprador) -->
+                    <div id="panelReembolso" class="p-3 rounded-3 border border-danger-subtle d-none" style="background:#fef2f2;">
+                        <div class="fw-semibold small text-danger mb-2">
+                            <i class="fas fa-undo me-1"></i>¿Procesar reembolso?
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="procesarReembolso" id="chkReembolso" />
+                            <label class="form-check-label small" for="chkReembolso">
+                                Sí, iniciar devolución al comprador
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-semibold">
+                        <i class="fas fa-gavel me-1"></i>Aplicar resolución
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const modal = document.getElementById('modalDisputa');
+    modal.addEventListener('show.bs.modal', e => {
+        const btn = e.relatedTarget;
+        document.getElementById('dId').value          = btn.dataset.disputaId;
+        document.getElementById('dOrden').textContent = btn.dataset.orden;
+        document.getElementById('dComprador').textContent = btn.dataset.comprador;
+        document.getElementById('dVendedor').textContent  = btn.dataset.vendedor;
+        document.getElementById('dMotivo').textContent    = btn.dataset.motivo;
+    });
+
+    document.getElementById('dEstadoSelect').addEventListener('change', function() {
+        document.getElementById('panelReembolso').classList.toggle(
+            'd-none', this.value !== 'FavorComprador'
+        );
+    });
+</script>
+}

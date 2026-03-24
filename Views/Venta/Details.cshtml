@@ -1,0 +1,345 @@
+@model CasaDeLasTortas.Models.ViewModels.VentaDetalleViewModel
+@{
+    ViewData["Title"] = "Detalle de Orden #" + Model.NumeroOrden;
+}
+
+<div class="container py-4">
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @* Encabezado *@
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="MisCompras" class="text-decoration-none">Mis Compras</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Orden #@Model.NumeroOrden</li>
+                </ol>
+            </nav>
+            <h2 class="mb-0 fw-bold">Orden #@Model.NumeroOrden</h2>
+            <small class="text-muted">Realizada el @Model.FechaVenta.ToString("dd/MM/yyyy HH:mm")</small>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <span class="badge bg-@Model.EstadoColor fs-6 px-3 py-2">@Model.EstadoDisplay</span>
+            @if (Model.PuedeVerFactura)
+            {
+                <a asp-action="ImprimirFactura" asp-route-id="@Model.Id" class="btn btn-outline-secondary btn-sm" target="_blank">
+                    <i class="bi bi-printer me-1"></i>Factura
+                </a>
+            }
+            @if (Model.PuedeCancelar)
+            {
+                <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar orden
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        @* Columna izquierda: productos y pagos *@
+        <div class="col-lg-8">
+
+            @* Productos *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-cake2 me-2 text-primary"></i>Productos</h5>
+                </div>
+                <div class="card-body p-0">
+                    @foreach (var detalle in Model.Detalles)
+                    {
+                        <div class="d-flex gap-3 p-3 border-bottom align-items-start">
+                            <div class="flex-shrink-0">
+                                @if (!string.IsNullOrEmpty(detalle.ImagenTorta))
+                                {
+                                    <img src="@detalle.ImagenTorta" alt="@detalle.NombreTorta"
+                                         class="rounded" style="width:80px;height:80px;object-fit:cover;">
+                                }
+                                else
+                                {
+                                    <div class="rounded bg-light d-flex align-items-center justify-content-center"
+                                         style="width:80px;height:80px;">
+                                        <i class="bi bi-cake2 text-muted fs-3"></i>
+                                    </div>
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between flex-wrap gap-1">
+                                    <div>
+                                        <h6 class="mb-0 fw-semibold">@detalle.NombreTorta</h6>
+                                        <small class="text-muted">Vendedor: @detalle.NombreVendedor</small>
+                                    </div>
+                                    <span class="badge bg-@detalle.EstadoColor align-self-start">@detalle.EstadoDisplay</span>
+                                </div>
+                                <div class="mt-2 row g-2 text-sm">
+                                    <div class="col-auto">
+                                        <span class="text-muted">Cantidad:</span>
+                                        <strong>@detalle.Cantidad</strong>
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="text-muted">Precio unitario:</span>
+                                        <strong>$@detalle.PrecioUnitario.ToString("N2")</strong>
+                                    </div>
+                                    @if (detalle.Descuento > 0)
+                                    {
+                                        <div class="col-auto">
+                                            <span class="text-muted">Descuento:</span>
+                                            <strong class="text-danger">-$@detalle.Descuento.ToString("N2")</strong>
+                                        </div>
+                                    }
+                                    <div class="col-auto">
+                                        <span class="text-muted">Subtotal:</span>
+                                        <strong class="text-primary">$@detalle.Subtotal.ToString("N2")</strong>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(detalle.NotasPersonalizacion))
+                                {
+                                    <div class="mt-2">
+                                        <small class="text-muted"><i class="bi bi-chat-left-text me-1"></i>@detalle.NotasPersonalizacion</small>
+                                    </div>
+                                }
+                                @if (detalle.FechaEstimadaPreparacion.HasValue)
+                                {
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>Entrega estimada: @detalle.FechaEstimadaPreparacion.Value.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                @* Totales *@
+                <div class="card-footer bg-white">
+                    <div class="d-flex flex-column align-items-end gap-1">
+                        <div><span class="text-muted me-3">Subtotal:</span><strong>$@Model.Subtotal.ToString("N2")</strong></div>
+                        @if (Model.DescuentoTotal > 0)
+                        {
+                            <div><span class="text-muted me-3">Descuento:</span><strong class="text-danger">-$@Model.DescuentoTotal.ToString("N2")</strong></div>
+                        }
+                        <div class="fs-5"><span class="text-muted me-3">Total:</span><strong class="text-primary">$@Model.Total.ToString("N2")</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            @* Pagos *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-credit-card me-2 text-success"></i>Pagos</h5>
+                    @if (Model.PuedePagar)
+                    {
+                        <a asp-controller="Pago" asp-action="Crear" asp-route-ventaId="@Model.Id" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i>Registrar pago
+                        </a>
+                    }
+                </div>
+                <div class="card-body">
+                    @if (!Model.Pagos.Any())
+                    {
+                        <p class="text-muted text-center mb-0"><i class="bi bi-inbox me-2"></i>No hay pagos registrados aún.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Método</th>
+                                        <th>N° Transacción</th>
+                                        <th>Monto</th>
+                                        <th>Estado</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pago in Model.Pagos)
+                                    {
+                                        <tr>
+                                            <td>@pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@pago.MetodoDisplay</td>
+                                            <td><small>@(pago.NumeroTransaccion ?? "-")</small></td>
+                                            <td><strong>$@pago.Monto.ToString("N2")</strong></td>
+                                            <td><span class="badge bg-success">@pago.EstadoDisplay</span></td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(pago.ArchivoComprobante))
+                                                {
+                                                    <a href="@pago.ArchivoComprobante" target="_blank" class="btn btn-outline-secondary btn-sm py-0">
+                                                        <i class="bi bi-file-earmark-text"></i>
+                                                    </a>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-end gap-3 mt-3 pt-3 border-top">
+                            <span>Total pagado: <strong class="text-success">$@Model.TotalPagado.ToString("N2")</strong></span>
+                            @if (Model.SaldoPendiente > 0)
+                            {
+                                <span>Saldo pendiente: <strong class="text-danger">$@Model.SaldoPendiente.ToString("N2")</strong></span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        @* Columna derecha: info entrega y comprador *@
+        <div class="col-lg-4">
+
+            @* Entrega *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt me-2 text-danger"></i>Entrega</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>@Model.DireccionEntrega</strong></p>
+                    @if (!string.IsNullOrEmpty(Model.Ciudad))
+                    {
+                        <p class="mb-1 text-muted">@Model.Ciudad@(!string.IsNullOrEmpty(Model.Provincia) ? ", " + Model.Provincia : "")</p>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.CodigoPostal))
+                    {
+                        <p class="mb-1 text-muted">CP: @Model.CodigoPostal</p>
+                    }
+                    @if (Model.FechaEntregaEstimada.HasValue)
+                    {
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">Estimada:</small>
+                            <small class="fw-semibold">@Model.FechaEntregaEstimada.Value.ToString("dd/MM/yyyy")</small>
+                        </div>
+                    }
+                    @if (Model.FechaEntregaReal.HasValue)
+                    {
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">Entregada:</small>
+                            <small class="fw-semibold text-success">@Model.FechaEntregaReal.Value.ToString("dd/MM/yyyy")</small>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.NotasCliente))
+                    {
+                        <hr class="my-2">
+                        <small class="text-muted d-block">Notas:</small>
+                        <small>@Model.NotasCliente</small>
+                    }
+                </div>
+            </div>
+
+            @* Comprador *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-person me-2 text-secondary"></i>Comprador</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1 fw-semibold">@Model.NombreComprador</p>
+                    <p class="mb-1 text-muted"><i class="bi bi-envelope me-1"></i>@Model.EmailComprador</p>
+                    <p class="mb-0 text-muted"><i class="bi bi-telephone me-1"></i>@Model.TelefonoComprador</p>
+                </div>
+            </div>
+
+            @* Factura *@
+            @if (Model.RequiereFactura)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="bi bi-receipt me-2 text-warning"></i>Datos de Factura</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1"><span class="text-muted">CBU Cliente:</span> @Model.CUITCliente</p>
+                        <p class="mb-0"><span class="text-muted">Razón social:</span> @Model.RazonSocial</p>
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@* Modal Cancelar *@
+@if (Model.PuedeCancelar)
+{
+    <div class="modal fade" id="modalCancelar" tabindex="-1" aria-labelledby="modalCancelarLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCancelarLabel">Cancelar Orden</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que querés cancelar la orden <strong>#@Model.NumeroOrden</strong>?</p>
+                    <div class="mb-3">
+                        <label for="motivoCancelacion" class="form-label">Motivo (opcional)</label>
+                        <textarea id="motivoCancelacion" class="form-control" rows="3" placeholder="Indicá el motivo de la cancelación..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmarCancelar">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar orden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Token AntiForgery para la petición fetch
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        
+        document.getElementById('btnConfirmarCancelar')?.addEventListener('click', function () {
+            const motivo = document.getElementById('motivoCancelacion').value;
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cancelando...';
+
+            fetch('@Url.Action("Cancelar", "Venta", new { id = Model.Id })', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: new URLSearchParams({ motivo: motivo })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Error al cancelar la orden');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelar orden';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión. Intente nuevamente.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelar orden';
+            });
+        });
+    </script>
+    
+    @* Generar el token AntiForgery para el fetch *@
+    @Html.AntiForgeryToken()
+}

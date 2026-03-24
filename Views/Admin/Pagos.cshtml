@@ -1,0 +1,407 @@
+@model CasaDeLasTortas.Models.ViewModels.AdminPagosViewModel
+@{
+    ViewData["Title"] = "Verificar Pagos - Admin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    body { background-color: #f1f5f9; }
+    .admin-main { margin-left: 260px; padding: 2rem; }
+    .kpi-card  { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .filter-card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .pagos-table th { font-size:.75rem; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; font-weight:600; border:none; }
+    .pagos-table td { vertical-align:middle; border-color:#f1f5f9; }
+    .pagos-table tr:last-child td { border-bottom:none; }
+    .pagos-table tbody tr:hover { background:#f8fafc; }
+    .comprobante-thumb { width:54px; height:54px; object-fit:cover; border-radius:8px; border:2px solid #e2e8f0; cursor:pointer; transition:transform .15s; }
+    .comprobante-thumb:hover { transform:scale(1.07); }
+    @@media (max-width:991px){ .admin-main{ margin-left:0; padding:1rem; } }
+</style>
+}
+
+<partial name="_AdminSidebar" />
+
+<div class="admin-main">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-0" style="font-size:1.6rem;">
+                <i class="fas fa-file-invoice-dollar text-warning me-2"></i>Verificar Pagos
+            </h1>
+            <p class="text-muted mb-0 small">Revisá y aprobá los comprobantes de transferencia bancaria</p>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">⏳ En revisión</div>
+                <div class="fs-2 fw-bold text-warning">@Model.Estadisticas.PagosEnRevision</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">✅ Verificados</div>
+                <div class="fs-2 fw-bold text-success">@Model.Estadisticas.PagosVerificados</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">❌ Rechazados</div>
+                <div class="fs-2 fw-bold text-danger">@Model.Estadisticas.PagosRechazados</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">💰 Monto en revisión</div>
+                <div class="fs-2 fw-bold text-primary">$@Model.Estadisticas.MontoEnRevision.ToString("N0")</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card card mb-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Estado</label>
+                    <select name="filtroEstado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="EnRevision" selected="@(Model.FiltroEstado == "EnRevision")">⏳ En revisión</option>
+                        <option value="Verificado" selected="@(Model.FiltroEstado == "Verificado")">✅ Verificados</option>
+                        <option value="Rechazado"  selected="@(Model.FiltroEstado == "Rechazado")">❌ Rechazados</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Desde</label>
+                    <input type="date" name="desde" value="@Model.FiltroDesde?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Hasta</label>
+                    <input type="date" name="hasta" value="@Model.FiltroHasta?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-12 col-md-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="fas fa-filter me-1"></i>Filtrar
+                    </button>
+                    <a asp-action="Pagos" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de pagos pendientes -->
+    <div class="card border-0 rounded-3 shadow-sm">
+        @if (Model.PagosPendientes.Any())
+        {
+            <div class="table-responsive">
+                <table class="table pagos-table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Orden / Comprador</th>
+                            <th>Comprobante</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Método</th>
+                            <th class="text-center">Fecha</th>
+                            <th class="text-center">Espera</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pago in Model.PagosPendientes)
+                        {
+                            <tr>
+                                <!-- Orden + Comprador -->
+                                <td class="ps-4">
+                                    <div class="fw-semibold small">#@pago.NumeroOrden</div>
+                                    <div class="text-muted" style="font-size:.75rem;">
+                                        <i class="fas fa-user me-1"></i>@pago.NombreComprador
+                                    </div>
+                                    <div class="text-muted" style="font-size:.72rem;">
+                                        @pago.EmailComprador
+                                    </div>
+                                </td>
+
+                                <!-- Comprobante -->
+                                <td>
+                                    @if (!string.IsNullOrEmpty(pago.ArchivoComprobante))
+                                    {
+                                        <img src="@pago.ArchivoComprobante"
+                                             class="comprobante-thumb"
+                                             data-bs-toggle="modal"
+                                             data-bs-target="#modalComprobante"
+                                             data-src="@pago.ArchivoComprobante"
+                                             title="Ver comprobante" />
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2" style="font-size:.7rem;">
+                                            <i class="fas fa-file-slash me-1"></i>Sin comprobante
+                                        </span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(pago.NumeroTransaccion))
+                                    {
+                                        <div class="text-muted mt-1" style="font-size:.7rem;">
+                                            Nº @pago.NumeroTransaccion
+                                        </div>
+                                    }
+                                </td>
+
+                                <!-- Monto -->
+                                <td class="text-end fw-bold text-success fs-6">
+                                    $@pago.Monto.ToString("N0")
+                                </td>
+
+                                <!-- Método -->
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark rounded-pill" style="font-size:.72rem;">
+                                        @(pago.MetodoPago ?? "Transferencia")
+                                    </span>
+                                </td>
+
+                                <!-- Fecha -->
+                                <td class="text-center text-muted small">
+                                    @pago.FechaPago.ToString("dd/MM/yy")<br/>
+                                    <span style="font-size:.7rem;">@pago.FechaPago.ToString("HH:mm")</span>
+                                </td>
+
+                                <!-- Horas esperando -->
+                                <td class="text-center">
+                                    @{
+                                        var horasClass = pago.HorasEsperando > 24 ? "text-danger" : (pago.HorasEsperando > 12 ? "text-warning" : "text-muted");
+                                    }
+                                    <span class="@horasClass small fw-semibold">
+                                        @pago.HorasEsperando h
+                                    </span>
+                                </td>
+
+                                <!-- Acciones -->
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <!-- Aprobar -->
+                                        <form asp-action="VerificarPago" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id"      value="@pago.Id" />
+                                            <input type="hidden" name="aprobar" value="true" />
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-success"
+                                                    title="Aprobar pago"
+                                                    onclick="return confirm('¿Confirmar que el dinero llegó a la cuenta de la plataforma?')">
+                                                <i class="fas fa-check me-1"></i>Aprobar
+                                            </button>
+                                        </form>
+                                        <!-- Rechazar -->
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Rechazar pago"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalRechazar"
+                                                data-pago-id="@pago.Id"
+                                                data-comprador="@pago.NombreComprador"
+                                                data-monto="$@pago.Monto.ToString("N0")">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPaginas > 1)
+            {
+                <div class="card-footer bg-white border-0 px-4 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">
+                            @Model.TotalRegistros pago(s) encontrados
+                        </span>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0 gap-1">
+                                <li class="page-item @(Model.PaginaActual <= 1 ? "disabled" : "")">
+                                    <a class="page-link rounded" asp-action="Pagos" asp-route-pagina="@(Model.PaginaActual - 1)" asp-route-filtroEstado="@Model.FiltroEstado">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                @for (int pg = Math.Max(1, Model.PaginaActual - 2); pg <= Math.Min(Model.TotalPaginas, Model.PaginaActual + 2); pg++)
+                                {
+                                    <li class="page-item @(pg == Model.PaginaActual ? "active" : "")">
+                                        <a class="page-link rounded" asp-action="Pagos" asp-route-pagina="@pg" asp-route-filtroEstado="@Model.FiltroEstado">@pg</a>
+                                    </li>
+                                }
+                                <li class="page-item @(Model.PaginaActual >= Model.TotalPaginas ? "disabled" : "")">
+                                    <a class="page-link rounded" asp-action="Pagos" asp-route-pagina="@(Model.PaginaActual + 1)" asp-route-filtroEstado="@Model.FiltroEstado">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-check-double fa-3x text-muted mb-3 d-block"></i>
+                <h6 class="fw-semibold text-muted">No hay pagos en esta categoría</h6>
+                <p class="text-muted small">Probá con otros filtros</p>
+            </div>
+        }
+    </div>
+
+    <!-- Pagos recientes verificados -->
+    @if (Model.PagosRecientes.Any())
+    {
+        <div class="card border-0 rounded-3 shadow-sm mt-4">
+            <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                <h6 class="fw-bold mb-0">
+                    <i class="fas fa-history text-muted me-2"></i>Pagos recientes verificados
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table pagos-table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Orden</th>
+                                <th>Comprador</th>
+                                <th class="text-end">Monto</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Fecha</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pago in Model.PagosRecientes.Take(5))
+                            {
+                                var estadoClass = pago.Estado switch {
+                                    EstadoPago.Verificado => "bg-success",
+                                    EstadoPago.Completado => "bg-success",
+                                    EstadoPago.Rechazado  => "bg-danger",
+                                    _                     => "bg-secondary"
+                                };
+                                var estadoTexto = pago.Estado switch {
+                                    EstadoPago.Verificado => "Verificado",
+                                    EstadoPago.Completado => "Completado",
+                                    EstadoPago.Rechazado  => "Rechazado",
+                                    _                     => pago.Estado.ToString()
+                                };
+                                <tr>
+                                    <td class="ps-4 fw-semibold small">#@pago.NumeroOrden</td>
+                                    <td class="text-muted small">@pago.NombreComprador</td>
+                                    <td class="text-end fw-bold text-success">$@pago.Monto.ToString("N0")</td>
+                                    <td class="text-center">
+                                        <span class="badge @estadoClass rounded-pill px-2">@estadoTexto</span>
+                                    </td>
+                                    <td class="text-center text-muted small">@pago.FechaPago.ToString("dd/MM/yy HH:mm")</td>
+                                    <td class="text-center">
+                                        <a asp-controller="Pago" asp-action="Details" asp-route-id="@pago.Id"
+                                           class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ── Modal: Ver comprobante ── -->
+<div class="modal fade" id="modalComprobante" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">Comprobante de pago</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="comprobanteImg" src="" class="img-fluid rounded-3" style="max-height:70vh;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Modal: Rechazar pago ── -->
+<div class="modal fade" id="modalRechazar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-danger">
+                    <i class="fas fa-times-circle me-2"></i>Rechazar pago
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="VerificarPago" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="rechazarPagoId" />
+                    <input type="hidden" name="aprobar" value="false" />
+                    <div class="alert alert-warning border-0 rounded-3 small mb-3">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Comprador: <strong id="rechazarComprador"></strong> — 
+                        Monto: <strong id="rechazarMonto"></strong>
+                    </div>
+                    <label class="form-label fw-semibold small">Motivo del rechazo <span class="text-danger">*</span></label>
+                    <textarea name="motivoRechazo" class="form-control" rows="3"
+                              placeholder="Ej: Comprobante ilegible, monto no coincide, transferencia no recibida…"
+                              required></textarea>
+                    <div class="form-text text-muted">El comprador recibirá una notificación con este motivo.</div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>Confirmar rechazo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Modal comprobante
+    document.querySelectorAll('.comprobante-thumb').forEach(img => {
+        img.addEventListener('click', () => {
+            document.getElementById('comprobanteImg').src = img.dataset.src;
+        });
+    });
+
+    // Modal rechazar — poblar datos
+    document.getElementById('modalRechazar').addEventListener('show.bs.modal', e => {
+        const btn = e.relatedTarget;
+        document.getElementById('rechazarPagoId').value   = btn.dataset.pagoId;
+        document.getElementById('rechazarComprador').textContent = btn.dataset.comprador;
+        document.getElementById('rechazarMonto').textContent     = btn.dataset.monto;
+    });
+</script>
+}

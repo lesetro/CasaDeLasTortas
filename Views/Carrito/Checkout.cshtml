@@ -1,0 +1,240 @@
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="container py-4">
+    <!-- Progress bar -->
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-center flex-fill">
+                <div class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center mb-2" 
+                     style="width: 40px; height: 40px;">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="small text-success fw-bold">Carrito</div>
+            </div>
+            <div class="flex-fill">
+                <div class="progress" style="height: 2px;">
+                    <div class="progress-bar bg-success" style="width: 50%"></div>
+                </div>
+            </div>
+            <div class="text-center flex-fill">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" 
+                     style="width: 40px; height: 40px;">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="small text-primary fw-bold">Checkout</div>
+            </div>
+            <div class="flex-fill">
+                <div class="progress" style="height: 2px;">
+                    <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="text-center flex-fill">
+                <div class="rounded-circle bg-light text-secondary d-inline-flex align-items-center justify-content-center mb-2" 
+                     style="width: 40px; height: 40px;">
+                    <i class="fas fa-credit-card"></i>
+                </div>
+                <div class="small text-secondary">Pago</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Formulario de checkout -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Información de Entrega</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="ProcesarCheckout" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <!-- Usar dirección del perfil -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" 
+                                   asp-for="UsarDireccionPerfil" id="usarDireccionPerfil">
+                            <label class="form-check-label" for="usarDireccionPerfil">
+                                Usar dirección guardada en mi perfil
+                            </label>
+                        </div>
+
+                        <!-- Dirección de entrega -->
+                        <div class="mb-3">
+                            <label asp-for="DireccionEntrega" class="form-label fw-bold">
+                                Dirección de Entrega *
+                            </label>
+                            <textarea asp-for="DireccionEntrega" class="form-control" rows="3" 
+                                      placeholder="Calle, número, piso, departamento..."></textarea>
+                            <span asp-validation-for="DireccionEntrega" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Ciudad" class="form-label">Ciudad</label>
+                                <input asp-for="Ciudad" class="form-control" placeholder="Ej: Asunción">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Provincia" class="form-label">Provincia</label>
+                                <input asp-for="Provincia" class="form-control" placeholder="Ej: Central">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="CodigoPostal" class="form-label">Código Postal</label>
+                                <input asp-for="CodigoPostal" class="form-control" placeholder="Ej: 1000">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TelefonoContacto" class="form-label">Teléfono de contacto</label>
+                                <input asp-for="TelefonoContacto" class="form-control" placeholder="Ej: 0981 123456">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="EmailContacto" class="form-label">Email de contacto</label>
+                                <input asp-for="EmailContacto" class="form-control" placeholder="Ej: correo@ejemplo.com">
+                            </div>
+                        </div>
+
+                        <!-- Notas adicionales -->
+                        <div class="mb-4">
+                            <label asp-for="Notas" class="form-label">Notas adicionales</label>
+                            <textarea asp-for="Notas" class="form-control" rows="3" 
+                                      placeholder="Ej: Entregar en horario de tarde, timbre no funciona, etc."></textarea>
+                        </div>
+
+                        <!-- Facturación -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" 
+                                           asp-for="RequiereFactura" id="requiereFactura">
+                                    <label class="form-check-label fw-bold" for="requiereFactura">
+                                        Requiero factura
+                                    </label>
+                                </div>
+
+                                <div id="facturaFields" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="RucOCedula" class="form-label">RUC/Cédula</label>
+                                            <input asp-for="RucOCedula" class="form-control" placeholder="Ej: 123456-1">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="RazonSocial" class="form-label">Razón Social</label>
+                                            <input asp-for="RazonSocial" class="form-control" placeholder="Nombre de la empresa">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver al Carrito
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-credit-card me-2"></i>Continuar al Pago
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen del pedido -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Tu Pedido</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">@Model.Carrito.TotalItems productos</small>
+                    </div>
+
+                    @foreach (var item in Model.Carrito.Items.Take(3))
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-secondary me-2">@item.Cantidad</span>
+                                <span class="small">@item.Nombre</span>
+                            </div>
+                            <span class="small fw-bold">@item.Total.ToString("C")</span>
+                        </div>
+                    }
+
+                    @if (Model.Carrito.Items.Count > 3)
+                    {
+                        <p class="text-muted small mb-3">
+                            + @(Model.Carrito.Items.Count - 3) productos más
+                        </p>
+                    }
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal:</span>
+                        <strong>@Model.Carrito.Subtotal.ToString("C")</strong>
+                    </div>
+
+                    @if (Model.Carrito.DescuentoTotal > 0)
+                    {
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <span>Descuentos:</span>
+                            <strong>-@Model.Carrito.DescuentoTotal.ToString("C")</strong>
+                        </div>
+                    }
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Envío:</span>
+                        <strong class="text-success">GRATIS</strong>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-0">
+                        <span class="h5">Total:</span>
+                        <span class="h5 text-primary fw-bold">@Model.Carrito.Total.ToString("C")</span>
+                    </div>
+
+                    <div class="alert alert-success mt-4 py-2 small">
+                        <i class="fas fa-lock me-2"></i>
+                        Tus datos están seguros con encriptación SSL
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Mostrar/ocultar campos de factura
+        document.getElementById('requiereFactura').addEventListener('change', function(e) {
+            document.getElementById('facturaFields').style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        // Auto-completar con dirección del perfil
+        document.getElementById('usarDireccionPerfil').addEventListener('change', async function(e) {
+            if (e.target.checked) {
+                try {
+                    const response = await fetch('/api/Comprador/perfil');
+                    const data = await response.json();
+                    
+                    document.getElementById('DireccionEntrega').value = data.direccion || '';
+                    document.getElementById('Ciudad').value = data.ciudad || '';
+                    document.getElementById('Provincia').value = data.provincia || '';
+                    document.getElementById('CodigoPostal').value = data.codigoPostal || '';
+                    document.getElementById('TelefonoContacto').value = data.telefono || '';
+                    document.getElementById('EmailContacto').value = data.email || '';
+                } catch (error) {
+                    console.error('Error cargando perfil:', error);
+                }
+            }
+        });
+    </script>
+}

@@ -89,7 +89,7 @@ namespace CasaDeLasTortas.Models.DTOs
         public bool Disponible { get; set; }
         
         // Vendedor
-        public VendedorListDTO Vendedor { get; set; }
+        public VendedorDTO Vendedor { get; set; }
         
         // Imágenes
         public List<ImagenTortaDTO> Imagenes { get; set; }

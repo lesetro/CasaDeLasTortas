@@ -67,8 +67,10 @@ namespace CasaDeLasTortas.Repositories
         {
             return await _context.Compradores
                 .Include(c => c.Persona)
-                .Include(c => c.Pagos)
-                    .ThenInclude(p => p.Torta)
+                .Include(c => c.Ventas)
+                    .ThenInclude(v => v.Pagos)
+                .Include(c => c.Ventas)
+                    .ThenInclude(v => v.Detalles)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
@@ -76,10 +78,12 @@ namespace CasaDeLasTortas.Repositories
         {
             return await _context.Compradores
                 .Include(c => c.Persona)
-                .Include(c => c.Pagos)
-                    .ThenInclude(p => p.Torta)
-                        .ThenInclude(t => t.Vendedor)
-                            .ThenInclude(v => v.Persona)
+                .Include(c => c.Ventas)  // ← Incluir ventas en lugar de pagos directos
+                    .ThenInclude(v => v.Detalles)
+                        .ThenInclude(d => d.Torta)
+                            .ThenInclude(t => t.Imagenes)
+                .Include(c => c.Ventas)
+                    .ThenInclude(v => v.Pagos)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
@@ -121,7 +125,7 @@ namespace CasaDeLasTortas.Repositories
         {
             return await _context.Compradores
                 .Include(c => c.Persona)
-                .Where(c => 
+                .Where(c =>
                     c.Persona.Nombre.Contains(termino) ||
                     c.Persona.Email.Contains(termino) ||
                     (c.Direccion != null && c.Direccion.Contains(termino)) ||
@@ -164,9 +168,15 @@ namespace CasaDeLasTortas.Repositories
 
         public async Task<IEnumerable<Comprador>> GetTopCompradores(int cantidad = 10)
         {
+            // Versión corregida usando Ventas en lugar de Pagos
             return await _context.Compradores
                 .Include(c => c.Persona)
-                .OrderByDescending(c => c.TotalCompras)
+                .Include(c => c.Ventas)
+                    .ThenInclude(v => v.Pagos)
+                .Where(c => c.Activo)
+                .OrderByDescending(c => c.Ventas
+                    .Where(v => v.Pagos.Any(p => p.Estado == EstadoPago.Completado))
+                    .Sum(v => v.Total))
                 .Take(cantidad)
                 .ToListAsync();
         }
@@ -174,7 +184,7 @@ namespace CasaDeLasTortas.Repositories
         public async Task<IEnumerable<Comprador>> GetCompradorReciente(int dias = 30)
         {
             var fechaLimite = DateTime.Now.AddDays(-dias);
-            
+
             return await _context.Compradores
                 .Include(c => c.Persona)
                 .Where(c => c.FechaCreacion >= fechaLimite)
@@ -220,10 +230,10 @@ namespace CasaDeLasTortas.Repositories
                 .ToListAsync();
         }
         public async Task UpdateAsync(Comprador comprador)
-        {   
+        {
             _context.Compradores.Update(comprador);
             await _context.SaveChangesAsync();
         }
-        
+
     }
 }

@@ -1,0 +1,70 @@
+@model TortaViewModel
+@{
+    ViewData["Title"] = "Eliminar Torta";
+}
+
+<div class="container py-4" style="max-width: 600px;">
+    <div class="card shadow-sm overflow-hidden">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>Confirmar eliminación
+            </h5>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <i class="fas fa-birthday-cake fa-4x text-muted mb-3 d-block opacity-50"></i>
+                <h4 class="fw-bold">@Model.Nombre</h4>
+                <p class="text-muted">¿Estás seguro de que deseas eliminar esta torta?</p>
+                <p class="text-danger small fw-semibold">
+                    <i class="fas fa-exclamation-circle me-1"></i>Esta acción no se puede deshacer
+                </p>
+            </div>
+
+            <div class="card bg-light mb-4">
+                <div class="card-body">
+                    <div class="row g-2 small">
+                        <div class="col-6">
+                            <span class="text-muted">Precio:</span>
+                            <span class="fw-semibold ms-2">$@Model.Precio.ToString("N2")</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted">Stock:</span>
+                            <span class="fw-semibold ms-2">@Model.Stock</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted">Ventas:</span>
+                            <span class="fw-semibold ms-2">@Model.VecesVendida</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted">Vendedor:</span>
+                            <span class="fw-semibold ms-2">@Model.NombreVendedor</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.VecesVendida > 0)
+            {
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Esta torta tiene @Model.VecesVendida ventas registradas.</strong>
+                    <br><small>Eliminarla podría afectar el historial de ventas.</small>
+                </div>
+            }
+
+            <form asp-action="DeleteConfirmed" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-danger flex-fill fw-semibold">
+                        <i class="fas fa-trash me-2"></i>Sí, eliminar torta
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary flex-fill fw-semibold">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -4,12 +4,14 @@ using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace CasaDeLasTortas.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+
     public class PersonaApiController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -23,7 +25,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Obtener todas las personas con paginación
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+
         public async Task<IActionResult> GetAll([FromQuery] int pagina = 1, [FromQuery] int registrosPorPagina = 10)
         {
             var personas = await _unitOfWork.PersonaRepository.GetAllAsync(pagina, registrosPorPagina);
@@ -166,7 +169,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Eliminar persona
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+
         public async Task<IActionResult> Delete(int id)
         {
             var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(id);
@@ -221,7 +225,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Buscar personas por término
         /// </summary>
         [HttpGet("search")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+
         public async Task<IActionResult> Search([FromQuery] string termino)
         {
             if (string.IsNullOrWhiteSpace(termino))

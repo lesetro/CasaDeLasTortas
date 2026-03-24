@@ -1,0 +1,274 @@
+@model VentaDetalleViewModel
+@{
+    ViewData["Title"] = "Factura #" + Model?.NumeroOrden;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // Para imprimir usamos una clase que oculta el navbar
+}
+
+@section Styles {
+<style>
+    @@media print {
+        .no-print, nav, footer, .navbar { display: none !important; }
+        .print-only { display: block !important; }
+        .factura-wrap { max-width: 100% !important; box-shadow: none !important; }
+        body { background: white !important; }
+    }
+    .factura-wrap {
+        max-width: 820px; margin: 2rem auto; background: #fff;
+        border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.10);
+        overflow: hidden;
+    }
+    .factura-header { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 2.5rem 2.5rem 2rem; }
+    .factura-body   { padding: 2rem 2.5rem; }
+    .factura-footer { padding: 1.5rem 2.5rem; background: #f8fafc; border-top: 2px solid #f1f5f9; }
+    .linea-item { border-bottom: 1px solid #f1f5f9; }
+    .linea-item:last-child { border-bottom: none; }
+    .estado-badge {
+        display: inline-block; padding: .35rem .9rem; border-radius: 20px;
+        font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .qr-placeholder {
+        width: 80px; height: 80px; border: 2px solid #e2e8f0; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; font-size: .65rem;
+        text-align: center; color: #94a3b8; background: #f8fafc;
+    }
+</style>
+}
+
+<div class="container-fluid py-3">
+
+    <!-- Botonera (no imprime) -->
+    <div class="no-print d-flex justify-content-center gap-2 mb-3">
+        <button onclick="window.print()" class="btn btn-dark">
+            <i class="fas fa-print me-2"></i>Imprimir / Guardar PDF
+        </button>
+        <a asp-controller="Venta" asp-action="Details" asp-route-id="@Model?.Id"
+           class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al detalle
+        </a>
+    </div>
+
+    @if (Model == null)
+    {
+        <div class="alert alert-warning text-center rounded-3">
+            No se encontró la venta solicitada.
+        </div>
+    }
+    else
+    {
+        <div class="factura-wrap">
+
+            <!-- ── CABECERA ── -->
+            <div class="factura-header">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                    <!-- Logo / Empresa -->
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span style="font-size:2.2rem;">🎂</span>
+                            <div>
+                                <div class="fw-bold" style="font-size:1.3rem;">Casa de las Tortas</div>
+                                <div class="text-white text-opacity-60" style="font-size:.78rem;">Marketplace de repostería artesanal</div>
+                            </div>
+                        </div>
+                        <div class="text-white text-opacity-60 small">casadelastortas@email.com</div>
+                    </div>
+
+                    <!-- Título factura -->
+                    <div class="text-end">
+                        <div class="text-white text-opacity-50 small text-uppercase letter-spacing mb-1">Factura / Comprobante</div>
+                        <div class="fw-bold" style="font-size:1.6rem;">#@Model.NumeroOrden</div>
+                        <div class="text-white text-opacity-60 small mt-1">
+                            Emitida: @Model.FechaVenta.ToString("dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-AR"))
+                        </div>
+                        @{
+                            var (estadoColor, estadoLabel) = Model.Estado switch {
+                                EstadoVenta.Pendiente     => ("#f59e0b", "Pendiente"),
+                                EstadoVenta.Pagada        => ("#3b82f6", "Pagada"),
+                                EstadoVenta.EnPreparacion => ("#8b5cf6", "En Preparación"),
+                                EstadoVenta.Entregada     => ("#22c55e", "Entregada"),
+                                EstadoVenta.Cancelada     => ("#ef4444", "Cancelada"),
+                                _                         => ("#94a3b8", Model.Estado.ToString())
+                            };
+                        }
+                        <div class="mt-2">
+                            <span class="estado-badge text-white" style="background:@estadoColor;">@estadoLabel</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── DATOS DE PARTES ── -->
+            <div class="factura-body border-bottom">
+                <div class="row g-4">
+                    <!-- Facturado a -->
+                    <div class="col-md-6">
+                        <div class="text-muted small fw-semibold text-uppercase mb-2" style="letter-spacing:.08em;">
+                            Facturado a
+                        </div>
+                        <div class="fw-bold">@Model.NombreComprador</div>
+                        <div class="text-muted small">@Model.EmailComprador</div>
+                        @if (!string.IsNullOrEmpty(Model.TelefonoComprador))
+                        {
+                            <div class="text-muted small">@Model.TelefonoComprador</div>
+                        }
+                        @if (Model.RequiereFactura && !string.IsNullOrEmpty(Model.RazonSocial))
+                        {
+                            <div class="mt-2 small">
+                                <span class="text-muted">Razón social:</span> <strong>@Model.RazonSocial</strong><br/>
+                                <span class="text-muted">CUIT/RUC:</span> <strong>@Model.CUITCliente</strong>
+                            </div>
+                        }
+                    </div>
+                    <!-- Entrega -->
+                    <div class="col-md-6">
+                        <div class="text-muted small fw-semibold text-uppercase mb-2" style="letter-spacing:.08em;">
+                            Datos de entrega
+                        </div>
+                        <div class="small">@Model.DireccionEntrega</div>
+                        @if (!string.IsNullOrEmpty(Model.Ciudad))
+                        {
+                            <div class="small text-muted">@Model.Ciudad@(!string.IsNullOrEmpty(Model.Provincia) ? $", {Model.Provincia}" : "")</div>
+                        }
+                        @if (Model.FechaEntregaEstimada.HasValue)
+                        {
+                            <div class="small mt-1">
+                                <span class="text-muted">Entrega estimada:</span>
+                                <strong>@Model.FechaEntregaEstimada.Value.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                        }
+                        @if (Model.FechaEntregaReal.HasValue)
+                        {
+                            <div class="small mt-1">
+                                <span class="text-muted">Entrega real:</span>
+                                <strong class="text-success">@Model.FechaEntregaReal.Value.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PRODUCTOS ── -->
+            <div class="factura-body border-bottom">
+                <div class="text-muted small fw-semibold text-uppercase mb-3" style="letter-spacing:.08em;">
+                    Detalle de productos
+                </div>
+
+                <!-- Encabezado columnas -->
+                <div class="row text-muted small fw-semibold border-bottom pb-2 mb-2"
+                     style="font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;">
+                    <div class="col-5">Producto</div>
+                    <div class="col-2 text-center">Cant.</div>
+                    <div class="col-2 text-end">P. Unit.</div>
+                    <div class="col-1 text-end">Desc.</div>
+                    <div class="col-2 text-end">Subtotal</div>
+                </div>
+
+                @foreach (var item in Model.Detalles)
+                {
+                    <div class="row align-items-center py-3 linea-item">
+                        <div class="col-5">
+                            <div class="fw-semibold small">@item.NombreTorta</div>
+                            <div class="text-muted" style="font-size:.72rem;">
+                                Vendedor: @item.NombreVendedor
+                            </div>
+                            @if (!string.IsNullOrEmpty(item.NotasPersonalizacion))
+                            {
+                                <div class="text-muted fst-italic" style="font-size:.7rem;">
+                                    📝 @item.NotasPersonalizacion
+                                </div>
+                            }
+                        </div>
+                        <div class="col-2 text-center text-muted">@item.Cantidad</div>
+                        <div class="col-2 text-end small">$@item.PrecioUnitario.ToString("N0")</div>
+                        <div class="col-1 text-end small text-danger">
+                            @(item.Descuento > 0 ? $"-${item.Descuento.ToString("N0")}" : "—")
+                        </div>
+                        <div class="col-2 text-end fw-semibold">$@item.Subtotal.ToString("N0")</div>
+                    </div>
+                }
+            </div>
+
+            <!-- ── TOTALES ── -->
+            <div class="factura-body border-bottom">
+                <div class="row justify-content-end">
+                    <div class="col-md-5">
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted small">Subtotal</span>
+                            <span class="small">$@Model.Subtotal.ToString("N0")</span>
+                        </div>
+                        @if (Model.DescuentoTotal > 0)
+                        {
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-muted small">Descuentos</span>
+                                <span class="small text-danger">-$@Model.DescuentoTotal.ToString("N0")</span>
+                            </div>
+                        }
+                        <div class="d-flex justify-content-between py-2 border-top mt-1">
+                            <span class="fw-bold">TOTAL</span>
+                            <span class="fw-bold fs-5 text-success">$@Model.Total.ToString("N0")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PAGOS ── -->
+            @if (Model.Pagos.Any())
+            {
+                <div class="factura-body border-bottom">
+                    <div class="text-muted small fw-semibold text-uppercase mb-3" style="letter-spacing:.08em;">
+                        Comprobantes de pago
+                    </div>
+                    @foreach (var pago in Model.Pagos)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <span class="small fw-semibold">Transferencia</span>
+                                @if (!string.IsNullOrEmpty(pago.NumeroTransaccion))
+                                {
+                                    <span class="text-muted small ms-2">Nº @pago.NumeroTransaccion</span>
+                                }
+                                <div class="text-muted" style="font-size:.72rem;">
+                                    @pago.FechaPago.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-semibold text-success">$@pago.Monto.ToString("N0")</div>
+                                @{
+                                    var (pgBadge, pgLabel) = pago.Estado switch {
+                                        EstadoPago.Completado => ("bg-success", "Confirmado"),
+                                        EstadoPago.Pendiente  => ("bg-warning text-dark", "En revisión"),
+                                        _                     => ("bg-danger", "Rechazado")
+                                    };
+                                }
+                                <span class="badge @pgBadge rounded-pill" style="font-size:.65rem;">@pgLabel</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- ── NOTAS ── -->
+            @if (!string.IsNullOrEmpty(Model.NotasCliente))
+            {
+                <div class="factura-body border-bottom">
+                    <div class="text-muted small fw-semibold text-uppercase mb-2" style="letter-spacing:.08em;">Notas</div>
+                    <div class="small text-muted fst-italic">@Model.NotasCliente</div>
+                </div>
+            }
+
+            <!-- ── FOOTER ── -->
+            <div class="factura-footer">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="text-muted small">
+                        <i class="fas fa-shield-alt me-1 text-success"></i>
+                        Compra protegida por Casa de las Tortas · Documento generado el @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                    <div class="qr-placeholder no-print">
+                        <div>QR<br/>Orden</div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /factura-wrap -->
+    }
+</div>

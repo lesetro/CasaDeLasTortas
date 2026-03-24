@@ -1,0 +1,81 @@
+@model ConfirmarPagoViewModel
+@{
+    ViewData["Title"] = "Confirmar Pago";
+}
+
+<div class="container py-4" style="max-width: 700px;">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a asp-controller="Venta" asp-action="MisPedidos" class="text-decoration-none">Mis Pedidos</a></li>
+                <li class="breadcrumb-item active">Confirmar Pago</li>
+            </ol>
+        </nav>
+        <h1 class="fw-bold"><i class="fas fa-check-circle text-success me-2"></i>Confirmar Pago</h1>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning bg-opacity-25">
+            <h5 class="mb-0 fw-semibold text-warning"><i class="fas fa-shopping-bag me-2"></i>Pedido pendiente de confirmación</h5>
+        </div>
+
+        <div class="card-body">
+            <div class="bg-light rounded p-4 mb-4">
+                <h5 class="fw-bold mb-2">@Model.NombreTorta</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Cantidad:</small>
+                        <span class="fw-semibold ms-2">@Model.Cantidad</span>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Monto total:</small>
+                        <span class="fs-5 fw-bold text-success ms-2">$@Model.Monto.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+
+            <form asp-action="ConfirmarPago" method="post" enctype="multipart/form-data" id="confirmarPagoForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="PagoId" />
+                <input type="hidden" asp-for="Monto" />
+                <input type="hidden" asp-for="NombreTorta" />
+                <input type="hidden" asp-for="Cantidad" />
+
+                <div class="mb-3">
+                    <label asp-for="NumeroTransaccion" class="form-label fw-semibold">Número de transferencia</label>
+                    <input asp-for="NumeroTransaccion" class="form-control" placeholder="Ej: 123456789" />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ArchivoComprobante" class="form-label fw-semibold">Comprobante de pago (opcional)</label>
+                    <input asp-for="ArchivoComprobante" type="file" accept="image/*,application/pdf" class="form-control" />
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="NotasConfirmacion" class="form-label fw-semibold">Notas adicionales (opcional)</label>
+                    <textarea asp-for="NotasConfirmacion" rows="2" class="form-control" placeholder="Comentarios sobre el pago..."></textarea>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-success flex-fill fw-semibold">
+                        <i class="fas fa-check-circle me-2"></i>Confirmar pago
+                    </button>
+                    <a asp-controller="Venta" asp-action="MisPedidos" class="btn btn-secondary flex-fill fw-semibold">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('confirmarPagoForm').addEventListener('submit', function(e) {
+            if (!confirm('¿Confirmar este pago? Esta acción no se puede deshacer.')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+}

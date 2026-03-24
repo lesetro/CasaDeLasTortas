@@ -5,15 +5,16 @@ using CasaDeLasTortas.Models.ViewModels;
 using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Services;
 
+
 namespace CasaDeLasTortas.Controllers
 {
     [Authorize]
     public class PersonaController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly FileService _fileService;
+        private readonly IFileService _fileService;
 
-        public PersonaController(IUnitOfWork unitOfWork, FileService fileService)
+        public PersonaController(IUnitOfWork unitOfWork, IFileService fileService)
         {
             _unitOfWork = unitOfWork;
             _fileService = fileService;
@@ -29,7 +30,7 @@ namespace CasaDeLasTortas.Controllers
                 // Aplicar filtros
                 if (!string.IsNullOrEmpty(busqueda))
                 {
-                    personas = personas.Where(p => 
+                    personas = personas.Where(p =>
                         p.Nombre.Contains(busqueda, StringComparison.OrdinalIgnoreCase) ||
                         p.Email.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
                     );
@@ -170,8 +171,12 @@ namespace CasaDeLasTortas.Controllers
                 {
                     Id = persona.Id,
                     Nombre = persona.Nombre,
+                    Apellido = persona.Apellido,       // ← faltaba
                     Email = persona.Email,
                     Telefono = persona.Telefono,
+                    Dni = persona.Dni,            // ← faltaba
+                    Direccion = persona.Direccion,      // ← faltaba
+                    FechaNacimiento = persona.FechaNacimiento,// ← faltaba
                     AvatarActual = persona.Avatar,
                     Activo = persona.Activo
                 };
@@ -185,6 +190,7 @@ namespace CasaDeLasTortas.Controllers
             }
         }
 
+        // ── REEMPLAZÁ el POST Edit en PersonaController.cs ─────────────────────
         // POST: Persona/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -197,9 +203,7 @@ namespace CasaDeLasTortas.Controllers
             }
 
             if (!ModelState.IsValid)
-            {
                 return View(viewModel);
-            }
 
             try
             {
@@ -210,32 +214,32 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Verificar si el email ya existe en otra persona
-                var emailExiste = await _unitOfWork.PersonaRepository.ExistsAsync(p => p.Email == viewModel.Email && p.Id != id);
+                // Verificar email duplicado
+                var emailExiste = await _unitOfWork.PersonaRepository.ExistsAsync(
+                    p => p.Email == viewModel.Email && p.Id != id);
                 if (emailExiste)
                 {
                     ModelState.AddModelError("Email", "Este email ya está en uso por otra persona.");
                     return View(viewModel);
                 }
 
-                // Actualizar datos
+                // Actualizar todos los campos
                 persona.Nombre = viewModel.Nombre;
+                persona.Apellido = viewModel.Apellido;        // ← faltaba
                 persona.Email = viewModel.Email;
                 persona.Telefono = viewModel.Telefono;
+                persona.Dni = viewModel.Dni;             // ← faltaba
+                persona.Direccion = viewModel.Direccion;       // ← faltaba
+                persona.FechaNacimiento = viewModel.FechaNacimiento; // ← faltaba
                 persona.Activo = viewModel.Activo;
 
                 // Manejar avatar
                 if (viewModel.NuevoAvatar != null && viewModel.NuevoAvatar.Length > 0)
                 {
-                    // Eliminar avatar anterior si existe
                     if (!string.IsNullOrEmpty(persona.Avatar))
-                    {
                         await _fileService.DeleteFileAsync(persona.Avatar);
-                    }
 
-                    // Subir nuevo avatar
-                    var nuevoAvatar = await _fileService.UploadFileAsync(viewModel.NuevoAvatar, "avatars");
-                    persona.Avatar = nuevoAvatar;
+                    persona.Avatar = await _fileService.UploadFileAsync(viewModel.NuevoAvatar, "avatars");
                 }
 
                 await _unitOfWork.PersonaRepository.UpdateAsync(persona);
@@ -408,7 +412,7 @@ namespace CasaDeLasTortas.Controllers
 
                 var personas = await _unitOfWork.PersonaRepository.GetAllAsync();
                 var resultados = personas
-                    .Where(p => 
+                    .Where(p =>
                         p.Nombre.Contains(termino, StringComparison.OrdinalIgnoreCase) ||
                         p.Email.Contains(termino, StringComparison.OrdinalIgnoreCase)
                     )
@@ -437,6 +441,66 @@ namespace CasaDeLasTortas.Controllers
             // Aquí implementarías la lógica de permisos
             // Por ejemplo, solo admin o la misma persona puede editar
             return true; // Placeholder
+        }
+
+        // GET: Persona/Create
+        [Authorize(Roles = "Admin")]
+        public IActionResult Create()
+        {
+            return View(new PersonaCreateViewModel());
+        }
+
+        // POST: Persona/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create(PersonaCreateViewModel viewModel)
+        {
+            if (!ModelState.IsValid)
+                return View(viewModel);
+
+            try
+            {
+                // Verificar email duplicado
+                var emailExiste = await _unitOfWork.PersonaRepository.ExistsByEmailAsync(viewModel.Email);
+                if (emailExiste)
+                {
+                    ModelState.AddModelError("Email", "Este email ya está registrado.");
+                    return View(viewModel);
+                }
+
+                var persona = new Persona
+                {
+                    Nombre = viewModel.Nombre,
+                    Apellido = viewModel.Apellido,
+                    Email = viewModel.Email,
+                    Telefono = viewModel.Telefono,
+                    Dni = viewModel.Dni,
+                    Direccion = viewModel.Direccion,
+                    FechaNacimiento = viewModel.FechaNacimiento,
+                    Rol = viewModel.Rol,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(viewModel.Password),
+                    FechaRegistro = DateTime.Now,
+                    Activo = true
+                };
+
+                // Subir avatar si se adjuntó uno
+                if (viewModel.AvatarFile != null && viewModel.AvatarFile.Length > 0)
+                {
+                    persona.Avatar = await _fileService.UploadFileAsync(viewModel.AvatarFile, "avatars");
+                }
+
+                await _unitOfWork.PersonaRepository.AddAsync(persona);
+                await _unitOfWork.SaveAsync();
+
+                TempData["Success"] = $"Persona '{persona.NombreCompleto}' creada exitosamente.";
+                return RedirectToAction(nameof(Details), new { id = persona.Id });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error al crear la persona: {ex.Message}";
+                return View(viewModel);
+            }
         }
     }
 }

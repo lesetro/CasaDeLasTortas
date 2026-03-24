@@ -13,7 +13,7 @@ namespace CasaDeLasTortas.Models.Entities
         [Required(ErrorMessage = "El nombre es requerido")]
         [StringLength(50, ErrorMessage = "El nombre no puede exceder los 50 caracteres")]
         [Display(Name = "Nombre")]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } 
 
         [Required(ErrorMessage = "El apellido es requerido")]
         [StringLength(50, ErrorMessage = "El apellido no puede exceder los 50 caracteres")]

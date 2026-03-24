@@ -1,0 +1,275 @@
+@model CasaDeLasTortas.Models.ViewModels.TortaDetalleViewModel
+@{
+    ViewData["Title"] = Model.Torta.Nombre;
+    var torta = Model.Torta;
+    var vendedor = Model.Vendedor;
+    var imagenPrincipal = torta.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
+                       ?? torta.Imagenes?.FirstOrDefault()?.UrlImagen
+                       ?? torta.ImagenPrincipal
+                       ?? "/images/default-cake.jpg";
+}
+
+<div class="container my-5">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-controller="Home" asp-action="Index" class="text-decoration-none text-warning">
+                    <i class="fas fa-home me-1"></i>Inicio
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a asp-controller="Home" asp-action="Index"
+                   asp-route-categoria="@torta.Categoria"
+                   class="text-decoration-none text-warning">
+                    @(torta.Categoria ?? "Tortas")
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">@torta.Nombre</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+
+        <!-- ══════════ COLUMNA IZQUIERDA — Imágenes ══════════ -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden position-relative">
+                <img id="imagenPrincipal"
+                     src="@imagenPrincipal"
+                     alt="@torta.Nombre"
+                     class="w-100"
+                     style="height:420px;object-fit:cover">
+
+                @if (!torta.Disponible)
+                {
+                    <div class="position-absolute top-0 start-0 w-100 h-100
+                                d-flex align-items-center justify-content-center"
+                         style="background:rgba(0,0,0,.55)">
+                        <span class="badge bg-danger fs-5 px-4 py-3">No disponible</span>
+                    </div>
+                }
+                @if (torta.FechaCreacion >= DateTime.Now.AddDays(-7))
+                {
+                    <span class="position-absolute top-0 start-0 m-3 badge bg-success px-3 py-2">
+                        ✨ Nuevo
+                    </span>
+                }
+            </div>
+
+            <!-- Miniaturas -->
+            @if (torta.Imagenes?.Count > 1)
+            {
+                <div class="d-flex gap-2 flex-wrap mt-3">
+                    @foreach (var img in torta.Imagenes.OrderBy(i => i.Orden))
+                    {
+                        <img src="@img.UrlImagen"
+                             alt="@torta.Nombre"
+                             class="rounded border @(img.EsPrincipal ? "border-warning border-2" : "border-light")"
+                             style="width:80px;height:80px;object-fit:cover;cursor:pointer"
+                             onclick="document.getElementById('imagenPrincipal').src='@img.UrlImagen'">
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ══════════ COLUMNA DERECHA — Info + CTA ══════════ -->
+        <div class="col-lg-6">
+
+            <div class="card border-0 shadow-sm rounded-3 p-4">
+
+                <!-- Badges -->
+                <div class="mb-3">
+                    @if (!string.IsNullOrEmpty(torta.Categoria))
+                    {
+                        <span class="badge bg-warning text-dark me-1 px-3 py-2">
+                            <i class="fas fa-tag me-1"></i>@torta.Categoria
+                        </span>
+                    }
+                    @if (torta.Personalizable)
+                    {
+                        <span class="badge bg-info text-white me-1 px-3 py-2">
+                            <i class="fas fa-paint-brush me-1"></i>Personalizable
+                        </span>
+                    }
+                    @if (torta.VecesVendida >= 5)
+                    {
+                        <span class="badge bg-danger me-1 px-3 py-2">
+                            <i class="fas fa-fire me-1"></i>Popular
+                        </span>
+                    }
+                </div>
+
+                <!-- Nombre -->
+                <h1 class="fw-bold mb-2" style="font-size:2rem">@torta.Nombre</h1>
+
+                <!-- Vendedor -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning bg-opacity-25"
+                         style="width:36px;height:36px">
+                        <i class="fas fa-store text-warning"></i>
+                    </div>
+                    <div>
+                        <span class="fw-semibold">@vendedor.NombreComercial</span>
+                        @if (!string.IsNullOrEmpty(vendedor.Especialidad))
+                        {
+                            <span class="text-muted small d-block">@vendedor.Especialidad</span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Precio -->
+                <div class="bg-success bg-opacity-10 rounded-3 p-3 mb-4 text-center">
+                    <div class="display-5 fw-bold text-success">
+                        $@torta.Precio.ToString("N2")
+                    </div>
+                </div>
+
+                <!-- Descripción -->
+                @if (!string.IsNullOrEmpty(torta.Descripcion))
+                {
+                    <p class="text-secondary mb-4">@torta.Descripcion</p>
+                }
+
+                <!-- Detalles rápidos -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="bg-light rounded-3 p-3 text-center">
+                            <i class="fas fa-ruler-combined text-primary mb-1 d-block"></i>
+                            <div class="fw-bold small">@torta.Tamanio</div>
+                            <small class="text-muted">Tamaño</small>
+                        </div>
+                    </div>
+                    @if (torta.TiempoPreparacion.HasValue)
+                    {
+                        <div class="col-6">
+                            <div class="bg-light rounded-3 p-3 text-center">
+                                <i class="fas fa-clock text-warning mb-1 d-block"></i>
+                                <div class="fw-bold small">@torta.TiempoPreparacion día@(torta.TiempoPreparacion > 1 ? "s" : "")</div>
+                                <small class="text-muted">Preparación</small>
+                            </div>
+                        </div>
+                    }
+                    <div class="col-6">
+                        <div class="bg-light rounded-3 p-3 text-center">
+                            <i class="fas fa-box @(torta.Stock > 0 ? "text-success" : "text-danger") mb-1 d-block"></i>
+                            <div class="fw-bold small">@torta.Stock unidades</div>
+                            <small class="text-muted">Stock</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-light rounded-3 p-3 text-center">
+                            <i class="fas fa-shopping-cart text-info mb-1 d-block"></i>
+                            <div class="fw-bold small">@torta.VecesVendida ventas</div>
+                            <small class="text-muted">Vendidas</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- ══════════ BOTÓN DE COMPRA ══════════ -->
+                @if (!torta.Disponible || torta.Stock == 0)
+                {
+                    <button class="btn btn-secondary w-100 btn-lg rounded-pill" disabled>
+                        <i class="fas fa-times-circle me-2"></i>No disponible actualmente
+                    </button>
+                }
+                else if (User?.Identity?.IsAuthenticated == true)
+                {
+                    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+                    if (userRole == "Comprador")
+                    {
+                        <a asp-controller="Comprador" asp-action="DashboardVue"
+                           asp-route-verTorta="@torta.Id"
+                           class="btn btn-warning w-100 btn-lg rounded-pill fw-bold mb-2">
+                            <i class="fas fa-shopping-cart me-2"></i>Agregar al Carrito
+                        </a>
+                        <p class="text-muted text-center small mb-0">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Serás redirigido a tu panel para completar la compra
+                        </p>
+                    }
+                    else if (userRole == "Vendedor" || userRole == "Admin")
+                    {
+                        <div class="alert alert-info mb-0 rounded-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Solo los compradores pueden adquirir tortas.
+                        </div>
+                    }
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login"
+                       asp-route-returnUrl="@($"/Torta/Details/{torta.Id}")"
+                       class="btn btn-warning w-100 btn-lg rounded-pill fw-bold mb-2">
+                        <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión para Comprar
+                    </a>
+                    <a asp-controller="Account" asp-action="Register"
+                       class="btn btn-outline-warning w-100 rounded-pill mb-2">
+                        <i class="fas fa-user-plus me-2"></i>Crear cuenta gratis
+                    </a>
+                    <p class="text-muted text-center small mb-0">
+                        <i class="fas fa-lock me-1"></i>
+                        Registrate como Comprador para adquirir tortas
+                    </p>
+                }
+
+                <!-- Ingredientes -->
+                @if (!string.IsNullOrEmpty(torta.Ingredientes))
+                {
+                    <hr class="my-4">
+                    <h6 class="fw-bold">
+                        <i class="fas fa-list me-1 text-warning"></i>Ingredientes
+                    </h6>
+                    <p class="text-secondary small mb-0">@torta.Ingredientes</p>
+                }
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ TORTAS RELACIONADAS ══════════ -->
+    @if (Model.TortasRelacionadas?.Any() == true)
+    {
+        <hr class="my-5">
+        <h3 class="fw-bold mb-4">
+            <i class="fas fa-birthday-cake me-2 text-warning"></i>También te puede interesar
+        </h3>
+        <div class="row g-3">
+            @foreach (var rel in Model.TortasRelacionadas)
+            {
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a asp-controller="Torta" asp-action="Details" asp-route-id="@rel.Id"
+                       class="text-decoration-none">
+                        <div class="card h-100 shadow-sm border-0">
+                            <img src="@(rel.ImagenPrincipal ?? "/images/default-cake.jpg")"
+                                 class="card-img-top"
+                                 style="height:130px;object-fit:cover"
+                                 alt="@rel.Nombre">
+                            <div class="card-body p-2">
+                                <div class="small fw-bold text-truncate text-dark">@rel.Nombre</div>
+                                <div class="text-success fw-bold small">$@rel.Precio.ToString("N2")</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+<script>
+    // Si el usuario llega logueado como Comprador,
+    // guardar el verTorta para que el Dashboard Vue lo levante
+    var verTorta = '@torta.Id';
+    var userRole = '@(User?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")';
+
+    if (userRole === 'Comprador' && verTorta) {
+        sessionStorage.setItem('verTorta', verTorta);
+    }
+</script>
+}

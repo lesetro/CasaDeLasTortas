@@ -19,14 +19,5 @@ namespace CasaDeLasTortas.Models.ViewModels
         public IFormFile AvatarFile { get; set; }
     }
 
-    // DTO para login de API
-    public class PersonaLoginDTO
-    {
-        [Required(ErrorMessage = "El email es requerido")]
-        [EmailAddress(ErrorMessage = "Email inválido")]
-        public string Email { get; set; }
-
-        [Required(ErrorMessage = "La contraseña es requerida")]
-        public string Password { get; set; }
-    }
+    
 }

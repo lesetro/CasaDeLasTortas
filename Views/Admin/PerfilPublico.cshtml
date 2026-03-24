@@ -1,0 +1,244 @@
+@model CasaDeLasTortas.Models.ViewModels.VendedorPerfilPublicoViewModel
+@{
+    ViewData["Title"] = Model?.NombreComercial ?? "Vendedor";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    .vendedor-hero {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white; padding: 3rem 0 4rem;
+    }
+    .vendedor-avatar {
+        width: 90px; height: 90px; border-radius: 50%;
+        border: 4px solid rgba(255,255,255,.25);
+        object-fit: cover;
+    }
+    .vendedor-avatar-placeholder {
+        width: 90px; height: 90px; border-radius: 50%;
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.2rem; font-weight: 700; color: white;
+        border: 4px solid rgba(255,255,255,.25);
+        flex-shrink: 0;
+    }
+    .star-rating .fas { color: #f59e0b; }
+    .star-rating .far { color: #94a3b8; }
+    .torta-card { border: none; border-radius: 14px; transition: all .2s; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .torta-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.13); }
+    .torta-card img { height: 180px; object-fit: cover; width: 100%; }
+    .torta-img-placeholder { height: 180px; background: linear-gradient(135deg, #ffedd5, #fed7aa); display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+    .badge-verificado { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+    .stat-pill { background: rgba(255,255,255,.1); border-radius: 20px; padding: .35rem .9rem; display: inline-flex; align-items: center; gap:.4rem; font-size:.82rem; }
+</style>
+}
+
+@if (Model == null)
+{
+    <div class="container py-5 text-center">
+        <i class="fas fa-store-slash fa-4x text-muted mb-3 d-block"></i>
+        <h4 class="fw-bold text-muted">Vendedor no encontrado</h4>
+        <p class="text-muted">El perfil que buscás no existe o fue desactivado.</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+            <i class="fas fa-home me-2"></i>Volver al inicio
+        </a>
+    </div>
+}
+else
+{
+    <!-- ── HERO ── -->
+    <div class="vendedor-hero">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center gap-4">
+                <!-- Avatar -->
+                @if (!string.IsNullOrEmpty(Model.Avatar))
+                {
+                    <img src="@Model.Avatar" class="vendedor-avatar" alt="@Model.NombreComercial" />
+                }
+                else
+                {
+                    <div class="vendedor-avatar-placeholder">
+                        @(Model.NombreComercial?.Substring(0,1).ToUpper() ?? "?")
+                    </div>
+                }
+
+                <!-- Info principal -->
+                <div class="flex-grow-1">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <h1 class="fw-bold mb-0" style="font-size:1.8rem;">@Model.NombreComercial</h1>
+                        @if (Model.Verificado)
+                        {
+                            <span class="badge badge-verificado rounded-pill px-3 py-2">
+                                <i class="fas fa-check-circle me-1"></i>Verificado
+                            </span>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Especialidad))
+                    {
+                        <div class="text-white text-opacity-70 mb-2">@Model.Especialidad</div>
+                    }
+
+                    <!-- Estrellas -->
+                    <div class="star-rating d-inline-flex align-items-center gap-1 mb-3">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= (int)Model.Calificacion)
+                            {
+                                <i class="fas fa-star"></i>
+                            }
+                            else if (i - 0.5 <= (double)Model.Calificacion)
+                            {
+                                <i class="fas fa-star-half-alt"></i>
+                            }
+                            else
+                            {
+                                <i class="far fa-star"></i>
+                            }
+                        }
+                        <span class="text-white text-opacity-80 ms-1 small fw-semibold">
+                            @Model.Calificacion.ToString("N1")
+                        </span>
+                        @if (Model.TotalResenas > 0)
+                        {
+                            <span class="text-white text-opacity-60 small ms-1">(@Model.TotalResenas reseñas)</span>
+                        }
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="stat-pill">
+                            <i class="fas fa-birthday-cake text-orange-300"></i>
+                            @Model.TotalProductos tortas
+                        </span>
+                        <span class="stat-pill">
+                            <i class="fas fa-shopping-bag"></i>
+                            @Model.TotalVentas ventas
+                        </span>
+                        @if (!string.IsNullOrEmpty(Model.Horario))
+                        {
+                            <span class="stat-pill">
+                                <i class="fas fa-clock"></i>
+                                @Model.Horario
+                            </span>
+                        }
+                        <span class="stat-pill">
+                            <i class="fas fa-calendar-alt"></i>
+                            Desde @Model.FechaCreacion.ToString("MM/yyyy")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Descripcion))
+            {
+                <div class="mt-3 text-white text-opacity-75 small" style="max-width:600px;">
+                    @Model.Descripcion
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ── CATÁLOGO ── -->
+    <div class="container py-5">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0" style="font-size:1.3rem;">
+                <i class="fas fa-birthday-cake text-warning me-2"></i>
+                Catálogo de @Model.NombreComercial
+            </h2>
+            <span class="text-muted small">@Model.ProductosDisponibles producto(s) disponibles</span>
+        </div>
+
+        @if (Model.Tortas != null && Model.Tortas.Any())
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                @foreach (var torta in Model.Tortas)
+                {
+                    <div class="col">
+                        <div class="torta-card card h-100">
+                            <a asp-controller="Torta" asp-action="Details" asp-route-id="@torta.Id"
+                               class="text-decoration-none">
+                                @if (!string.IsNullOrEmpty(torta.ImagenPrincipal))
+                                {
+                                    <img src="@torta.ImagenPrincipal" alt="@torta.Nombre" />
+                                }
+                                else
+                                {
+                                    <div class="torta-img-placeholder">🎂</div>
+                                }
+                            </a>
+                            <div class="card-body p-3">
+                                <a asp-controller="Torta" asp-action="Details" asp-route-id="@torta.Id"
+                                   class="text-decoration-none text-dark">
+                                    <h6 class="fw-bold mb-1">@torta.Nombre</h6>
+                                </a>
+
+                                @if (!string.IsNullOrEmpty(torta.Categoria))
+                                {
+                                    <span class="badge bg-light text-muted rounded-pill mb-2" style="font-size:.68rem;">
+                                        @torta.Categoria
+                                    </span>
+                                }
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div>
+                                        <span class="fw-bold text-success fs-6">$@torta.Precio.ToString("N0")</span>
+                                        @if (torta.PrecioOferta.HasValue && torta.PrecioOferta < torta.Precio)
+                                        {
+                                            <span class="text-muted text-decoration-line-through ms-1 small">
+                                                $@torta.Precio.ToString("N0")
+                                            </span>
+                                        }
+                                    </div>
+                                    <form asp-controller="Carrito" asp-action="AgregarItem" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="tortaId" value="@torta.Id" />
+                                        <input type="hidden" name="cantidad" value="1" />
+                                        <button type="submit" class="btn btn-sm btn-warning fw-semibold"
+                                                title="Agregar al carrito"
+                                                @(torta.Disponible && torta.Stock > 0 ? "" : "disabled")>
+                                            <i class="fas fa-cart-plus"></i>
+                                        </button>
+                                    </form>
+                                </div>
+
+                                @if (!torta.Disponible || torta.Stock <= 0)
+                                {
+                                    <div class="badge bg-secondary w-100 text-center mt-2" style="font-size:.7rem;">
+                                        Sin stock
+                                    </div>
+                                }
+                                else if (torta.Stock <= 3)
+                                {
+                                    <div class="badge bg-warning text-dark w-100 text-center mt-2" style="font-size:.7rem;">
+                                        ¡Últimas @torta.Stock unidades!
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-birthday-cake fa-4x text-muted mb-3 d-block"></i>
+                <h5 class="fw-semibold text-muted">Aún no hay productos disponibles</h5>
+                <p class="text-muted">Este vendedor aún no publicó tortas. ¡Volvé pronto!</p>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary btn-sm">
+                    Ver otros vendedores
+                </a>
+            </div>
+        }
+
+        <!-- Volver -->
+        <div class="mt-5 pt-3 border-top">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Ver todos los vendedores
+            </a>
+        </div>
+    </div>
+}

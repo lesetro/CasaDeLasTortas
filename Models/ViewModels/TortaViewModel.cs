@@ -11,12 +11,12 @@ namespace CasaDeLasTortas.Models.ViewModels
         [Required(ErrorMessage = "El nombre es requerido")]
         [StringLength(100)]
         [Display(Name = "Nombre de la Torta")]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La descripción es requerida")]
         [Display(Name = "Descripción")]
         [DataType(DataType.MultilineText)]
-        public string Descripcion { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El precio es requerido")]
         [Range(0.01, 999999.99)]
@@ -35,7 +35,7 @@ namespace CasaDeLasTortas.Models.ViewModels
 
         [StringLength(20)]
         [Display(Name = "Tamaño")]
-        public string Tamanio { get; set; }
+        public string Tamanio { get; set; } = string.Empty;
 
         [Display(Name = "Tiempo de Preparación (días)")]
         [Range(0, 30)]
@@ -67,11 +67,11 @@ namespace CasaDeLasTortas.Models.ViewModels
         public DateTime? FechaActualizacion { get; set; }
 
         // Información del vendedor
-        public string NombreVendedor { get; set; }
+        public string NombreVendedor { get; set; } = string.Empty;
         public string? EspecialidadVendedor { get; set; }
 
         // Imágenes
-        public List<ImagenTortaViewModel> Imagenes { get; set; }
+        public List<ImagenTortaViewModel> Imagenes { get; set; } = new();
         public string? ImagenPrincipal { get; set; }
     }
 
@@ -82,12 +82,12 @@ namespace CasaDeLasTortas.Models.ViewModels
         [Required(ErrorMessage = "El nombre es requerido")]
         [StringLength(100)]
         [Display(Name = "Nombre de la Torta")]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La descripción es requerida")]
         [Display(Name = "Descripción")]
         [DataType(DataType.MultilineText)]
-        public string Descripcion { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El precio es requerido")]
         [Range(0.01, 999999.99)]
@@ -107,7 +107,7 @@ namespace CasaDeLasTortas.Models.ViewModels
         [Required]
         [StringLength(20)]
         [Display(Name = "Tamaño")]
-        public string Tamanio { get; set; }
+        public string Tamanio { get; set; } = string.Empty;
 
         [Display(Name = "Tiempo de Preparación (días)")]
         [Range(0, 30)]
@@ -135,12 +135,12 @@ namespace CasaDeLasTortas.Models.ViewModels
         [Required(ErrorMessage = "El nombre es requerido")]
         [StringLength(100)]
         [Display(Name = "Nombre de la Torta")]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La descripción es requerida")]
         [Display(Name = "Descripción")]
         [DataType(DataType.MultilineText)]
-        public string Descripcion { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El precio es requerido")]
         [Range(0.01, 999999.99)]
@@ -159,7 +159,7 @@ namespace CasaDeLasTortas.Models.ViewModels
 
         [StringLength(20)]
         [Display(Name = "Tamaño")]
-        public string Tamanio { get; set; }
+        public string Tamanio { get; set; } = string.Empty;
 
         [Display(Name = "Tiempo de Preparación (días)")]
         [Range(0, 30)]
@@ -176,7 +176,7 @@ namespace CasaDeLasTortas.Models.ViewModels
         public bool Disponible { get; set; }
 
         // Imágenes existentes
-        public List<ImagenTortaViewModel> ImagenesActuales { get; set; }
+        public List<ImagenTortaViewModel> ImagenesActuales { get; set; } = new();
 
         // Nuevas imágenes a agregar
         [Display(Name = "Agregar Nuevas Imágenes")]
@@ -191,8 +191,8 @@ namespace CasaDeLasTortas.Models.ViewModels
 
     public class TortaListViewModel
     {
-        public List<TortaViewModel> Tortas { get; set; }
-        public PaginacionViewModel Paginacion { get; set; }
+        public List<TortaViewModel> Tortas { get; set; } = new();
+        public PaginacionViewModel Paginacion { get; set; } = new();
         public string? FiltroCategoria { get; set; }
         public string? FiltroVendedor { get; set; }
         public decimal? PrecioMinimo { get; set; }
@@ -202,19 +202,19 @@ namespace CasaDeLasTortas.Models.ViewModels
         public string? OrdenarPor { get; set; }
         
         // Para los filtros en la vista
-        public List<string> CategoriasDisponibles { get; set; }
-        public List<VendedorViewModel> VendedoresDisponibles { get; set; }
+        public List<string> CategoriasDisponibles { get; set; } = new();
+        public List<VendedorViewModel> VendedoresDisponibles { get; set; } = new();
     }
 
     public class TortaDetalleViewModel
     {
-        public TortaViewModel Torta { get; set; }
-        public VendedorViewModel Vendedor { get; set; }
+        public TortaViewModel Torta { get; set; } = new();
+        public VendedorViewModel Vendedor { get; set; } = new();
         public bool PuedeEditar { get; set; }
         public bool PuedeComprar { get; set; }
         public bool YaCompro { get; set; }
         
         // Para mostrar tortas relacionadas
-        public List<TortaViewModel> TortasRelacionadas { get; set; }
+        public List<TortaViewModel> TortasRelacionadas { get; set; } = new();
     }
 }

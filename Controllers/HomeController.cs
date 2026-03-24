@@ -243,7 +243,8 @@ namespace CasaDeLasTortas.Controllers
             // Recomendaciones basadas en compras anteriores
             var categoriasCompradas = historialCompras
                 .Where(p => p.Estado == EstadoPago.Completado)
-                .Select(p => p.Torta.Categoria)
+                .SelectMany(p => p.Venta.Detalles)  
+                .Select(d => d.Torta.Categoria)      
                 .Where(c => !string.IsNullOrEmpty(c))
                 .GroupBy(c => c)
                 .OrderByDescending(g => g.Count())
@@ -327,7 +328,7 @@ namespace CasaDeLasTortas.Controllers
             };
 
             ViewBag.Title = "Panel de Administración - Casa de las Tortas";
-            return View("IndexAdmin", estadisticas);
+            return RedirectToAction("Index", "Admin");
         }
 
         // Búsqueda AJAX para autocompletado

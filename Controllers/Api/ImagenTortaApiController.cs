@@ -4,12 +4,13 @@ using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using CasaDeLasTortas.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace CasaDeLasTortas.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class ImagenTortaApiController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -82,7 +83,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Subir imagen de torta
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor,Admin")]
+
         public async Task<IActionResult> Upload([FromForm] ImagenTortaCreateDTO dto)
         {
             if (!ModelState.IsValid)
@@ -152,7 +154,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Subir múltiples imágenes
         /// </summary>
         [HttpPost("multiple")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor,Admin")]
+
         public async Task<IActionResult> UploadMultiple([FromForm] ImagenTortaUploadDTO dto)
         {
             if (!ModelState.IsValid)
@@ -171,7 +174,7 @@ namespace CasaDeLasTortas.Controllers.Api
 
             try
             {
-                await _unitOfWork.BeginTransactionAsync();
+                
 
                 // Si hay imagen principal, quitar el flag de las existentes
                 if (dto.ImagenPrincipalIndex.HasValue)
@@ -228,7 +231,7 @@ namespace CasaDeLasTortas.Controllers.Api
                 }
 
                 await _unitOfWork.SaveChangesAsync();
-                await _unitOfWork.CommitTransactionAsync();
+                
 
                 return Ok(new
                 {
@@ -238,7 +241,7 @@ namespace CasaDeLasTortas.Controllers.Api
             }
             catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync();
+                
 
                 // Eliminar archivos subidos en caso de error
                 foreach (var imagen in imagenesCreadas)
@@ -254,7 +257,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Actualizar imagen
         /// </summary>
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor,Admin")]
+
         public async Task<IActionResult> Update(int id, [FromBody] ImagenTortaUpdateDTO dto)
         {
             if (!ModelState.IsValid)
@@ -289,7 +293,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Establecer imagen como principal
         /// </summary>
         [HttpPatch("{id}/principal")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor,Admin")]
+
         public async Task<IActionResult> SetPrincipal(int id)
         {
             var imagen = await _unitOfWork.ImagenesTorta.GetByIdAsync(id);
@@ -314,7 +319,8 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Eliminar imagen
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor,Admin")]
+
         public async Task<IActionResult> Delete(int id)
         {
             var imagen = await _unitOfWork.ImagenesTorta.GetByIdAsync(id);
@@ -342,7 +348,7 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Reordenar imágenes
         /// </summary>
         [HttpPut("reordenar")]
-        [Authorize(Roles = "Admin,Vendedor")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor,Admin")]
         public async Task<IActionResult> Reordenar([FromBody] List<ImagenTortaReordenarDTO> imagenes) 
         {
             if (!imagenes.Any())

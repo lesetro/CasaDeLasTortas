@@ -1,0 +1,196 @@
+@model TortaListViewModel
+@{
+    ViewData["Title"] = "Gestión de Tortas";
+}
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-2">
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Index" class="text-decoration-none">Admin</a></li>
+                    }
+                    <li class="breadcrumb-item active" style="color: #ea580c;">Tortas</li>
+                </ol>
+            </nav>
+            <h1 class="fw-bold text-dark">
+                <i class="fas fa-birthday-cake me-2" style="color: #ea580c;"></i>Gestión de Tortas
+            </h1>
+            <p class="text-muted mb-0">@Model.Tortas.Count tortas encontradas</p>
+        </div>
+        @if (User.IsInRole("Vendedor") || User.IsInRole("Admin"))
+        {
+            <a asp-action="Create" class="btn text-white fw-semibold shadow-sm" style="background-color: #ea580c;">
+                <i class="fas fa-plus-circle me-2"></i>Nueva Torta
+            </a>
+        }
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-medium">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="busqueda" value="@Model.Busqueda" placeholder="Nombre o descripción..." class="form-control" />
+                    </div>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label small fw-medium">Categoría</label>
+                    <select name="filtroCategoria" class="form-select">
+                        <option value="">Todas</option>
+                        @foreach (var cat in Model.CategoriasDisponibles)
+                        {
+                            <option value="@cat" selected="@(Model.FiltroCategoria == cat)">@cat</option>
+                        }
+                    </select>
+                </div>
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="col-12 col-md-2">
+                        <label class="form-label small fw-medium">Vendedor</label>
+                        <select name="filtroVendedorId" class="form-select">
+                            <option value="">Todos</option>
+                            @foreach (var v in Model.VendedoresDisponibles)
+                            {
+                                <option value="@v.Id" selected="@(Model.FiltroVendedor == v.Id.ToString())">@v.NombreComercial</option>
+                            }
+                        </select>
+                    </div>
+                }
+                <div class="col-12 col-md-2">
+                    <label class="form-label small fw-medium">Ordenar por</label>
+                    <select name="ordenarPor" class="form-select">
+                        <option value="Nombre" selected="@(Model.OrdenarPor == "Nombre")">Nombre A-Z</option>
+                        <option value="Precio" selected="@(Model.OrdenarPor == "Precio")">Precio ↑</option>
+                        <option value="Precio_desc" selected="@(Model.OrdenarPor == "Precio_desc")">Precio ↓</option>
+                        <option value="VecesVendida" selected="@(Model.OrdenarPor == "VecesVendida")">Más vendidas</option>
+                        <option value="FechaCreacion_desc" selected="@(Model.OrdenarPor == "FechaCreacion_desc")">Más recientes</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-auto d-flex gap-2">
+                    <button type="submit" class="btn text-white" style="background-color: #ea580c;">
+                        <i class="fas fa-filter me-1"></i>Filtrar
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Grid de Tortas -->
+    @if (Model.Tortas.Any())
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            @foreach (var torta in Model.Tortas)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <!-- Imagen -->
+                        <div class="position-relative" style="height: 192px; overflow: hidden;">
+                            @if (!string.IsNullOrEmpty(torta.ImagenPrincipal))
+                            {
+                                <img src="@torta.ImagenPrincipal" alt="@torta.Nombre"
+                                     class="card-img-top" style="height:192px;object-fit:cover" />
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center justify-content-center h-100" style="background: linear-gradient(135deg, #ffedd5, #fce7f3);">
+                                    <i class="fas fa-birthday-cake fa-3x" style="color: #fdba74;"></i>
+                                </div>
+                            }
+                            <!-- Badges -->
+                            @if (!torta.Disponible)
+                            {
+                                <span class="position-absolute top-0 start-0 m-2 badge bg-danger">
+                                    <i class="fas fa-ban me-1"></i>No disponible
+                                </span>
+                            }
+                            else if (torta.Stock <= 2)
+                            {
+                                <span class="position-absolute top-0 start-0 m-2 badge bg-warning text-dark">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Stock bajo
+                                </span>
+                            }
+                            @if (torta.Personalizable)
+                            {
+                                <span class="position-absolute top-0 end-0 m-2 badge" style="background-color: #7c3aed;">
+                                    <i class="fas fa-paint-brush me-1"></i>Personalizable
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Contenido -->
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold text-truncate mb-0" title="@torta.Nombre">@torta.Nombre</h5>
+                                @if (!string.IsNullOrEmpty(torta.Categoria))
+                                {
+                                    <span class="badge" style="background-color: #ffedd5; color: #9a3412;">@torta.Categoria</span>
+                                }
+                            </div>
+                            <p class="card-text text-muted small" style="height:40px;overflow:hidden;">@torta.Descripcion</p>
+
+                            <div class="small text-muted mb-2">
+                                <i class="fas fa-store me-1"></i>@torta.NombreVendedor
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fs-5 fw-bold" style="color: #ea580c;">$@torta.Precio.ToString("N2")</span>
+                                <span class="small @(torta.Stock > 0 ? "text-success" : "text-danger")">
+                                    <i class="fas fa-box me-1"></i>@torta.Stock
+                                </span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center small border-top pt-2">
+                                <span><i class="fas fa-star text-warning me-1"></i>@torta.Calificacion.ToString("F1")/5</span>
+                                <span class="text-muted"><i class="fas fa-shopping-cart me-1"></i>@torta.VecesVendida ventas</span>
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="card-footer bg-white d-flex gap-2">
+                            <a asp-action="Details" asp-route-id="@torta.Id" class="btn btn-sm btn-outline-primary flex-fill">
+                                <i class="fas fa-eye me-1"></i>Ver
+                            </a>
+                            @if (User.IsInRole("Admin") || (User.IsInRole("Vendedor") && torta.VendedorId.ToString() == User.FindFirst("VendedorId")?.Value))
+                            {
+                                <a asp-action="Edit" asp-route-id="@torta.Id" class="btn btn-sm btn-outline-warning flex-fill">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@torta.Id" class="btn btn-sm btn-outline-danger flex-fill">
+                                    <i class="fas fa-trash me-1"></i>Eliminar
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="mt-4">
+            <partial name="_Paginacion" model="Model.Paginacion" />
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-birthday-cake fa-4x text-muted mb-3 d-block"></i>
+            <h5 class="fw-semibold text-muted">No se encontraron tortas</h5>
+            <p class="text-muted">No hay tortas que coincidan con los filtros seleccionados.</p>
+            @if (User.IsInRole("Vendedor") || User.IsInRole("Admin"))
+            {
+                <a asp-action="Create" class="btn text-white" style="background-color: #ea580c;">
+                    <i class="fas fa-plus-circle me-2"></i>Crear primera torta
+                </a>
+            }
+        </div>
+    }
+</div>

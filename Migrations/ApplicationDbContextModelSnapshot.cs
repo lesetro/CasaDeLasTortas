@@ -90,6 +90,312 @@ namespace CasaDeLasTortas.Migrations
                     b.ToTable("Compradores", (string)null);
                 });
 
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.ConfiguracionPlataforma", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ActualizadoPorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AliasCBU")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Banco")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("CBU")
+                        .IsRequired()
+                        .HasMaxLength(22)
+                        .HasColumnType("varchar(22)");
+
+                    b.Property<string>("CUIT")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(13)");
+
+                    b.Property<decimal?>("ComisionMaxima")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.Property<decimal>("ComisionMinima")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("ComisionPorcentaje")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5, 2)")
+                        .HasDefaultValue(10.00m);
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("DiasLimiteDisputa")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(15);
+
+                    b.Property<int>("DiasLimitePago")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(3);
+
+                    b.Property<int>("DiasParaLiberarFondos")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(3);
+
+                    b.Property<string>("EmailNotificaciones")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("FechaActualizacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("ImagenQR")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("InstruccionesPago")
+                        .HasMaxLength(2000)
+                        .HasColumnType("text");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("MaxIntentosRechazados")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(3);
+
+                    b.Property<string>("MensajeMantenimiento")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("NombrePlataforma")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<bool>("PlataformaActiva")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("TelefonoContacto")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("TerminosCondiciones")
+                        .HasMaxLength(5000)
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitularCuenta")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ConfiguracionPlataforma", (string)null);
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.DetalleVenta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Descuento")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("Pendiente");
+
+                    b.Property<DateTime?>("FechaEstimadaPreparacion")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaRealPreparacion")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("NotasPersonalizacion")
+                        .HasMaxLength(500)
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("PrecioUnitario")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.Property<int>("TortaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VendedorId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VentaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Estado")
+                        .HasDatabaseName("IX_DetallesVenta_Estado");
+
+                    b.HasIndex("TortaId")
+                        .HasDatabaseName("IX_DetallesVenta_TortaId");
+
+                    b.HasIndex("VendedorId")
+                        .HasDatabaseName("IX_DetallesVenta_VendedorId");
+
+                    b.HasIndex("VentaId")
+                        .HasDatabaseName("IX_DetallesVenta_VentaId");
+
+                    b.ToTable("DetallesVenta", (string)null);
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Disputa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AdminAsignadoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("text");
+
+                    b.Property<string>("DetalleResolucion")
+                        .HasMaxLength(2000)
+                        .HasColumnType("text");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("Abierta");
+
+                    b.Property<string>("Evidencia")
+                        .HasMaxLength(2000)
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("FechaActualizacion")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime?>("FechaLimite")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaResolucion")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("IniciadorId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MontoInvolucrado")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)");
+
+                    b.Property<decimal?>("MontoResolucion")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)");
+
+                    b.Property<string>("NumeroDisputa")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int>("Prioridad")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(3);
+
+                    b.Property<string>("Resolucion")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("SinResolucion");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("VentaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminAsignadoId");
+
+                    b.HasIndex("Estado")
+                        .HasDatabaseName("IX_Disputas_Estado");
+
+                    b.HasIndex("FechaCreacion")
+                        .HasDatabaseName("IX_Disputas_FechaCreacion");
+
+                    b.HasIndex("IniciadorId");
+
+                    b.HasIndex("NumeroDisputa")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Disputas_NumeroDisputa");
+
+                    b.HasIndex("Prioridad")
+                        .HasDatabaseName("IX_Disputas_Prioridad");
+
+                    b.HasIndex("VentaId")
+                        .HasDatabaseName("IX_Disputas_VentaId");
+
+                    b.ToTable("Disputas", (string)null);
+                });
+
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.ImagenTorta", b =>
                 {
                     b.Property<int>("Id")
@@ -145,6 +451,147 @@ namespace CasaDeLasTortas.Migrations
                     b.ToTable("ImagenesTorta", (string)null);
                 });
 
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.LiberacionFondos", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AliasDestino")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("ArchivoComprobante")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("CBUDestino")
+                        .HasMaxLength(22)
+                        .HasColumnType("varchar(22)");
+
+                    b.Property<decimal>("Comision")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("Pendiente");
+
+                    b.Property<DateTime?>("FechaConfirmacion")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime?>("FechaListoParaLiberar")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaTransferencia")
+                        .HasColumnType("datetime");
+
+                    b.Property<decimal>("MontoBruto")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)");
+
+                    b.Property<decimal>("MontoNeto")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)");
+
+                    b.Property<string>("NumeroOperacion")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int?>("ProcesadoPorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TitularDestino")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("VendedorId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VentaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Estado")
+                        .HasDatabaseName("IX_LiberacionesFondos_Estado");
+
+                    b.HasIndex("FechaCreacion")
+                        .HasDatabaseName("IX_LiberacionesFondos_FechaCreacion");
+
+                    b.HasIndex("ProcesadoPorId");
+
+                    b.HasIndex("VendedorId")
+                        .HasDatabaseName("IX_LiberacionesFondos_VendedorId");
+
+                    b.HasIndex("VentaId")
+                        .HasDatabaseName("IX_LiberacionesFondos_VentaId");
+
+                    b.ToTable("LiberacionesFondos", (string)null);
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.MensajeDisputa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Adjuntos")
+                        .HasMaxLength(2000)
+                        .HasColumnType("text");
+
+                    b.Property<int>("AutorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Contenido")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("text");
+
+                    b.Property<int>("DisputaId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("EsInterno")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("Fecha")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("DisputaId")
+                        .HasDatabaseName("IX_MensajesDisputa_DisputaId");
+
+                    b.HasIndex("Fecha")
+                        .HasDatabaseName("IX_MensajesDisputa_Fecha");
+
+                    b.ToTable("MensajesDisputa", (string)null);
+                });
+
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Pago", b =>
                 {
                     b.Property<int>("Id")
@@ -158,23 +605,18 @@ namespace CasaDeLasTortas.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
-                    b.Property<int>("Cantidad")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
+                    b.Property<string>("ArchivoReembolso")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
-                    b.Property<int>("CompradorId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Descuento")
+                    b.Property<decimal>("ComisionPlataforma")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10, 2)")
                         .HasDefaultValue(0m);
 
-                    b.Property<string>("DireccionEntrega")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                    b.Property<int>("CompradorId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Estado")
                         .IsRequired()
@@ -186,7 +628,7 @@ namespace CasaDeLasTortas.Migrations
                     b.Property<DateTime?>("FechaActualizacion")
                         .HasColumnType("datetime");
 
-                    b.Property<DateTime?>("FechaEntrega")
+                    b.Property<DateTime?>("FechaComprobante")
                         .HasColumnType("datetime");
 
                     b.Property<DateTime>("FechaPago")
@@ -194,13 +636,41 @@ namespace CasaDeLasTortas.Migrations
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<DateTime?>("FechaRechazo")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaReembolso")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaVerificacion")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("IntentosRechazados")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("MetodoPago")
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
                     b.Property<decimal>("Monto")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10, 2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)");
+
+                    b.Property<decimal>("MontoVendedores")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("MotivoRechazo")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("MotivoReembolso")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<bool>("NotificacionEnviada")
                         .ValueGeneratedOnAdd()
@@ -211,21 +681,24 @@ namespace CasaDeLasTortas.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("NumeroTransaccionReembolso")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<string>("Observaciones")
                         .HasColumnType("text");
 
-                    b.Property<decimal>("PrecioUnitario")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10, 2)");
+                    b.Property<string>("ObservacionesAdmin")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
-                    b.Property<decimal>("Subtotal")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10, 2)");
-
-                    b.Property<int>("TortaId")
+                    b.Property<int?>("VendedorId")
                         .HasColumnType("int");
 
-                    b.Property<int>("VendedorId")
+                    b.Property<int>("VentaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("VerificadoPorId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -242,11 +715,12 @@ namespace CasaDeLasTortas.Migrations
                     b.HasIndex("NumeroTransaccion")
                         .HasDatabaseName("IX_Pagos_NumeroTransaccion");
 
-                    b.HasIndex("TortaId")
-                        .HasDatabaseName("IX_Pagos_TortaId");
+                    b.HasIndex("VendedorId");
 
-                    b.HasIndex("VendedorId")
-                        .HasDatabaseName("IX_Pagos_VendedorId");
+                    b.HasIndex("VentaId")
+                        .HasDatabaseName("IX_Pagos_VentaId");
+
+                    b.HasIndex("VerificadoPorId");
 
                     b.ToTable("Pagos", (string)null);
                 });
@@ -438,11 +912,32 @@ namespace CasaDeLasTortas.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(true);
 
+                    b.Property<string>("AliasCBU")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Banco")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("CBU")
+                        .HasMaxLength(22)
+                        .HasColumnType("varchar(22)");
+
+                    b.Property<string>("CUIT")
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(13)");
+
                     b.Property<decimal>("Calificacion")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(3, 2)
                         .HasColumnType("decimal(3, 2)")
                         .HasDefaultValue(0.00m);
+
+                    b.Property<bool>("DatosPagoCompletos")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Descripcion")
                         .HasMaxLength(500)
@@ -457,17 +952,46 @@ namespace CasaDeLasTortas.Migrations
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<DateTime?>("FechaDatosPago")
+                        .HasColumnType("datetime");
+
                     b.Property<string>("Horario")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
+
+                    b.Property<string>("ImagenQR")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<string>("NombreComercial")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<decimal>("PendienteCobro")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<int>("PersonaId")
                         .HasColumnType("int");
+
+                    b.Property<string>("TitularCuenta")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<decimal>("TotalCobrado")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TotalComisiones")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<int>("TotalVentas")
                         .ValueGeneratedOnAdd()
@@ -481,6 +1005,9 @@ namespace CasaDeLasTortas.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DatosPagoCompletos")
+                        .HasDatabaseName("IX_Vendedores_DatosPagoCompletos");
+
                     b.HasIndex("NombreComercial")
                         .HasDatabaseName("IX_Vendedores_NombreComercial");
 
@@ -489,6 +1016,143 @@ namespace CasaDeLasTortas.Migrations
                         .HasDatabaseName("IX_Vendedores_PersonaId");
 
                     b.ToTable("Vendedores", (string)null);
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Venta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CUITCliente")
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(13)");
+
+                    b.Property<string>("Ciudad")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("CodigoPostal")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<decimal>("ComisionPlataforma")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int>("CompradorId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DescuentoTotal")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10, 2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("DireccionEntrega")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("Pendiente");
+
+                    b.Property<DateTime?>("FechaActualizacion")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaEntregaEstimada")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaEntregaReal")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("FechaLiberacion")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("FechaVenta")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<bool>("FondosLiberados")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("MontoVendedores")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("NotasCliente")
+                        .HasMaxLength(500)
+                        .HasColumnType("text");
+
+                    b.Property<string>("NotasInternas")
+                        .HasMaxLength(500)
+                        .HasColumnType("text");
+
+                    b.Property<string>("NumeroOrden")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("PorcentajeComision")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5, 2)")
+                        .HasDefaultValue(10.00m);
+
+                    b.Property<string>("Provincia")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("RazonSocial")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<bool>("RequiereFactura")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12, 2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompradorId")
+                        .HasDatabaseName("IX_Ventas_CompradorId");
+
+                    b.HasIndex("Estado")
+                        .HasDatabaseName("IX_Ventas_Estado");
+
+                    b.HasIndex("FechaVenta")
+                        .HasDatabaseName("IX_Ventas_FechaVenta");
+
+                    b.HasIndex("FondosLiberados")
+                        .HasDatabaseName("IX_Ventas_FondosLiberados");
+
+                    b.HasIndex("NumeroOrden")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Ventas_NumeroOrden");
+
+                    b.ToTable("Ventas", (string)null);
                 });
 
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Comprador", b =>
@@ -503,6 +1167,65 @@ namespace CasaDeLasTortas.Migrations
                     b.Navigation("Persona");
                 });
 
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.DetalleVenta", b =>
+                {
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Torta", "Torta")
+                        .WithMany("DetallesVenta")
+                        .HasForeignKey("TortaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_DetallesVenta_Tortas");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Vendedor", "Vendedor")
+                        .WithMany("DetallesVenta")
+                        .HasForeignKey("VendedorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_DetallesVenta_Vendedores");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Venta", "Venta")
+                        .WithMany("Detalles")
+                        .HasForeignKey("VentaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_DetallesVenta_Ventas");
+
+                    b.Navigation("Torta");
+
+                    b.Navigation("Vendedor");
+
+                    b.Navigation("Venta");
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Disputa", b =>
+                {
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Persona", "AdminAsignado")
+                        .WithMany()
+                        .HasForeignKey("AdminAsignadoId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_Disputas_Personas_Admin");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Persona", "Iniciador")
+                        .WithMany()
+                        .HasForeignKey("IniciadorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Disputas_Personas_Iniciador");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Venta", "Venta")
+                        .WithMany("Disputas")
+                        .HasForeignKey("VentaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Disputas_Ventas");
+
+                    b.Navigation("AdminAsignado");
+
+                    b.Navigation("Iniciador");
+
+                    b.Navigation("Venta");
+                });
+
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.ImagenTorta", b =>
                 {
                     b.HasOne("CasaDeLasTortas.Models.Entities.Torta", "Torta")
@@ -515,6 +1238,56 @@ namespace CasaDeLasTortas.Migrations
                     b.Navigation("Torta");
                 });
 
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.LiberacionFondos", b =>
+                {
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Persona", "ProcesadoPor")
+                        .WithMany()
+                        .HasForeignKey("ProcesadoPorId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_LiberacionesFondos_Personas");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Vendedor", "Vendedor")
+                        .WithMany("Liberaciones")
+                        .HasForeignKey("VendedorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_LiberacionesFondos_Vendedores");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Venta", "Venta")
+                        .WithMany()
+                        .HasForeignKey("VentaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_LiberacionesFondos_Ventas");
+
+                    b.Navigation("ProcesadoPor");
+
+                    b.Navigation("Vendedor");
+
+                    b.Navigation("Venta");
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.MensajeDisputa", b =>
+                {
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Persona", "Autor")
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_MensajesDisputa_Personas");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Disputa", "Disputa")
+                        .WithMany("Mensajes")
+                        .HasForeignKey("DisputaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_MensajesDisputa_Disputas");
+
+                    b.Navigation("Autor");
+
+                    b.Navigation("Disputa");
+                });
+
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Pago", b =>
                 {
                     b.HasOne("CasaDeLasTortas.Models.Entities.Comprador", "Comprador")
@@ -524,25 +1297,28 @@ namespace CasaDeLasTortas.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_Pagos_Compradores");
 
-                    b.HasOne("CasaDeLasTortas.Models.Entities.Torta", "Torta")
-                        .WithMany("Pagos")
-                        .HasForeignKey("TortaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_Pagos_Tortas");
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Vendedor", null)
+                        .WithMany("PagosConfirmados")
+                        .HasForeignKey("VendedorId");
 
-                    b.HasOne("CasaDeLasTortas.Models.Entities.Vendedor", "Vendedor")
-                        .WithMany("PagosRecibidos")
-                        .HasForeignKey("VendedorId")
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Venta", "Venta")
+                        .WithMany("Pagos")
+                        .HasForeignKey("VentaId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("FK_Pagos_Vendedores");
+                        .HasConstraintName("FK_Pagos_Ventas");
+
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Persona", "VerificadoPor")
+                        .WithMany()
+                        .HasForeignKey("VerificadoPorId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_Pagos_Personas_Verificador");
 
                     b.Navigation("Comprador");
 
-                    b.Navigation("Torta");
+                    b.Navigation("Venta");
 
-                    b.Navigation("Vendedor");
+                    b.Navigation("VerificadoPor");
                 });
 
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Torta", b =>
@@ -569,9 +1345,28 @@ namespace CasaDeLasTortas.Migrations
                     b.Navigation("Persona");
                 });
 
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Venta", b =>
+                {
+                    b.HasOne("CasaDeLasTortas.Models.Entities.Comprador", "Comprador")
+                        .WithMany("Ventas")
+                        .HasForeignKey("CompradorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Ventas_Compradores");
+
+                    b.Navigation("Comprador");
+                });
+
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Comprador", b =>
                 {
                     b.Navigation("Pagos");
+
+                    b.Navigation("Ventas");
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Disputa", b =>
+                {
+                    b.Navigation("Mensajes");
                 });
 
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Persona", b =>
@@ -583,16 +1378,29 @@ namespace CasaDeLasTortas.Migrations
 
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Torta", b =>
                 {
-                    b.Navigation("Imagenes");
+                    b.Navigation("DetallesVenta");
 
-                    b.Navigation("Pagos");
+                    b.Navigation("Imagenes");
                 });
 
             modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Vendedor", b =>
                 {
-                    b.Navigation("PagosRecibidos");
+                    b.Navigation("DetallesVenta");
+
+                    b.Navigation("Liberaciones");
+
+                    b.Navigation("PagosConfirmados");
 
                     b.Navigation("Tortas");
+                });
+
+            modelBuilder.Entity("CasaDeLasTortas.Models.Entities.Venta", b =>
+                {
+                    b.Navigation("Detalles");
+
+                    b.Navigation("Disputas");
+
+                    b.Navigation("Pagos");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,0 +1,82 @@
+@model ImagenTortaViewModel
+@{
+    ViewData["Title"] = "Eliminar Imagen";
+}
+
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+        <!-- Header -->
+        <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Confirmar eliminación
+            </h5>
+        </div>
+
+        <!-- Contenido -->
+        <div class="card-body">
+            <div class="text-center mb-4">
+                <img src="@Model.UrlImagen" 
+                     alt="@Model.NombreArchivo" 
+                     class="img-fluid rounded shadow-sm mb-3" style="max-height: 300px;" />
+                
+                <h5 class="fw-semibold mb-3">@Model.NombreArchivo</h5>
+                
+                <div class="bg-light p-3 rounded text-start small">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <span class="text-secondary">Torta:</span>
+                            <span class="fw-semibold ms-2">@Model.NombreTorta</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-secondary">Es principal:</span>
+                            <span class="fw-semibold ms-2">@(Model.EsPrincipal ? "Sí" : "No")</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-secondary">Orden:</span>
+                            <span class="fw-semibold ms-2">@Model.Orden</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-secondary">Tamaño:</span>
+                            <span class="fw-semibold ms-2">@(Model.TamanioArchivo?.ToString("N0") ?? "?") bytes</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-secondary">Fecha:</span>
+                            <span class="fw-semibold ms-2">@Model.FechaSubida.ToString("dd/MM/yyyy HH:mm")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.EsPrincipal)
+            {
+                <div class="alert alert-warning border-start border-4 border-warning mb-4">
+                    <div class="d-flex">
+                        <i class="fas fa-exclamation-triangle me-3 mt-1"></i>
+                        <div>
+                            <p class="fw-medium mb-2">Esta es la imagen principal de la torta</p>
+                            <p class="small mb-0">Si la eliminas, otra imagen será asignada como principal automáticamente.</p>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Formulario de confirmación -->
+            <form asp-action="DeleteConfirmed" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="d-flex gap-3">
+                    <button type="submit" 
+                            class="flex-fill btn btn-danger fw-semibold py-2">
+                        <i class="fas fa-trash me-2"></i>Sí, eliminar imagen
+                    </button>
+                    <a asp-action="Index" asp-route-tortaId="@Model.TortaId" 
+                       class="flex-fill btn btn-light border fw-semibold py-2 text-center">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

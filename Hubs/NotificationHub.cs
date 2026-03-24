@@ -5,16 +5,37 @@ using System.Security.Claims;
 namespace CasaDeLasTortas.Hubs
 {
     /// <summary>
-    /// Hub de SignalR para notificaciones en tiempo real
-    /// Permite comunicación bidireccional entre servidor y clientes
+    /// Hub de SignalR para notificaciones en tiempo real.
+    ///
+    /// GRUPOS AUTOMÁTICOS (asignados al conectar según el rol del JWT):
+    ///   "Admin"     → administradores
+    ///   "Vendedor"  → vendedores
+    ///   "Comprador" → compradores
+    ///
+    /// EVENTOS QUE EMITE EL SERVIDOR:
+    ///   → Admin:
+    ///       "NuevoComprobanteSubido"   comprador subió un comprobante para revisar
+    ///       "PagoRechazado"            admin rechazó un pago (copia al admin para log)
+    ///       "EntregaConfirmada"        comprador confirmó recepción → liberar fondos
+    ///       "NotificacionAdmin"        mensaje general al grupo Admin
+    ///   → Vendedor:
+    ///       "NuevoPedido"              llegó un nuevo pedido
+    ///       "PagoConfirmado"           admin aprobó el comprobante del comprador
+    ///       "FondosLiberados"          admin transfirió fondos al vendedor
+    ///       "StockBajo"                torta con stock bajo
+    ///   → Comprador:
+    ///       "PagoVerificado"           admin aprobó su comprobante
+    ///       "PagoRechazado"            admin rechazó su comprobante
+    ///       "PedidoEnPreparacion"      vendedor empezó a preparar
+    ///       "PedidoListo"              pedido listo para retirar
+    ///       "NuevaTorta"               nueva torta publicada
     /// </summary>
-    [Authorize] // Solo usuarios autenticados pueden conectarse
+    [Authorize]
     public class NotificationHub : Hub
     {
         private readonly ILogger<NotificationHub> _logger;
 
-        // Diccionario estático para rastrear conexiones por usuario
-        // En producción, usar Redis o similar para escalabilidad
+        // Mapa userId → conexiones activas (en producción usar Redis)
         private static readonly Dictionary<string, HashSet<string>> _userConnections = new();
         private static readonly object _lock = new();
 
@@ -23,402 +44,497 @@ namespace CasaDeLasTortas.Hubs
             _logger = logger;
         }
 
-        // ==================== EVENTOS DE CICLO DE VIDA ====================
+        // ══════════════════════════════════════════════════════════════
+        // CICLO DE VIDA
+        // ══════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Se ejecuta cuando un cliente se conecta al hub
-        /// </summary>
         public override async Task OnConnectedAsync()
         {
-            var userId = GetUserId();
-            var connectionId = Context.ConnectionId;
+            var userId     = GetUserId();
+            var userRole   = GetUserRole();
+            var connId     = Context.ConnectionId;
 
             if (!string.IsNullOrEmpty(userId))
             {
-                // Agregar conexión al diccionario
+                // Registrar conexión
                 lock (_lock)
                 {
                     if (!_userConnections.ContainsKey(userId))
-                    {
                         _userConnections[userId] = new HashSet<string>();
-                    }
-                    _userConnections[userId].Add(connectionId);
+                    _userConnections[userId].Add(connId);
+                }
+
+                // Agregar al grupo del rol (Comprador / Vendedor / Admin)
+                if (!string.IsNullOrEmpty(userRole))
+                {
+                    await Groups.AddToGroupAsync(connId, userRole);
+
+                    // Los admins tienen su propio grupo específico para recibir
+                    // notificaciones de nuevos comprobantes y liberaciones pendientes
+                    if (userRole == "Admin")
+                        await Groups.AddToGroupAsync(connId, "AdminPanel");
                 }
 
                 _logger.LogInformation(
-                    "Usuario {UserId} conectado. ConnectionId: {ConnectionId}. Total conexiones: {Count}",
-                    userId, connectionId, _userConnections[userId].Count
-                );
+                    "Usuario {UserId} ({Role}) conectado. ConnectionId: {ConnId}",
+                    userId, userRole, connId);
 
-                // Notificar al usuario que está conectado
                 await Clients.Caller.SendAsync("OnConnected", new
                 {
-                    message = "Conectado exitosamente al servidor de notificaciones",
+                    message    = "Conectado al servidor de notificaciones",
                     userId,
-                    connectionId,
-                    timestamp = DateTime.UtcNow
+                    userRole,
+                    connectionId = connId,
+                    timestamp  = DateTime.UtcNow
                 });
-
-                // Agregar al grupo de su rol
-                var userRole = GetUserRole();
-                if (!string.IsNullOrEmpty(userRole))
-                {
-                    await Groups.AddToGroupAsync(connectionId, userRole);
-                    _logger.LogInformation("Usuario {UserId} agregado al grupo {Role}", userId, userRole);
-                }
             }
 
             await base.OnConnectedAsync();
         }
 
-        /// <summary>
-        /// Se ejecuta cuando un cliente se desconecta
-        /// </summary>
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var userId = GetUserId();
-            var connectionId = Context.ConnectionId;
+            var connId = Context.ConnectionId;
 
             if (!string.IsNullOrEmpty(userId))
             {
                 lock (_lock)
                 {
-                    if (_userConnections.ContainsKey(userId))
+                    if (_userConnections.TryGetValue(userId, out var conns))
                     {
-                        _userConnections[userId].Remove(connectionId);
-                        if (_userConnections[userId].Count == 0)
-                        {
+                        conns.Remove(connId);
+                        if (conns.Count == 0)
                             _userConnections.Remove(userId);
-                        }
                     }
                 }
 
                 if (exception != null)
-                {
                     _logger.LogWarning(exception,
-                        "Usuario {UserId} desconectado con error. ConnectionId: {ConnectionId}",
-                        userId, connectionId
-                    );
-                }
+                        "Usuario {UserId} desconectado con error. ConnId: {ConnId}", userId, connId);
                 else
-                {
                     _logger.LogInformation(
-                        "Usuario {UserId} desconectado normalmente. ConnectionId: {ConnectionId}",
-                        userId, connectionId
-                    );
-                }
+                        "Usuario {UserId} desconectado. ConnId: {ConnId}", userId, connId);
             }
 
             await base.OnDisconnectedAsync(exception);
         }
 
-        // ==================== MÉTODOS PÚBLICOS (LLAMADOS POR CLIENTES) ====================
+        // ══════════════════════════════════════════════════════════════
+        // MÉTODOS LLAMADOS POR LOS CLIENTES
+        // ══════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Permite al cliente unirse a un grupo específico
-        /// </summary>
-        /// <param name="groupName">Nombre del grupo (ej: "Vendedores", "Compradores")</param>
         [HubMethodName("JoinGroup")]
         public async Task JoinGroupAsync(string groupName)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            
-            _logger.LogInformation(
-                "Usuario {UserId} se unió al grupo {GroupName}",
-                GetUserId(), groupName
-            );
-
+            _logger.LogInformation("Usuario {UserId} se unió al grupo {Group}", GetUserId(), groupName);
             await Clients.Caller.SendAsync("GroupJoined", new
             {
-                group = groupName,
-                message = $"Te has unido al grupo {groupName}",
-                timestamp = DateTime.UtcNow
+                group = groupName, timestamp = DateTime.UtcNow
             });
         }
 
-        /// <summary>
-        /// Permite al cliente salir de un grupo
-        /// </summary>
         [HubMethodName("LeaveGroup")]
         public async Task LeaveGroupAsync(string groupName)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-            
-            _logger.LogInformation(
-                "Usuario {UserId} salió del grupo {GroupName}",
-                GetUserId(), groupName
-            );
-
             await Clients.Caller.SendAsync("GroupLeft", new
             {
-                group = groupName,
-                message = $"Has salido del grupo {groupName}",
-                timestamp = DateTime.UtcNow
+                group = groupName, timestamp = DateTime.UtcNow
             });
         }
 
-        /// <summary>
-        /// Envia un mensaje directo a otro usuario
-        /// </summary>
+        [HubMethodName("Ping")]
+        public async Task PingAsync()
+        {
+            await Clients.Caller.SendAsync("Pong", new { timestamp = DateTime.UtcNow });
+        }
+
         [HubMethodName("SendPrivateMessage")]
         public async Task SendPrivateMessageAsync(string toUserId, string message)
         {
             var fromUserId = GetUserId();
-            var fromUserName = GetUserName();
-
-            if (string.IsNullOrEmpty(toUserId))
-            {
-                await Clients.Caller.SendAsync("Error", new
-                {
-                    message = "ID de usuario destino es requerido",
-                    timestamp = DateTime.UtcNow
-                });
-                return;
-            }
-
-            // Enviar mensaje al destinatario
             await Clients.User(toUserId).SendAsync("ReceivePrivateMessage", new
             {
                 fromUserId,
-                fromUserName,
+                fromUserName = GetUserName(),
                 message,
-                timestamp = DateTime.UtcNow
+                timestamp    = DateTime.UtcNow
             });
-
-            // Confirmar al remitente
             await Clients.Caller.SendAsync("MessageSent", new
             {
-                toUserId,
-                message = "Mensaje enviado correctamente",
-                timestamp = DateTime.UtcNow
-            });
-
-            _logger.LogInformation(
-                "Mensaje privado de {FromUserId} a {ToUserId}",
-                fromUserId, toUserId
-            );
-        }
-
-        /// <summary>
-        /// Ping para mantener la conexión viva
-        /// </summary>
-        [HubMethodName("Ping")]
-        public async Task PingAsync()
-        {
-            await Clients.Caller.SendAsync("Pong", new
-            {
-                message = "Pong",
-                timestamp = DateTime.UtcNow
+                toUserId, timestamp = DateTime.UtcNow
             });
         }
 
-        // ==================== MÉTODOS PARA NOTIFICACIONES ESPECÍFICAS ====================
+        // ══════════════════════════════════════════════════════════════
+        // NOTIFICACIONES — FLUJO DE PAGOS (llamadas desde servicios del backend)
+        // ══════════════════════════════════════════════════════════════
 
         /// <summary>
-        /// Notifica sobre un nuevo pago creado
-        /// (llamado desde el servidor, no desde el cliente)
+        /// El comprador subió un comprobante de transferencia.
+        /// → Notifica al grupo Admin para que vaya a revisarlo.
+        /// → Notifica al comprador confirmando recepción.
         /// </summary>
-        public async Task NotificarNuevoPago(int pagoId, string compradorId, string vendedorId, decimal monto)
+        public async Task NotificarComprobanteSubido(
+            int    pagoId,
+            string compradorUserId,
+            string compradorNombre,
+            decimal monto,
+            string  numeroOrden)
         {
-            // Notificar al vendedor
-            await Clients.User(vendedorId).SendAsync("NuevoPago", new
+            // Al panel de admin
+            await Clients.Group("AdminPanel").SendAsync("NuevoComprobanteSubido", new
             {
-                tipo = "nuevo_pago",
+                tipo           = "nuevo_comprobante",
                 pagoId,
-                compradorId,
+                compradorNombre,
                 monto,
-                message = $"Nuevo pago recibido por ${monto:N2}",
-                timestamp = DateTime.UtcNow
+                numeroOrden,
+                mensaje        = $"Nuevo comprobante de {compradorNombre} — Orden #{numeroOrden} — ${monto:N0}",
+                timestamp      = DateTime.UtcNow
             });
 
-            // Notificar al comprador
-            await Clients.User(compradorId).SendAsync("PagoCreado", new
+            // Al comprador: confirmación de que llegó
+            await Clients.User(compradorUserId).SendAsync("ComprobanteRecibido", new
             {
-                tipo = "pago_creado",
                 pagoId,
-                vendedorId,
-                monto,
-                message = $"Pago de ${monto:N2} registrado exitosamente",
+                numeroOrden,
+                mensaje   = "Tu comprobante fue recibido. Lo revisaremos en 1 día hábil.",
                 timestamp = DateTime.UtcNow
             });
 
             _logger.LogInformation(
-                "Notificación de pago {PagoId} enviada a vendedor {VendedorId} y comprador {CompradorId}",
-                pagoId, vendedorId, compradorId
-            );
+                "Comprobante de pago {PagoId} subido por comprador {UserId} — ${Monto:N0}",
+                pagoId, compradorUserId, monto);
         }
 
         /// <summary>
-        /// Notifica cambio de estado de un pago
+        /// Admin aprobó el comprobante.
+        /// → Notifica al comprador que su pago fue verificado.
+        /// → Notifica a cada vendedor involucrado que pueden preparar.
         /// </summary>
-        public async Task NotificarCambioEstadoPago(int pagoId, string usuarioId, string nuevoEstado, string mensaje)
+        public async Task NotificarPagoAprobado(
+            int    pagoId,
+            string compradorUserId,
+            string compradorNombre,
+            string numeroOrden,
+            decimal monto,
+            IEnumerable<string> vendedorUserIds)
         {
-            await Clients.User(usuarioId).SendAsync("EstadoPagoCambiado", new
+            // Al comprador
+            await Clients.User(compradorUserId).SendAsync("PagoVerificado", new
             {
-                tipo = "estado_pago_cambiado",
+                tipo        = "pago_verificado",
                 pagoId,
-                nuevoEstado,
-                message = mensaje,
-                timestamp = DateTime.UtcNow
+                numeroOrden,
+                monto,
+                mensaje     = $"¡Pago verificado! Tu pedido #{numeroOrden} pasó a preparación.",
+                timestamp   = DateTime.UtcNow
             });
 
+            // A cada vendedor de la orden
+            foreach (var vendedorId in vendedorUserIds)
+            {
+                await Clients.User(vendedorId).SendAsync("PagoConfirmado", new
+                {
+                    tipo           = "pago_confirmado",
+                    pagoId,
+                    compradorNombre,
+                    numeroOrden,
+                    monto,
+                    mensaje        = $"Pago confirmado para la orden #{numeroOrden}. ¡Podés empezar la preparación!",
+                    timestamp      = DateTime.UtcNow
+                });
+            }
+
             _logger.LogInformation(
-                "Notificación de cambio de estado del pago {PagoId} a {NuevoEstado} enviada a {UsuarioId}",
-                pagoId, nuevoEstado, usuarioId
-            );
+                "Pago {PagoId} aprobado. Notificado a comprador {CompradorId} y {VendCount} vendedor(es)",
+                pagoId, compradorUserId, vendedorUserIds.Count());
         }
 
         /// <summary>
-        /// Notifica sobre una nueva torta publicada (a todos los compradores)
+        /// Admin rechazó el comprobante.
+        /// → Notifica al comprador con el motivo.
         /// </summary>
-        public async Task NotificarNuevaTorta(int tortaId, string nombreTorta, decimal precio, string categoría)
+        public async Task NotificarPagoRechazado(
+            int    pagoId,
+            string compradorUserId,
+            string numeroOrden,
+            string motivo)
+        {
+            await Clients.User(compradorUserId).SendAsync("PagoRechazado", new
+            {
+                tipo        = "pago_rechazado",
+                pagoId,
+                numeroOrden,
+                motivo,
+                mensaje     = $"Tu comprobante de la orden #{numeroOrden} fue rechazado: {motivo}",
+                timestamp   = DateTime.UtcNow
+            });
+
+            _logger.LogInformation(
+                "Pago {PagoId} rechazado. Notificado al comprador {UserId}. Motivo: {Motivo}",
+                pagoId, compradorUserId, motivo);
+        }
+
+        /// <summary>
+        /// Vendedor marcó el pedido como "Listo para retirar".
+        /// → Notifica al comprador.
+        /// </summary>
+        public async Task NotificarPedidoListo(
+            int    detalleId,
+            string compradorUserId,
+            string nombreTorta,
+            string numeroOrden)
+        {
+            await Clients.User(compradorUserId).SendAsync("PedidoListo", new
+            {
+                tipo       = "pedido_listo",
+                detalleId,
+                nombreTorta,
+                numeroOrden,
+                mensaje    = $"¡Tu pedido #{numeroOrden} está listo para retirar!",
+                timestamp  = DateTime.UtcNow
+            });
+
+            _logger.LogInformation(
+                "Pedido {DetalleId} listo. Notificado al comprador {UserId}",
+                detalleId, compradorUserId);
+        }
+
+        /// <summary>
+        /// Comprador confirmó la entrega.
+        /// → Notifica al Admin para que proceda a liberar fondos.
+        /// → Notifica al vendedor que el comprador confirmó.
+        /// </summary>
+        public async Task NotificarEntregaConfirmada(
+            int    ventaId,
+            string compradorNombre,
+            string numeroOrden,
+            string vendedorUserId,
+            decimal montoALiberar)
+        {
+            // Al admin
+            await Clients.Group("AdminPanel").SendAsync("EntregaConfirmada", new
+            {
+                tipo           = "entrega_confirmada",
+                ventaId,
+                compradorNombre,
+                numeroOrden,
+                montoALiberar,
+                mensaje        = $"Entrega confirmada — Orden #{numeroOrden} — Liberar ${montoALiberar:N0} al vendedor",
+                timestamp      = DateTime.UtcNow
+            });
+
+            // Al vendedor
+            await Clients.User(vendedorUserId).SendAsync("EntregaConfirmada", new
+            {
+                tipo           = "entrega_confirmada",
+                ventaId,
+                compradorNombre,
+                numeroOrden,
+                mensaje        = $"El comprador confirmó la recepción del pedido #{numeroOrden}",
+                timestamp      = DateTime.UtcNow
+            });
+
+            _logger.LogInformation(
+                "Entrega confirmada — Orden #{Orden}. Admin notificado. Monto a liberar: ${Monto:N0}",
+                numeroOrden, montoALiberar);
+        }
+
+        /// <summary>
+        /// Admin liberó los fondos al vendedor.
+        /// → Notifica al vendedor con el monto acreditado.
+        /// </summary>
+        public async Task NotificarFondosLiberados(
+            int     liberacionId,
+            string  vendedorUserId,
+            string  vendedorNombre,
+            string  numeroOrden,
+            decimal montoLiberado,
+            decimal comisionDescontada)
+        {
+            await Clients.User(vendedorUserId).SendAsync("FondosLiberados", new
+            {
+                tipo               = "fondos_liberados",
+                liberacionId,
+                numeroOrden,
+                montoLiberado,
+                comisionDescontada,
+                monto              = montoLiberado,   // alias usado por AppVendedor.vue
+                mensaje            = $"💸 Fondos acreditados — Orden #{numeroOrden} — ${montoLiberado:N0} transferidos a tu cuenta",
+                timestamp          = DateTime.UtcNow
+            });
+
+            _logger.LogInformation(
+                "Fondos liberados al vendedor {Nombre} ({UserId}) — ${Monto:N0} — Orden #{Orden}",
+                vendedorNombre, vendedorUserId, montoLiberado, numeroOrden);
+        }
+
+        /// <summary>
+        /// Disputa abierta por un comprador.
+        /// → Notifica al Admin.
+        /// </summary>
+        public async Task NotificarDisputaAbierta(
+            int    disputaId,
+            string compradorNombre,
+            string numeroOrden,
+            string motivo)
+        {
+            await Clients.Group("AdminPanel").SendAsync("DisputaAbierta", new
+            {
+                tipo            = "disputa_abierta",
+                disputaId,
+                compradorNombre,
+                numeroOrden,
+                motivo,
+                mensaje         = $"🚨 Nueva disputa — Orden #{numeroOrden} — {compradorNombre}: {motivo}",
+                timestamp       = DateTime.UtcNow
+            });
+
+            _logger.LogWarning(
+                "Disputa {DisputaId} abierta para orden #{Orden} por {Comprador}",
+                disputaId, numeroOrden, compradorNombre);
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // NOTIFICACIONES DE PRODUCTOS
+        // ══════════════════════════════════════════════════════════════
+
+        /// <summary>Nueva torta publicada → notifica a todos los compradores.</summary>
+        public async Task NotificarNuevaTorta(
+            int     tortaId,
+            string  nombreTorta,
+            decimal precio,
+            string  categoria)
         {
             await Clients.Group("Comprador").SendAsync("NuevaTorta", new
             {
-                tipo = "nueva_torta",
+                tipo       = "nueva_torta",
                 tortaId,
                 nombreTorta,
                 precio,
-                categoría,
-                message = $"Nueva torta disponible: {nombreTorta}",
-                timestamp = DateTime.UtcNow
+                categoria,
+                mensaje    = $"Nueva torta disponible: {nombreTorta}",
+                timestamp  = DateTime.UtcNow
             });
-
-            _logger.LogInformation(
-                "Notificación de nueva torta {TortaId} enviada al grupo Comprador",
-                tortaId
-            );
         }
 
-        /// <summary>
-        /// Notifica cuando el stock de una torta está bajo
-        /// </summary>
-        public async Task NotificarStockBajo(int tortaId, string vendedorId, string nombreTorta, int stockActual)
+        /// <summary>Stock bajo de una torta → notifica al vendedor dueño.</summary>
+        public async Task NotificarStockBajo(
+            int    tortaId,
+            string vendedorUserId,
+            string nombreTorta,
+            int    stockActual)
         {
-            await Clients.User(vendedorId).SendAsync("StockBajo", new
+            await Clients.User(vendedorUserId).SendAsync("StockBajo", new
             {
-                tipo = "stock_bajo",
+                tipo       = "stock_bajo",
                 tortaId,
                 nombreTorta,
                 stockActual,
-                message = $"Stock bajo de {nombreTorta}: solo quedan {stockActual} unidades",
-                timestamp = DateTime.UtcNow,
-                nivel = stockActual == 0 ? "critico" : "advertencia"
+                message    = $"Stock bajo de '{nombreTorta}': quedan {stockActual} unidades",
+                nivel      = stockActual == 0 ? "critico" : "advertencia",
+                timestamp  = DateTime.UtcNow
             });
-
-            _logger.LogInformation(
-                "Notificación de stock bajo de torta {TortaId} enviada a vendedor {VendedorId}",
-                tortaId, vendedorId
-            );
         }
 
-        /// <summary>
-        /// Envía una notificación general a todos los usuarios
-        /// </summary>
+        // ══════════════════════════════════════════════════════════════
+        // MÉTODOS HEREDADOS / GENERALES
+        // ══════════════════════════════════════════════════════════════
+
+        /// <summary>Notificación de pago genérica (compatibilidad con código anterior).</summary>
+        public async Task NotificarNuevoPago(
+            int    pagoId,
+            string compradorId,
+            string vendedorId,
+            decimal monto)
+        {
+            await Clients.User(vendedorId).SendAsync("NuevoPago", new
+            {
+                pagoId, compradorId, monto,
+                message   = $"Nuevo pago recibido por ${monto:N2}",
+                timestamp = DateTime.UtcNow
+            });
+            await Clients.User(compradorId).SendAsync("PagoCreado", new
+            {
+                pagoId, vendedorId, monto,
+                message   = $"Pago de ${monto:N2} registrado exitosamente",
+                timestamp = DateTime.UtcNow
+            });
+        }
+
+        /// <summary>Cambio de estado genérico de pago.</summary>
+        public async Task NotificarCambioEstadoPago(
+            int    pagoId,
+            string usuarioId,
+            string nuevoEstado,
+            string mensaje)
+        {
+            await Clients.User(usuarioId).SendAsync("EstadoPagoCambiado", new
+            {
+                pagoId, nuevoEstado, message = mensaje, timestamp = DateTime.UtcNow
+            });
+        }
+
+        /// <summary>Notificación a todos los usuarios.</summary>
         public async Task NotificarATodos(string titulo, string mensaje, string tipo = "info")
         {
             await Clients.All.SendAsync("NotificacionGeneral", new
             {
-                tipo = "notificacion_general",
-                titulo,
-                mensaje,
-                nivel = tipo, // info, warning, error, success
-                timestamp = DateTime.UtcNow
+                titulo, mensaje, nivel = tipo, timestamp = DateTime.UtcNow
             });
-
-            _logger.LogInformation("Notificación general enviada a todos: {Titulo}", titulo);
         }
 
-        /// <summary>
-        /// Envía notificación a un grupo específico (por rol)
-        /// </summary>
-        public async Task NotificarAGrupo(string grupo, string titulo, string mensaje, string tipo = "info")
+        /// <summary>Notificación a un grupo por nombre.</summary>
+        public async Task NotificarAGrupo(
+            string grupo, string titulo, string mensaje, string tipo = "info")
         {
             await Clients.Group(grupo).SendAsync("NotificacionGrupo", new
             {
-                tipo = "notificacion_grupo",
-                grupo,
-                titulo,
-                mensaje,
-                nivel = tipo,
-                timestamp = DateTime.UtcNow
+                grupo, titulo, mensaje, nivel = tipo, timestamp = DateTime.UtcNow
             });
-
-            _logger.LogInformation("Notificación enviada al grupo {Grupo}: {Titulo}", grupo, titulo);
         }
 
-        // ==================== MÉTODOS AUXILIARES PRIVADOS ====================
+        // ══════════════════════════════════════════════════════════════
+        // HELPERS PRIVADOS
+        // ══════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Obtiene el ID del usuario actual del contexto
-        /// </summary>
-        private string GetUserId()
-        {
-            return Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-        }
+        private string GetUserId()    => Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        private string GetUserName()  => Context.User?.FindFirst(ClaimTypes.Name)?.Value            ?? "Desconocido";
+        private string GetUserRole()  => Context.User?.FindFirst(ClaimTypes.Role)?.Value            ?? string.Empty;
+        private string GetUserEmail() => Context.User?.FindFirst(ClaimTypes.Email)?.Value           ?? string.Empty;
 
-        /// <summary>
-        /// Obtiene el nombre del usuario actual
-        /// </summary>
-        private string GetUserName()
-        {
-            return Context.User?.FindFirst(ClaimTypes.Name)?.Value ?? "Usuario Desconocido";
-        }
+        // ══════════════════════════════════════════════════════════════
+        // MÉTODOS ESTÁTICOS DE CONSULTA (usados por otros servicios)
+        // ══════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Obtiene el rol del usuario actual
-        /// </summary>
-        private string GetUserRole()
-        {
-            return Context.User?.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Obtiene el email del usuario actual
-        /// </summary>
-        private string GetUserEmail()
-        {
-            return Context.User?.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Verifica si un usuario está conectado actualmente
-        /// </summary>
         public static bool IsUserConnected(string userId)
         {
             lock (_lock)
-            {
-                return _userConnections.ContainsKey(userId) && _userConnections[userId].Count > 0;
-            }
+                return _userConnections.ContainsKey(userId)
+                    && _userConnections[userId].Count > 0;
         }
 
-        /// <summary>
-        /// Obtiene todas las conexiones de un usuario
-        /// </summary>
         public static IEnumerable<string> GetUserConnections(string userId)
         {
             lock (_lock)
-            {
-                return _userConnections.ContainsKey(userId) 
-                    ? _userConnections[userId].ToList() 
+                return _userConnections.TryGetValue(userId, out var conns)
+                    ? conns.ToList()
                     : Enumerable.Empty<string>();
-            }
         }
 
-        /// <summary>
-        /// Obtiene estadísticas de conexiones
-        /// </summary>
         public static object GetConnectionStats()
         {
             lock (_lock)
-            {
                 return new
                 {
-                    totalUsers = _userConnections.Count,
+                    totalUsers       = _userConnections.Count,
                     totalConnections = _userConnections.Values.Sum(c => c.Count),
-                    timestamp = DateTime.UtcNow
+                    timestamp        = DateTime.UtcNow
                 };
-            }
         }
     }
 }

@@ -1,0 +1,208 @@
+@model ImagenTortaCreateViewModel
+@{
+    ViewData["Title"] = "Agregar Imágenes";
+}
+
+<div class="container mt-5" style="max-width: 900px;">
+    <!-- Header -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Torta" asp-action="Index" class="text-decoration-none">Tortas</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index" asp-route-tortaId="@Model.TortaId" class="text-decoration-none">Imágenes</a></li>
+                <li class="breadcrumb-item active text-primary" aria-current="page">Agregar imágenes</li>
+            </ol>
+        </nav>
+        <h1 class="display-5 fw-bold text-dark">
+            <i class="fas fa-cloud-upload-alt text-primary me-3"></i>Agregar Imágenes
+        </h1>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <!-- Torta (solo visible para admin) -->
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="mb-4">
+                        <label asp-for="TortaId" class="form-label fw-medium">
+                            Seleccionar Torta <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="TortaId" asp-items="ViewBag.TortaId" class="form-select">
+                            <option value="">Selecciona una torta</option>
+                        </select>
+                        <span asp-validation-for="TortaId" class="text-danger small"></span>
+                    </div>
+                }
+                else
+                {
+                    <input type="hidden" asp-for="TortaId" />
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Las imágenes se agregarán a la torta seleccionada.
+                    </div>
+                }
+
+                <!-- Subida de imágenes -->
+                <div class="mb-4">
+                    <label asp-for="Imagenes" class="form-label fw-medium">
+                        Seleccionar imágenes <span class="text-danger">*</span>
+                    </label>
+                    
+                    <div class="border-2 border-dashed border-secondary rounded-3 p-5 text-center" 
+                         id="dropZone" style="cursor: pointer;">
+                        <i class="fas fa-cloud-upload-alt fa-4x text-secondary mb-3"></i>
+                        <p class="text-secondary mb-3">Arrastra y suelta tus imágenes aquí o</p>
+                        <label class="btn btn-primary">
+                            <i class="fas fa-folder-open me-2"></i>Seleccionar archivos
+                            <input asp-for="Imagenes" 
+                                   type="file" 
+                                   multiple 
+                                   accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                                   class="d-none"
+                                   id="fileInput" />
+                        </label>
+                        <p class="small text-secondary mt-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Máximo 5MB por imagen. Formatos: JPG, PNG, GIF, WebP
+                        </p>
+                    </div>
+                    <span asp-validation-for="Imagenes" class="text-danger small"></span>
+                </div>
+
+                <!-- Preview de imágenes seleccionadas -->
+                <div id="imagePreview" class="row g-3 mb-4"></div>
+
+                <!-- Opción de imagen principal -->
+                <div class="alert alert-warning mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <div class="col">
+                            <label class="fw-medium mb-2">Marcar la primera imagen como principal:</label>
+                            <select asp-for="ImagenPrincipalIndex" class="form-select w-auto">
+                                <option value="">Ninguna (automático)</option>
+                            </select>
+                            <div class="small text-secondary mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Si no se selecciona ninguna, la primera imagen será la principal (si no hay otra).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="d-flex justify-content-end gap-3">
+                    <a asp-action="Index" asp-route-tortaId="@Model.TortaId" 
+                       class="btn btn-light border px-4 py-2 fw-semibold">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                        <i class="fas fa-upload me-2"></i>Subir imágenes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Preview de imágenes
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '';
+            
+            // Limpiar opciones de índice principal
+            const selectPrincipal = document.getElementById('ImagenPrincipalIndex');
+            selectPrincipal.innerHTML = '<option value="">Ninguna (automático)</option>';
+            
+            for (let i = 0; i < this.files.length; i++) {
+                const file = this.files[i];
+                
+                // Validar tipo
+                if (!file.type.startsWith('image/')) {
+                    alert(`El archivo ${file.name} no es una imagen válida`);
+                    continue;
+                }
+                
+                // Validar tamaño (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`El archivo ${file.name} excede los 5MB`);
+                    continue;
+                }
+                
+                // Crear preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const col = document.createElement('div');
+                    col.className = 'col-6 col-md-3';
+                    col.innerHTML = `
+                        <div class="position-relative">
+                            <img src="${e.target.result}" 
+                                 class="img-fluid rounded border border-primary" 
+                                 style="height: 120px; width: 100%; object-fit: cover;" />
+                            <button type="button" 
+                                    class="position-absolute top-0 end-0 btn btn-sm btn-danger rounded-circle mt-1 me-1"
+                                    style="width: 30px; height: 30px;"
+                                    onclick="eliminarImagen(this, ${i})">
+                                <i class="fas fa-times small"></i>
+                            </button>
+                        </div>
+                    `;
+                    preview.appendChild(col);
+                }
+                reader.readAsDataURL(file);
+                
+                // Agregar opción al select de imagen principal
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Imagen ${i + 1}: ${file.name.substring(0, 30)}${file.name.length > 30 ? '...' : ''}`;
+                selectPrincipal.appendChild(option);
+            }
+        });
+
+        // Eliminar imagen de la selección
+        function eliminarImagen(btn, index) {
+            const col = btn.closest('.col-6');
+            col.remove();
+            
+            // Aquí necesitaríamos una forma de eliminar el archivo de la lista de FileList
+            // Esto es más complejo, por simplicidad recargamos la página o mostramos mensaje
+            alert('Para eliminar una imagen, por favor selecciona los archivos nuevamente');
+            window.location.reload();
+        }
+
+        // Drag & drop
+        const dropZone = document.getElementById('dropZone');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+            
+            const files = e.dataTransfer.files;
+            document.getElementById('fileInput').files = files;
+            
+            // Trigger change event
+            const event = new Event('change', { bubbles: true });
+            document.getElementById('fileInput').dispatchEvent(event);
+        });
+    </script>
+}

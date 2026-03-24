@@ -4,54 +4,48 @@ using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using CasaDeLasTortas.Services;
+using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace CasaDeLasTortas.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class PagoApiController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFileService _fileService;
+        private readonly IPagoService _pagoService;
         private readonly ILogger<PagoApiController> _logger;
 
         public PagoApiController(
-            IUnitOfWork unitOfWork, 
+            IUnitOfWork unitOfWork,
             IFileService fileService,
+            IPagoService pagoService,
             ILogger<PagoApiController> logger)
         {
             _unitOfWork = unitOfWork;
             _fileService = fileService;
+            _pagoService = pagoService;
             _logger = logger;
         }
 
         /// <summary>
-        /// Obtener todos los pagos con paginación
+        /// Obtener todos los pagos con paginación (Admin)
         /// </summary>
         [HttpGet]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
         public async Task<IActionResult> GetAll([FromQuery] int pagina = 1, [FromQuery] int registrosPorPagina = 10)
         {
-            var pagos = await _unitOfWork.PagoRepository.GetAllAsync();
+            var pagos = await _unitOfWork.PagoRepository.GetAllWithDetailsAsync();
             var total = pagos.Count();
-            
+
             var pagosPaginados = pagos
                 .Skip((pagina - 1) * registrosPorPagina)
                 .Take(registrosPorPagina)
-                .Select(p => new
-                {
-                    id = p.Id,
-                    tortaId = p.TortaId,
-                    compradorId = p.CompradorId,
-                    vendedorId = p.VendedorId,
-                    monto = p.Monto,
-                    cantidad = p.Cantidad,
-                    estado = p.Estado.ToString(),
-                    metodoPago = p.MetodoPago?.ToString(),
-                    fechaPago = p.FechaPago,
-                    tieneComprobante = !string.IsNullOrEmpty(p.ArchivoComprobante)
-                })
+                .Select(MapearPagoResumen)
                 .ToList();
 
             return Ok(new
@@ -70,35 +64,276 @@ namespace CasaDeLasTortas.Controllers.Api
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var pago = await _unitOfWork.PagoRepository.GetByIdAsync(id);
+            var pago = await _unitOfWork.PagoRepository.GetByIdWithDetallesAsync(id);
 
             if (pago == null)
                 return NotFound(new { message = "Pago no encontrado" });
 
+            return Ok(MapearPagoDetalle(pago));
+        }
+
+        /// <summary>
+        /// Obtener pagos del comprador actual
+        /// </summary>
+        [HttpGet("mis-pagos")]
+        public async Task<IActionResult> GetMisPagos()
+        {
+            var compradorId = await ObtenerCompradorIdActual();
+            if (compradorId == null)
+                return Unauthorized(new { message = "Comprador no encontrado" });
+
+            var pagos = await _unitOfWork.PagoRepository.GetByCompradorIdWithDetailsAsync(compradorId.Value);
+            return Ok(pagos.Select(MapearPagoResumen));
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Obtener datos de pago de la plataforma
+        /// </summary>
+        [HttpGet("datos-plataforma")]
+        public async Task<IActionResult> GetDatosPlataforma()
+        {
+            var datos = await _pagoService.GetDatosPagoPlataformaAsync();
+            return Ok(datos);
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Subir comprobante de pago
+        /// POST /api/PagoApi/{pagoId}/comprobante
+        /// </summary>
+        [HttpPost("{pagoId}/comprobante")]
+        public async Task<IActionResult> SubirComprobante(int pagoId, [FromForm] SubirComprobanteDTO request)
+        {
+            try
+            {
+                var compradorId = await ObtenerCompradorIdActual();
+                if (compradorId == null)
+                    return Unauthorized(new { message = "Comprador no encontrado" });
+
+                var pago = await _unitOfWork.PagoRepository.GetByIdAsync(pagoId);
+                if (pago == null)
+                    return NotFound(new { message = "Pago no encontrado" });
+
+                if (pago.CompradorId != compradorId)
+                    return Forbid();
+
+                // Validar que puede subir comprobante
+                if (!await _unitOfWork.PagoRepository.PuedeSubirComprobanteAsync(pagoId))
+                    return BadRequest(new { message = "No se puede subir comprobante en el estado actual" });
+
+                // Validar intentos
+                var maxIntentos = await _unitOfWork.Configuracion.GetMaxIntentosRechazadosAsync();
+                if (pago.IntentosRechazados >= maxIntentos)
+                    return BadRequest(new { message = $"Se superó el máximo de {maxIntentos} intentos. Contacte soporte." });
+
+                // Guardar archivo
+                string archivoComprobante;
+                if (request.Archivo != null)
+                {
+                    archivoComprobante = await _fileService.SaveFileAsync(request.Archivo, "comprobantes");
+                }
+                else if (!string.IsNullOrEmpty(request.ArchivoBase64))
+                {
+                    archivoComprobante = await _fileService.SaveBase64FileAsync(
+                        request.ArchivoBase64, "comprobantes", request.NombreArchivo ?? "comprobante.jpg");
+                }
+                else
+                {
+                    return BadRequest(new { message = "Debe enviar un archivo o imagen base64" });
+                }
+
+                // Procesar
+                var result = await _pagoService.SubirComprobanteAsync(
+                    pago.VentaId, compradorId.Value, archivoComprobante, 
+                    request.MetodoPago, request.NumeroTransaccion);
+
+                if (!result.Success)
+                    return BadRequest(new { message = result.Message });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Message,
+                    urlComprobante = _fileService.GetFileUrl(archivoComprobante)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al subir comprobante para pago {PagoId}", pagoId);
+                return StatusCode(500, new { message = "Error al subir el comprobante" });
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Obtener pagos pendientes de verificación (Admin)
+        /// </summary>
+        [HttpGet("pendientes-verificacion")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<IActionResult> GetPendientesVerificacion()
+        {
+            var pagos = await _unitOfWork.PagoRepository.GetPendientesVerificacionAsync();
+            return Ok(pagos.Select(p => new
+            {
+                id = p.Id,
+                ventaId = p.VentaId,
+                numeroOrden = p.Venta?.NumeroOrden,
+                compradorNombre = p.Comprador?.Persona?.Nombre,
+                compradorEmail = p.Comprador?.Persona?.Email,
+                monto = p.Monto,
+                comisionPlataforma = p.ComisionPlataforma,
+                montoVendedores = p.MontoVendedores,
+                metodoPago = p.MetodoPago?.ToString(),
+                numeroTransaccion = p.NumeroTransaccion,
+                fechaComprobante = p.FechaComprobante,
+                urlComprobante = !string.IsNullOrEmpty(p.ArchivoComprobante)
+                    ? _fileService.GetFileUrl(p.ArchivoComprobante) : null,
+                intentosRechazados = p.IntentosRechazados,
+                vendedoresInvolucrados = p.Venta?.Detalles?
+                    .GroupBy(d => d.VendedorId)
+                    .Select(g => new
+                    {
+                        vendedorId = g.Key,
+                        nombreComercial = g.First().Vendedor?.NombreComercial,
+                        monto = g.Sum(d => d.Subtotal)
+                    }).ToList()
+            }));
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Verificar pago (Admin aprueba o rechaza)
+        /// </summary>
+        [HttpPost("{pagoId}/verificar")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<IActionResult> VerificarPago(int pagoId, [FromBody] VerificarPagoDTO request)
+        {
+            try
+            {
+                var adminId = await ObtenerPersonaIdActual();
+                if (adminId == null)
+                    return Unauthorized();
+
+                var result = await _pagoService.VerificarPagoAsync(
+                    pagoId, adminId.Value, request.Aprobado, 
+                    request.Observaciones, request.MotivoRechazo);
+
+                if (!result.Success)
+                    return BadRequest(new { message = result.Message });
+
+                return Ok(new { success = true, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al verificar pago {PagoId}", pagoId);
+                return StatusCode(500, new { message = "Error al verificar el pago" });
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Obtener pagos rechazados
+        /// </summary>
+        [HttpGet("rechazados")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<IActionResult> GetRechazados()
+        {
+            var pagos = await _unitOfWork.PagoRepository.GetRechazadosAsync();
+            return Ok(pagos.Select(p => new
+            {
+                id = p.Id,
+                ventaId = p.VentaId,
+                numeroOrden = p.Venta?.NumeroOrden,
+                compradorNombre = p.Comprador?.Persona?.Nombre,
+                monto = p.Monto,
+                motivoRechazo = p.MotivoRechazo,
+                fechaRechazo = p.FechaRechazo,
+                intentosRechazados = p.IntentosRechazados
+            }));
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Obtener reembolsos pendientes
+        /// </summary>
+        [HttpGet("reembolsos-pendientes")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<IActionResult> GetReembolsosPendientes()
+        {
+            var pagos = await _unitOfWork.PagoRepository.GetReembolsosPendientesAsync();
+            return Ok(pagos.Select(p => new
+            {
+                id = p.Id,
+                ventaId = p.VentaId,
+                numeroOrden = p.Venta?.NumeroOrden,
+                compradorNombre = p.Comprador?.Persona?.Nombre,
+                compradorEmail = p.Comprador?.Persona?.Email,
+                monto = p.Monto,
+                fechaPago = p.FechaPago
+            }));
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Procesar reembolso (Admin)
+        /// </summary>
+        [HttpPost("{pagoId}/reembolso")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<IActionResult> ProcesarReembolso(int pagoId, [FromForm] ProcesarReembolsoDTO request)
+        {
+            try
+            {
+                var adminId = await ObtenerPersonaIdActual();
+                if (adminId == null)
+                    return Unauthorized();
+
+                // Guardar comprobante de reembolso
+                string archivoComprobante;
+                if (request.Archivo != null)
+                {
+                    archivoComprobante = await _fileService.SaveFileAsync(request.Archivo, "reembolsos");
+                }
+                else
+                {
+                    return BadRequest(new { message = "Debe adjuntar comprobante de transferencia" });
+                }
+
+                var result = await _pagoService.ProcesarReembolsoAsync(
+                    pagoId, adminId.Value, archivoComprobante, request.NumeroTransaccion);
+
+                if (!result.Success)
+                    return BadRequest(new { message = result.Message });
+
+                return Ok(new { success = true, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al procesar reembolso para pago {PagoId}", pagoId);
+                return StatusCode(500, new { message = "Error al procesar el reembolso" });
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUEVO: Estadísticas de pagos y comisiones (Admin)
+        /// </summary>
+        [HttpGet("estadisticas")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<IActionResult> GetEstadisticas()
+        {
+            var stats = await _pagoService.GetEstadisticasAsync();
+            
+            // Agregar datos adicionales
+            var comisionesDelMes = await _unitOfWork.PagoRepository.GetComisionesDelMesAsync();
+            var montoEnRevision = await _unitOfWork.PagoRepository.GetMontoEnRevisionAsync();
+            var tiempoPromedioVerificacion = await _unitOfWork.PagoRepository.GetTiempoPromedioVerificacionAsync();
+
             return Ok(new
             {
-                id = pago.Id,
-                tortaId = pago.TortaId,
-                compradorId = pago.CompradorId,
-                vendedorId = pago.VendedorId,
-                monto = pago.Monto,
-                precioUnitario = pago.PrecioUnitario,
-                cantidad = pago.Cantidad,
-                subtotal = pago.Subtotal,
-                descuento = pago.Descuento,
-                estado = pago.Estado.ToString(),
-                metodoPago = pago.MetodoPago?.ToString(),
-                fechaPago = pago.FechaPago,
-                numeroTransaccion = pago.NumeroTransaccion,
-                observaciones = pago.Observaciones,
-                direccionEntrega = pago.DireccionEntrega,
-                fechaEntrega = pago.FechaEntrega,
-                archivoComprobante = pago.ArchivoComprobante,
-                urlComprobante = !string.IsNullOrEmpty(pago.ArchivoComprobante) 
-                    ? _fileService.GetFileUrl(pago.ArchivoComprobante) 
-                    : null,
-                notificacionEnviada = pago.NotificacionEnviada,
-                fechaActualizacion = pago.FechaActualizacion
+                totalPagos = stats.TotalPagos,
+                pagosPendientes = stats.PagosPendientes,
+                pagosEnRevision = stats.PagosEnRevision,
+                pagosVerificados = stats.PagosVerificados,
+                pagosRechazados = stats.PagosRechazados,
+                montoTotalRecibido = stats.MontoTotalRecibido,
+                pagosHoy = stats.PagosHoy,
+                montoHoy = stats.MontoHoy,
+                comisionesDelMes,
+                montoEnRevision,
+                tiempoPromedioVerificacionHoras = tiempoPromedioVerificacion
             });
         }
 
@@ -108,570 +343,214 @@ namespace CasaDeLasTortas.Controllers.Api
         [HttpGet("comprador/{compradorId}")]
         public async Task<IActionResult> GetByComprador(int compradorId)
         {
-            var comprador = await _unitOfWork.CompradorRepository.GetByIdAsync(compradorId);
-            
-            if (comprador == null)
-                return NotFound(new { message = "Comprador no encontrado" });
-
-            var pagos = comprador.Pagos.Select(p => new
-            {
-                id = p.Id,
-                tortaId = p.TortaId,
-                monto = p.Monto,
-                cantidad = p.Cantidad,
-                estado = p.Estado.ToString(),
-                metodoPago = p.MetodoPago?.ToString(),
-                fechaPago = p.FechaPago,
-                fechaEntrega = p.FechaEntrega
-            }).ToList();
-
-            return Ok(pagos);
+            var pagos = await _unitOfWork.PagoRepository.GetByCompradorIdWithDetailsAsync(compradorId);
+            return Ok(pagos.Select(MapearPagoResumen));
         }
 
         /// <summary>
         /// Obtener pagos por vendedor
         /// </summary>
         [HttpGet("vendedor/{vendedorId}")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin,Vendedor")]
         public async Task<IActionResult> GetByVendedor(int vendedorId)
         {
-            var vendedor = await _unitOfWork.VendedorRepository.GetByIdAsync(vendedorId);
-            
-            if (vendedor == null)
-                return NotFound(new { message = "Vendedor no encontrado" });
-
-            var pagos = vendedor.PagosRecibidos.Select(p => new
-            {
-                id = p.Id,
-                tortaId = p.TortaId,
-                compradorId = p.CompradorId,
-                monto = p.Monto,
-                cantidad = p.Cantidad,
-                estado = p.Estado.ToString(),
-                metodoPago = p.MetodoPago?.ToString(),
-                fechaPago = p.FechaPago,
-                tieneComprobante = !string.IsNullOrEmpty(p.ArchivoComprobante)
-            }).ToList();
-
-            return Ok(pagos);
+            var pagos = await _unitOfWork.PagoRepository.GetByVendedorIdAsync(vendedorId);
+            return Ok(pagos.Select(p => MapearPagoResumen(p)));
         }
 
         /// <summary>
-        /// Obtener pagos por estado
+        /// Cambiar estado de detalle de venta (Vendedor)
         /// </summary>
-        [HttpGet("estado/{estado}")]
-        [Authorize]
-        public async Task<IActionResult> GetByEstado(string estado)
+        [HttpPatch("detalle/{detalleId}/estado")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor,Admin")]
+        public async Task<IActionResult> CambiarEstadoDetalle(int detalleId, [FromBody] CambiarEstadoDetalleDTO request)
         {
-            if (!Enum.TryParse<EstadoPago>(estado, true, out var estadoPago))
-                return BadRequest(new { message = "Estado inválido. Valores: Pendiente, Completado, Cancelado" });
-
-            var pagos = await _unitOfWork.PagoRepository.GetAllAsync();
-            var pagosFiltrados = pagos.Where(p => p.Estado == estadoPago).ToList();
-
-            return Ok(pagosFiltrados.Select(p => new
-            {
-                id = p.Id,
-                tortaId = p.TortaId,
-                compradorId = p.CompradorId,
-                vendedorId = p.VendedorId,
-                monto = p.Monto,
-                cantidad = p.Cantidad,
-                estado = p.Estado.ToString(),
-                fechaPago = p.FechaPago
-            }));
-        }
-
-        /// <summary>
-        /// Crear nuevo pago
-        /// </summary>
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm] PagoCreateDTO dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (!Enum.TryParse<EstadoDetalleVenta>(request.Estado, out var nuevoEstado))
+                return BadRequest(new { message = "Estado inválido" });
 
             try
             {
-                // Verificar que la torta existe y tiene stock
-                var torta = await _unitOfWork.TortaRepository.GetByIdAsync(dto.TortaId);
-                if (torta == null)
-                    return BadRequest(new { message = "Torta no encontrada" });
+                var detalle = await _unitOfWork.DetallesVenta.GetByIdWithTodoAsync(detalleId);
+                if (detalle == null)
+                    return NotFound(new { message = "Detalle no encontrado" });
 
-                if (torta.Stock < dto.Cantidad)
-                    return BadRequest(new { message = $"Stock insuficiente. Disponible: {torta.Stock}" });
+                var vendedorId = await ObtenerVendedorIdActual();
+                if (vendedorId == null || detalle.VendedorId != vendedorId)
+                    return Forbid();
 
-                // Verificar que el comprador existe
-                var comprador = await _unitOfWork.CompradorRepository.GetByIdAsync(dto.CompradorId);
-                if (comprador == null)
-                    return BadRequest(new { message = "Comprador no encontrado" });
+                // Validar transición
+                var transicionValida = ValidarTransicionEstado(detalle.Estado, nuevoEstado);
+                if (!transicionValida)
+                    return BadRequest(new { message = $"No se puede cambiar de '{detalle.Estado}' a '{nuevoEstado}'" });
 
-                // Calcular montos
-                var subtotal = torta.Precio * dto.Cantidad;
-                var descuento = dto.Descuento ?? 0;
-                var montoTotal = subtotal - descuento;
+                detalle.Estado = nuevoEstado;
+                if (nuevoEstado == EstadoDetalleVenta.Entregado)
+                    detalle.FechaRealPreparacion = DateTime.Now;
+                if (nuevoEstado == EstadoDetalleVenta.EnPreparacion)
+                    detalle.FechaEstimadaPreparacion = DateTime.Now.AddDays(detalle.Torta?.TiempoPreparacion ?? 1);
 
-                var pago = new Pago
-                {
-                    TortaId = dto.TortaId,
-                    CompradorId = dto.CompradorId,
-                    VendedorId = torta.VendedorId,
-                    Cantidad = dto.Cantidad,
-                    PrecioUnitario = torta.Precio,
-                    Subtotal = subtotal,
-                    Descuento = descuento,
-                    Monto = montoTotal,
-                    MetodoPago = dto.MetodoPago,
-                    Estado = EstadoPago.Pendiente,
-                    FechaPago = DateTime.Now,
-                    NumeroTransaccion = dto.NumeroTransaccion,
-                    Observaciones = dto.Observaciones,
-                    DireccionEntrega = dto.DireccionEntrega,
-                    FechaEntrega = dto.FechaEntrega,
-                    NotificacionEnviada = false
-                };
+                _unitOfWork.DetallesVenta.Update(detalle);
 
-                // Guardar comprobante si existe
-                if (dto.ArchivoComprobante != null)
-                {
-                    try
-                    {
-                        var rutaComprobante = await _fileService.SaveFileAsync(
-                            dto.ArchivoComprobante, 
-                            "comprobantes"
-                        );
-                        pago.ArchivoComprobante = rutaComprobante;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error al guardar comprobante");
-                        return BadRequest(new { message = "Error al guardar el comprobante: " + ex.Message });
-                    }
-                }
-
-                await _unitOfWork.PagoRepository.AddAsync(pago);
-                
-                // Actualizar stock de la torta
-                torta.Stock -= dto.Cantidad;
-                torta.VecesVendida += dto.Cantidad;
-                _unitOfWork.TortaRepository.Update(torta);
-
-                // Actualizar total de compras del comprador
-                comprador.TotalCompras += 1;
-                _unitOfWork.CompradorRepository.Update(comprador);
-
+                // Actualizar estado de venta
+                await ActualizarEstadoVenta(detalle.VentaId);
                 await _unitOfWork.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetById), new { id = pago.Id }, new
-                {
-                    id = pago.Id,
-                    monto = pago.Monto,
-                    estado = pago.Estado.ToString(),
-                    fechaPago = pago.FechaPago,
-                    message = "Pago creado exitosamente"
-                });
+                return Ok(new { success = true, message = $"Estado actualizado a '{nuevoEstado}'" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al crear pago");
-                return StatusCode(500, new { message = "Error al procesar el pago" });
+                _logger.LogError(ex, "Error al cambiar estado del detalle {DetalleId}", detalleId);
+                return StatusCode(500, new { message = "Error al actualizar el estado" });
             }
         }
 
-        /// <summary>
-        /// Actualizar estado del pago
-        /// </summary>
-        [HttpPatch("{id}/estado")]
-        [Authorize(Roles = "Admin,Vendedor")]
-        public async Task<IActionResult> ActualizarEstado(int id, [FromBody] ActualizarEstadoDTO dto)
+        // ==================== HELPERS ====================
+
+        private object MapearPagoResumen(Pago p) => new
         {
-            var pago = await _unitOfWork.PagoRepository.GetByIdAsync(id);
+            id = p.Id,
+            ventaId = p.VentaId,
+            numeroOrden = p.Venta?.NumeroOrden,
+            compradorId = p.CompradorId,
+            nombreComprador = p.Comprador?.Persona?.Nombre,
+            monto = p.Monto,
+            comisionPlataforma = p.ComisionPlataforma,
+            montoVendedores = p.MontoVendedores,
+            estado = p.Estado.ToString(),
+            metodoPago = p.MetodoPago?.ToString(),
+            fechaPago = p.FechaPago,
+            tieneComprobante = !string.IsNullOrEmpty(p.ArchivoComprobante),
+            intentosRechazados = p.IntentosRechazados
+        };
 
-            if (pago == null)
-                return NotFound(new { message = "Pago no encontrado" });
-
-            if (!Enum.TryParse<EstadoPago>(dto.NuevoEstado, true, out var nuevoEstado))
-                return BadRequest(new { message = "Estado inválido. Valores: Pendiente, Completado, Cancelado" });
-
-            pago.Estado = nuevoEstado;
-            pago.FechaActualizacion = DateTime.Now;
-
-            _unitOfWork.PagoRepository.Update(pago);
-            await _unitOfWork.SaveChangesAsync();
-
-            return Ok(new 
-            { 
-                message = "Estado actualizado exitosamente", 
-                estado = pago.Estado.ToString() 
-            });
-        }
-
-        /// <summary>
-        /// Actualizar pago completo
-        /// </summary>
-        [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, [FromForm] PagoUpdateDTO dto)
+        private object MapearPagoDetalle(Pago pago) => new
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var pago = await _unitOfWork.PagoRepository.GetByIdAsync(id);
-
-            if (pago == null)
-                return NotFound(new { message = "Pago no encontrado" });
-
-            try
+            id = pago.Id,
+            ventaId = pago.VentaId,
+            numeroOrden = pago.Venta?.NumeroOrden,
+            compradorId = pago.CompradorId,
+            nombreComprador = pago.Comprador?.Persona?.Nombre,
+            emailComprador = pago.Comprador?.Persona?.Email,
+            monto = pago.Monto,
+            comisionPlataforma = pago.ComisionPlataforma,
+            montoVendedores = pago.MontoVendedores,
+            estado = pago.Estado.ToString(),
+            metodoPago = pago.MetodoPago?.ToString(),
+            fechaPago = pago.FechaPago,
+            numeroTransaccion = pago.NumeroTransaccion,
+            archivoComprobante = pago.ArchivoComprobante,
+            urlComprobante = !string.IsNullOrEmpty(pago.ArchivoComprobante)
+                ? _fileService.GetFileUrl(pago.ArchivoComprobante) : null,
+            fechaComprobante = pago.FechaComprobante,
+            fechaVerificacion = pago.FechaVerificacion,
+            motivoRechazo = pago.MotivoRechazo,
+            observacionesAdmin = pago.ObservacionesAdmin,
+            intentosRechazados = pago.IntentosRechazados,
+            detalles = pago.Venta?.Detalles?.Select(d => new
             {
-                // Actualizar campos
-                pago.Estado = dto.Estado;
-                pago.MetodoPago = dto.MetodoPago;
-                pago.NumeroTransaccion = dto.NumeroTransaccion;
-                pago.Observaciones = dto.Observaciones;
-                pago.DireccionEntrega = dto.DireccionEntrega;
-                pago.FechaEntrega = dto.FechaEntrega;
-                pago.FechaActualizacion = DateTime.Now;
+                tortaId = d.TortaId,
+                nombreTorta = d.Torta?.Nombre,
+                cantidad = d.Cantidad,
+                precioUnitario = d.PrecioUnitario,
+                subtotal = d.Subtotal,
+                vendedorId = d.VendedorId,
+                nombreVendedor = d.Vendedor?.NombreComercial
+            }).ToList()
+        };
 
-                // Actualizar comprobante si se proporciona uno nuevo
-                if (dto.ArchivoComprobante != null)
-                {
-                    // Eliminar comprobante anterior si existe
-                    if (!string.IsNullOrEmpty(pago.ArchivoComprobante))
-                    {
-                        await _fileService.DeleteFileAsync(pago.ArchivoComprobante);
-                    }
-
-                    var rutaComprobante = await _fileService.SaveFileAsync(
-                        dto.ArchivoComprobante, 
-                        "comprobantes"
-                    );
-                    pago.ArchivoComprobante = rutaComprobante;
-                }
-
-                _unitOfWork.PagoRepository.Update(pago);
-                await _unitOfWork.SaveChangesAsync();
-
-                return Ok(new 
-                { 
-                    message = "Pago actualizado exitosamente",
-                    pago = new
-                    {
-                        id = pago.Id,
-                        estado = pago.Estado.ToString(),
-                        monto = pago.Monto,
-                        fechaActualizacion = pago.FechaActualizacion
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar pago");
-                return StatusCode(500, new { message = "Error al actualizar el pago" });
-            }
-        }
-
-        /// <summary>
-        /// Subir o actualizar comprobante de pago
-        /// </summary>
-        [HttpPost("{id}/comprobante")]
-        public async Task<IActionResult> SubirComprobante(int id, [FromForm] IFormFile comprobante)
+        private bool ValidarTransicionEstado(EstadoDetalleVenta actual, EstadoDetalleVenta nuevo)
         {
-            if (comprobante == null)
-                return BadRequest(new { message = "Debe proporcionar un archivo" });
-
-            var pago = await _unitOfWork.PagoRepository.GetByIdAsync(id);
-
-            if (pago == null)
-                return NotFound(new { message = "Pago no encontrado" });
-
-            try
+            return (actual, nuevo) switch
             {
-                // Eliminar comprobante anterior si existe
-                if (!string.IsNullOrEmpty(pago.ArchivoComprobante))
-                {
-                    await _fileService.DeleteFileAsync(pago.ArchivoComprobante);
-                }
-
-                // Guardar nuevo comprobante
-                var rutaComprobante = await _fileService.SaveFileAsync(comprobante, "comprobantes");
-                pago.ArchivoComprobante = rutaComprobante;
-                pago.FechaActualizacion = DateTime.Now;
-
-                _unitOfWork.PagoRepository.Update(pago);
-                await _unitOfWork.SaveChangesAsync();
-
-                return Ok(new 
-                { 
-                    message = "Comprobante guardado exitosamente",
-                    urlComprobante = _fileService.GetFileUrl(rutaComprobante)
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al guardar comprobante");
-                return BadRequest(new { message = "Error al guardar el comprobante: " + ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Confirmar pago (cambiar a completado)
-        /// </summary>
-        [HttpPost("{id}/confirmar")]
-        [Authorize(Roles = "Admin,Vendedor")]
-        public async Task<IActionResult> ConfirmarPago(int id, [FromBody] ConfirmarPagoDTO? dto = null)
-        {
-            var pago = await _unitOfWork.PagoRepository.GetByIdAsync(id);
-
-            if (pago == null)
-                return NotFound(new { message = "Pago no encontrado" });
-
-            if (pago.Estado != EstadoPago.Pendiente)
-                return BadRequest(new { message = "Solo se pueden confirmar pagos pendientes" });
-
-            try
-            {
-                pago.Estado = EstadoPago.Completado;
-                pago.FechaActualizacion = DateTime.Now;
-                pago.NotificacionEnviada = true;
-
-                if (dto != null && !string.IsNullOrEmpty(dto.NumeroTransaccion))
-                {
-                    pago.NumeroTransaccion = dto.NumeroTransaccion;
-                }
-
-                _unitOfWork.PagoRepository.Update(pago);
-
-                // Actualizar TotalVentas del vendedor
-                var vendedor = await _unitOfWork.VendedorRepository.GetByIdAsync(pago.VendedorId);
-                if (vendedor != null)
-                {
-                    vendedor.TotalVentas += 1;
-                    _unitOfWork.VendedorRepository.Update(vendedor);
-                }
-
-                await _unitOfWork.SaveChangesAsync();
-
-                return Ok(new { message = "Pago confirmado exitosamente" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al confirmar pago");
-                return StatusCode(500, new { message = "Error al confirmar el pago" });
-            }
-        }
-
-        /// <summary>
-        /// Cancelar pago
-        /// </summary>
-        [HttpPost("{id}/cancelar")]
-        [Authorize(Roles = "Admin,Vendedor")]
-        public async Task<IActionResult> CancelarPago(int id, [FromBody] CancelarPagoDTO dto)
-        {
-            var pago = await _unitOfWork.PagoRepository.GetByIdAsync(id);
-
-            if (pago == null)
-                return NotFound(new { message = "Pago no encontrado" });
-
-            if (pago.Estado == EstadoPago.Completado)
-                return BadRequest(new { message = "No se puede cancelar un pago completado" });
-
-            try
-            {
-                var estadoAnterior = pago.Estado;
-                
-                pago.Estado = EstadoPago.Cancelado;
-                pago.FechaActualizacion = DateTime.Now;
-                pago.Observaciones = (pago.Observaciones ?? "") + $"\nCancelado: {dto.MotivoCancelacion}";
-
-                _unitOfWork.PagoRepository.Update(pago);
-
-                // Restaurar stock si estaba pendiente
-                if (estadoAnterior == EstadoPago.Pendiente)
-                {
-                    var torta = await _unitOfWork.TortaRepository.GetByIdAsync(pago.TortaId);
-                    if (torta != null)
-                    {
-                        torta.Stock += pago.Cantidad;
-                        torta.VecesVendida = Math.Max(0, torta.VecesVendida - pago.Cantidad);
-                        _unitOfWork.TortaRepository.Update(torta);
-                    }
-
-                    // Decrementar TotalCompras del comprador
-                    var comprador = await _unitOfWork.CompradorRepository.GetByIdAsync(pago.CompradorId);
-                    if (comprador != null && comprador.TotalCompras > 0)
-                    {
-                        comprador.TotalCompras -= 1;
-                        _unitOfWork.CompradorRepository.Update(comprador);
-                    }
-                }
-
-                await _unitOfWork.SaveChangesAsync();
-
-                return Ok(new { message = "Pago cancelado exitosamente" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al cancelar pago");
-                return StatusCode(500, new { message = "Error al cancelar el pago" });
-            }
-        }
-
-        /// <summary>
-        /// Eliminar pago (solo Admin)
-        /// </summary>
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var pago = await _unitOfWork.PagoRepository.GetByIdAsync(id);
-
-            if (pago == null)
-                return NotFound(new { message = "Pago no encontrado" });
-
-            try
-            {
-                // Eliminar comprobante si existe
-                if (!string.IsNullOrEmpty(pago.ArchivoComprobante))
-                {
-                    await _fileService.DeleteFileAsync(pago.ArchivoComprobante);
-                }
-
-                _unitOfWork.PagoRepository.Delete(pago);
-                await _unitOfWork.SaveChangesAsync();
-
-                return Ok(new { message = "Pago eliminado exitosamente" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al eliminar pago");
-                return StatusCode(500, new { message = "Error al eliminar el pago" });
-            }
-        }
-
-        /// <summary>
-        /// Generar reporte de pagos por rango de fechas
-        /// </summary>
-        [HttpGet("reporte")]
-        [Authorize]
-        public async Task<IActionResult> GenerarReporte(
-            [FromQuery] DateTime? desde, 
-            [FromQuery] DateTime? hasta,
-            [FromQuery] int? vendedorId = null)
-        {
-            var fechaDesde = desde ?? DateTime.Now.AddMonths(-1);
-            var fechaHasta = hasta ?? DateTime.Now;
-
-            var pagos = await _unitOfWork.PagoRepository.GetAllAsync();
-            var pagosFiltrados = pagos.Where(p => 
-                p.FechaPago >= fechaDesde && 
-                p.FechaPago <= fechaHasta).ToList();
-
-            // Filtrar por vendedor si se especifica
-            if (vendedorId.HasValue)
-            {
-                pagosFiltrados = pagosFiltrados.Where(p => p.VendedorId == vendedorId.Value).ToList();
-            }
-
-            var reporte = new
-            {
-                periodo = new { desde = fechaDesde, hasta = fechaHasta },
-                totalPagos = pagosFiltrados.Count,
-                montoTotal = pagosFiltrados.Sum(p => p.Monto),
-                
-                porEstado = new
-                {
-                    pendientes = pagosFiltrados.Count(p => p.Estado == EstadoPago.Pendiente),
-                    completados = pagosFiltrados.Count(p => p.Estado == EstadoPago.Completado),
-                    cancelados = pagosFiltrados.Count(p => p.Estado == EstadoPago.Cancelado)
-                },
-                
-                montosPorEstado = new
-                {
-                    pendiente = pagosFiltrados.Where(p => p.Estado == EstadoPago.Pendiente).Sum(p => p.Monto),
-                    completado = pagosFiltrados.Where(p => p.Estado == EstadoPago.Completado).Sum(p => p.Monto),
-                    cancelado = pagosFiltrados.Where(p => p.Estado == EstadoPago.Cancelado).Sum(p => p.Monto)
-                },
-                
-                porMetodoPago = pagosFiltrados
-                    .Where(p => p.MetodoPago.HasValue)
-                    .GroupBy(p => p.MetodoPago)
-                    .Select(g => new
-                    {
-                        metodo = g.Key.ToString(),
-                        cantidad = g.Count(),
-                        monto = g.Sum(p => p.Monto)
-                    })
-                    .OrderByDescending(x => x.monto)
-                    .ToList(),
-                
-                promedios = new
-                {
-                    montoPromedio = pagosFiltrados.Any() ? pagosFiltrados.Average(p => p.Monto) : 0,
-                    cantidadPromedio = pagosFiltrados.Any() ? pagosFiltrados.Average(p => p.Cantidad) : 0
-                }
+                (EstadoDetalleVenta.Pendiente, EstadoDetalleVenta.Confirmado) => true,
+                (EstadoDetalleVenta.Pendiente, EstadoDetalleVenta.Cancelado) => true,
+                (EstadoDetalleVenta.Confirmado, EstadoDetalleVenta.EnPreparacion) => true,
+                (EstadoDetalleVenta.Confirmado, EstadoDetalleVenta.Cancelado) => true,
+                (EstadoDetalleVenta.EnPreparacion, EstadoDetalleVenta.Listo) => true,
+                (EstadoDetalleVenta.Listo, EstadoDetalleVenta.Entregado) => true,
+                _ => false
             };
-
-            return Ok(reporte);
         }
 
-        /// <summary>
-        /// Obtener estadísticas de pagos
-        /// </summary>
-        [HttpGet("estadisticas")]
-        [Authorize]
-        public async Task<IActionResult> GetEstadisticas([FromQuery] int? vendedorId = null)
+        private async Task ActualizarEstadoVenta(int ventaId)
         {
-            var pagos = await _unitOfWork.PagoRepository.GetAllAsync();
+            var venta = await _unitOfWork.Ventas.GetByIdWithTodoAsync(ventaId);
+            if (venta == null) return;
 
-            if (vendedorId.HasValue)
+            if (venta.Detalles.All(d => d.Estado == EstadoDetalleVenta.Entregado))
             {
-                pagos = pagos.Where(p => p.VendedorId == vendedorId.Value).ToList();
+                venta.Estado = EstadoVenta.Entregada;
+                venta.FechaEntregaReal = DateTime.Now;
             }
+            else if (venta.Detalles.Any(d => d.Estado == EstadoDetalleVenta.Listo))
+                venta.Estado = EstadoVenta.ListaParaRetiro;
+            else if (venta.Detalles.Any(d => d.Estado == EstadoDetalleVenta.EnPreparacion))
+                venta.Estado = EstadoVenta.EnPreparacion;
 
-            var estadisticas = new
-            {
-                
-                totales = new
-                {
-                    totalPagos = pagos.Count(),
-                    montoTotal = pagos.Sum(p => p.Monto),
-                    cantidadTotal = pagos.Sum(p => p.Cantidad)
-                },
-                
-                hoy = new
-                {
-                    pagos = pagos.Count(p => p.FechaPago.Date == DateTime.Today),
-                    monto = pagos.Where(p => p.FechaPago.Date == DateTime.Today).Sum(p => p.Monto)
-                },
-                
-                esteMes = new
-                {
-                    pagos = pagos.Count(p => p.FechaPago.Month == DateTime.Now.Month && 
-                                            p.FechaPago.Year == DateTime.Now.Year),
-                    monto = pagos.Where(p => p.FechaPago.Month == DateTime.Now.Month && 
-                                            p.FechaPago.Year == DateTime.Now.Year).Sum(p => p.Monto)
-                },
-                
-                ultimos7Dias = pagos
-                    .Where(p => p.FechaPago >= DateTime.Now.AddDays(-7))
-                    .GroupBy(p => p.FechaPago.Date)
-                    .Select(g => new
-                    {
-                        fecha = g.Key,
-                        cantidad = g.Count(),
-                        monto = g.Sum(p => p.Monto)
-                    })
-                    .OrderBy(x => x.fecha)
-                    .ToList()
-            };
+            venta.FechaActualizacion = DateTime.Now;
+            _unitOfWork.Ventas.Update(venta);
+        }
 
-            return Ok(estadisticas);
+        private async Task<int?> ObtenerCompradorIdActual()
+        {
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail)) return null;
+            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
+            return persona?.Comprador?.Id;
+        }
+
+        private async Task<int?> ObtenerVendedorIdActual()
+        {
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail)) return null;
+            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
+            return persona?.Vendedor?.Id;
+        }
+
+        private async Task<int?> ObtenerPersonaIdActual()
+        {
+            var userEmail = User.Identity?.Name;
+            if (string.IsNullOrEmpty(userEmail)) return null;
+            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
+            return persona?.Id;
         }
     }
 
-    // DTOs auxiliares
-    public class ActualizarEstadoDTO
+    // ==================== DTOs ====================
+
+    public class SubirComprobanteDTO
     {
-        public string NuevoEstado { get; set; }
+        public IFormFile? Archivo { get; set; }
+        public string? ArchivoBase64 { get; set; }
+        public string? NombreArchivo { get; set; }
+        
+        [Required]
+        public MetodoPago MetodoPago { get; set; }
+        
+        public string? NumeroTransaccion { get; set; }
+    }
+
+    public class VerificarPagoDTO
+    {
+        [Required]
+        public bool Aprobado { get; set; }
+        
+        public string? Observaciones { get; set; }
+        public string? MotivoRechazo { get; set; }
+    }
+
+    public class ProcesarReembolsoDTO
+    {
+        [Required]
+        public IFormFile Archivo { get; set; } = null!;
+        
+        [Required]
+        public string NumeroTransaccion { get; set; } = string.Empty;
+    }
+
+    public class CambiarEstadoDetalleDTO
+    {
+        [Required]
+        public string Estado { get; set; } = string.Empty;
     }
 }

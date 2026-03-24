@@ -1,98 +1,84 @@
 using CasaDeLasTortas.Data;
 using CasaDeLasTortas.Interfaces;
-using CasaDeLasTortas.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using System.Linq;
 
 namespace CasaDeLasTortas.Repositories
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private readonly ApplicationDbContext _context;
-        private IDbContextTransaction? _transaction;
+        private readonly ApplicationDbContext _dbContext;
+        private IDbContextTransaction? _currentTransaction;
+        private bool _disposed;
 
-        // Repositorios
-        private IPersonaRepository? _personaRepository;
-        private IVendedorRepository? _vendedorRepository;
-        private ICompradorRepository? _compradorRepository;
-        private ITortaRepository? _tortaRepository;
-        private IImagenTortaRepository? _imagenTortaRepository;
-        private IPagoRepository? _pagoRepository;
+        // Campos de repositorios
+        private IPersonaRepository? _personaRepo;
+        private IVendedorRepository? _vendedorRepo;
+        private ICompradorRepository? _compradorRepo;
+        private ITortaRepository? _tortaRepo;
+        private IImagenTortaRepository? _imagenTortaRepo;
+        private IPagoRepository? _pagoRepo;
+        private IVentaRepository? _ventaRepo;
+        private IDetalleVentaRepository? _detalleVentaRepo;
+        private ILiberacionRepository? _liberacionRepo;
+        private IDisputaRepository? _disputaRepo;
+        private IConfiguracionRepository? _configuracionRepo;
 
         public UnitOfWork(ApplicationDbContext context)
         {
-            _context = context;
+            _dbContext = context;
         }
 
-        // ==================== PROPIEDADES DE REPOSITORIOS CORREGIDAS ====================
+        // ══════════════════════════════════════════════════════════════
+        // REPOSITORIOS
+        // ══════════════════════════════════════════════════════════════
 
-        // ✅ LOS NOMBRES DEBEN COINCIDIR EXACTAMENTE CON LA INTERFAZ
         public IPersonaRepository PersonaRepository
-        {
-            get
-            {
-                _personaRepository ??= new PersonaRepository(_context);
-                return _personaRepository;
-            }
-        }
+            => _personaRepo ??= new PersonaRepository(_dbContext);
 
         public IVendedorRepository VendedorRepository
-        {
-            get
-            {
-                _vendedorRepository ??= new VendedorRepository(_context);
-                return _vendedorRepository;
-            }
-        }
+            => _vendedorRepo ??= new VendedorRepository(_dbContext);
 
         public ICompradorRepository CompradorRepository
-        {
-            get
-            {
-                _compradorRepository ??= new CompradorRepository(_context);
-                return _compradorRepository;
-            }
-        }
+            => _compradorRepo ??= new CompradorRepository(_dbContext);
 
         public ITortaRepository TortaRepository
-        {
-            get
-            {
-                _tortaRepository ??= new TortaRepository(_context);
-                return _tortaRepository;
-            }
-        }
+            => _tortaRepo ??= new TortaRepository(_dbContext);
 
         public IImagenTortaRepository ImagenesTorta
-        {
-            get
-            {
-                _imagenTortaRepository ??= new ImagenTortaRepository(_context);
-                return _imagenTortaRepository;
-            }
-        }
+            => _imagenTortaRepo ??= new ImagenTortaRepository(_dbContext);
 
         public IPagoRepository PagoRepository
-        {
-            get
-            {
-                _pagoRepository ??= new PagoRepository(_context);
-                return _pagoRepository;
-            }
-        }
+            => _pagoRepo ??= new PagoRepository(_dbContext);
 
-        // ==================== MÉTODOS DE TRANSACCIÓN ====================
+        public IVentaRepository Ventas
+            => _ventaRepo ??= new VentaRepository(_dbContext);
+
+        public IDetalleVentaRepository DetallesVenta
+            => _detalleVentaRepo ??= new DetalleVentaRepository(_dbContext);
+
+        public ILiberacionRepository Liberaciones
+            => _liberacionRepo ??= new LiberacionRepository(_dbContext);
+
+        public IDisputaRepository Disputas
+            => _disputaRepo ??= new DisputaRepository(_dbContext);
+
+        public IConfiguracionRepository Configuracion
+            => _configuracionRepo ??= new ConfiguracionRepository(_dbContext);
+
+        // ══════════════════════════════════════════════════════════════
+        // PERSISTENCIA
+        // ══════════════════════════════════════════════════════════════
 
         public async Task<int> SaveChangesAsync()
         {
             try
             {
-                return await _context.SaveChangesAsync();
+                return await _dbContext.SaveChangesAsync();
             }
             catch (DbUpdateException ex)
             {
-                throw new Exception("Error al guardar los cambios en la base de datos", ex);
+                throw new Exception("Error al guardar cambios en la base de datos", ex);
             }
         }
 
@@ -101,27 +87,39 @@ namespace CasaDeLasTortas.Repositories
             return await SaveChangesAsync();
         }
 
+        public async Task<bool> SaveChangesReturnBoolAsync()
+        {
+            try
+            {
+                return await SaveChangesAsync() > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // TRANSACCIONES
+        // ══════════════════════════════════════════════════════════════
+
         public async Task BeginTransactionAsync()
         {
-            if (_transaction != null)
-            {
+            if (_currentTransaction != null)
                 throw new InvalidOperationException("Ya existe una transacción activa");
-            }
 
-            _transaction = await _context.Database.BeginTransactionAsync();
+            _currentTransaction = await _dbContext.Database.BeginTransactionAsync();
         }
 
         public async Task CommitTransactionAsync()
         {
-            if (_transaction == null)
-            {
+            if (_currentTransaction == null)
                 throw new InvalidOperationException("No hay transacción activa para confirmar");
-            }
 
             try
             {
-                await _context.SaveChangesAsync();
-                await _transaction.CommitAsync();
+                await _dbContext.SaveChangesAsync();
+                await _currentTransaction.CommitAsync();
             }
             catch
             {
@@ -130,114 +128,88 @@ namespace CasaDeLasTortas.Repositories
             }
             finally
             {
-                if (_transaction != null)
-                {
-                    await _transaction.DisposeAsync();
-                    _transaction = null;
-                }
+                await DisposeTransactionAsync();
             }
         }
 
         public async Task RollbackTransactionAsync()
         {
-            if (_transaction == null)
-            {
+            if (_currentTransaction == null)
                 throw new InvalidOperationException("No hay transacción activa para revertir");
-            }
 
             try
             {
-                await _transaction.RollbackAsync();
+                await _currentTransaction.RollbackAsync();
             }
             finally
             {
-                if (_transaction != null)
-                {
-                    await _transaction.DisposeAsync();
-                    _transaction = null;
-                }
+                await DisposeTransactionAsync();
             }
         }
 
-        // ==================== MÉTODOS ADICIONALES IMPLEMENTADOS ====================
+        private async Task DisposeTransactionAsync()
+        {
+            if (_currentTransaction != null)
+            {
+                await _currentTransaction.DisposeAsync();
+                _currentTransaction = null;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // UTILIDADES
+        // ══════════════════════════════════════════════════════════════
 
         public void DetachAllEntities()
         {
-            var changedEntries = _context.ChangeTracker.Entries()
+            var entries = _dbContext.ChangeTracker.Entries()
                 .Where(e => e.State != EntityState.Detached)
                 .ToList();
 
-            foreach (var entry in changedEntries)
+            foreach (var entry in entries)
             {
                 entry.State = EntityState.Detached;
             }
         }
 
-        public async Task<bool> SaveChangesReturnBoolAsync()
+        public Task<bool> AnyChangesAsync()
         {
-            try
-            {
-                var result = await SaveChangesAsync();
-                return result > 0;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        // ✅ IMPLEMENTACIÓN DE LOS MÉTODOS QUE FALTABAN
-
-        public async Task<bool> AnyChangesAsync()
-        {
-            return _context.ChangeTracker.HasChanges();
+            return Task.FromResult(_dbContext.ChangeTracker.HasChanges());
         }
 
         public void Update<TEntity>(TEntity entity) where TEntity : class
         {
-            _context.Update(entity);
+            _dbContext.Update(entity);
         }
 
         public void Remove<TEntity>(TEntity entity) where TEntity : class
         {
-            _context.Remove(entity);
+            _dbContext.Remove(entity);
         }
 
         public async Task<TEntity> FindAsync<TEntity>(params object[] keyValues) where TEntity : class
         {
-            return await _context.FindAsync<TEntity>(keyValues);
+            var entity = await _dbContext.FindAsync<TEntity>(keyValues);
+            return entity ?? throw new InvalidOperationException($"Entidad {typeof(TEntity).Name} no encontrada");
         }
 
         public IQueryable<TEntity> Query<TEntity>() where TEntity : class
         {
-            return _context.Set<TEntity>();
+            return _dbContext.Set<TEntity>();
         }
 
-        // ==================== DISPOSE ====================
-
-        private bool _disposed = false;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    if (_transaction != null)
-                    {
-                        _transaction.Dispose();
-                        _transaction = null;
-                    }
-
-                    _context.Dispose();
-                }
-            }
-            _disposed = true;
-        }
+        // ══════════════════════════════════════════════════════════════
+        // DISPOSE
+        // ══════════════════════════════════════════════════════════════
 
         public void Dispose()
         {
-            Dispose(true);
+            if (_disposed) return;
+
+            _currentTransaction?.Dispose();
+            _dbContext.Dispose();
+            
+            _disposed = true;
             GC.SuppressFinalize(this);
         }
     }

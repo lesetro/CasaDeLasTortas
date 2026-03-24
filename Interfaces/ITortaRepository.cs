@@ -30,12 +30,15 @@ namespace CasaDeLasTortas.Interfaces
         Task<IEnumerable<Torta>> GetByPrecioRangeAsync(decimal precioMin, decimal precioMax);
         Task<IEnumerable<Torta>> GetDisponiblesAsync();
         Task<IEnumerable<Torta>> SearchAsync(string termino);
+        Task<Torta?> GetByIdWithVentasAsync(int id);
+        
+
         
         // Estadísticas
         Task<int> CountAsync();
         Task<int> CountDisponiblesAsync();
         Task<decimal> GetPrecioPromedioAsync();
-        Task<Torta> GetByIdWithPagosAsync(int id);
+        Task<Torta?> GetByIdWithPagosAsync(int id);
         Task<IEnumerable<Torta>> GetByPrecioRangoAsync(decimal min, decimal max);
 
         Task<IEnumerable<TortaListDTO>> GetAllWithVendedorAsync(int pagina = 1, int registrosPorPagina = 10);

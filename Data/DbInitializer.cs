@@ -1,455 +1,539 @@
+using CasaDeLasTortas.Data;
 using CasaDeLasTortas.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace CasaDeLasTortas.Data
 {
     /// <summary>
-    /// Inicializador de base de datos
-    /// Maneja datos semilla según el entorno (Desarrollo/Producción)
+    /// Inicializador de base de datos con datos de prueba
+    /// Incluye configuración de plataforma, vendedores con datos de pago, 
+    /// compradores, tortas, ventas y pagos de ejemplo
     /// </summary>
     public static class DbInitializer
     {
-        /// <summary>
-        /// Inicializa la base de datos según el entorno
-        /// </summary>
-        /// <param name="context">Contexto de base de datos</param>
-        /// <param name="isDevelopment">True para desarrollo, False para producción</param>
-        public static async Task InitializeAsync(ApplicationDbContext context, bool isDevelopment = false)
+        public static async Task Initialize(ApplicationDbContext context)
         {
-            // 1. Aplicar migraciones (siempre necesario)
-            await context.Database.MigrateAsync();
+            // Asegura que la base de datos existe
+            await context.Database.EnsureCreatedAsync();
 
-            // 2. En producción, solo datos esenciales
-            if (!isDevelopment)
-            {
-                await SeedProductionDataAsync(context);
-                Console.WriteLine("✅ Base de datos de PRODUCCIÓN inicializada (solo datos esenciales)");
-                return;
-            }
-
-            // 3. En desarrollo, datos completos de prueba
-            await SeedDevelopmentDataAsync(context);
-            Console.WriteLine("✅ Base de datos de DESARROLLO inicializada con datos semilla completos");
-        }
-
-        /// <summary>
-        /// Datos mínimos esenciales para producción
-        /// </summary>
-        private static async Task SeedProductionDataAsync(ApplicationDbContext context)
-        {
-            // Solo crear usuario administrador si no existe
-            if (!await context.Personas.AnyAsync(p => p.Rol == "Admin"))
-            {
-                var admin = new Persona
-                {
-                    Nombre = "Administrador Sistema",
-                    Apellido = "Casa de las Tortas",
-                    Email = "admin@casadelastortas.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("CambiarPassword123!"),
-                    Rol = "Admin",
-                    FechaRegistro = DateTime.Now,
-                    Activo = true
-                };
-
-                await context.Personas.AddAsync(admin);
-                await context.SaveChangesAsync();
-
-                Console.WriteLine("⚠️  USUARIO ADMINISTRADOR CREADO PARA PRODUCCIÓN");
-                Console.WriteLine("⚠️  EMAIL: admin@casadelastortas.com");
-                Console.WriteLine("⚠️  CONTRASEÑA TEMPORAL: CambiarPassword123!");
-                Console.WriteLine("⚠️  CAMBIA LA CONTRASEÑA INMEDIATAMENTE!");
-            }
-        }
-
-        /// <summary>
-        /// Datos completos de prueba para desarrollo
-        /// </summary>
-        private static async Task SeedDevelopmentDataAsync(ApplicationDbContext context)
-        {
             // Si ya hay datos, no hacer nada
             if (await context.Personas.AnyAsync())
             {
-                Console.WriteLine("ℹ️  Base de datos ya contiene datos, omitiendo inicialización");
                 return;
             }
 
-            // ==================== PERSONAS ====================
+            // ==================== 1. CONFIGURACIÓN DE LA PLATAFORMA ====================
+            var configuracion = ConfiguracionPlataforma.CrearDefault();
+            configuracion.AliasCBU = "casadelastortas.pagos";
+            configuracion.CBU = "0110012345678901234567";
+            configuracion.Banco = "Banco Nación";
+            configuracion.TitularCuenta = "Casa de las Tortas S.A.";
+            configuracion.CUIT = "30-71234567-9";
+            configuracion.ComisionPorcentaje = 10.00m;
+            configuracion.InstruccionesPago = @"Para completar tu compra:
+
+1. Realizá una transferencia o pago por MercadoPago al alias o CBU indicado
+2. Ingresá el monto exacto de tu pedido
+3. Subí el comprobante de pago (captura de pantalla o PDF)
+4. Esperá la confirmación del administrador (máximo 24hs hábiles)
+5. ¡Listo! Los vendedores comenzarán a preparar tu pedido
+
+IMPORTANTE: El comprobante debe mostrar claramente:
+- Monto transferido
+- Fecha de la operación
+- CBU o alias de destino";
+            
+            context.ConfiguracionPlataforma.Add(configuracion);
+            await context.SaveChangesAsync();
+
+            // ==================== 2. PERSONAS ====================
             var personas = new List<Persona>
             {
-                // Administrador
+                // Admin
                 new Persona
                 {
-                    Nombre = "Admin",
-                    Apellido = "Sistema",
-                    Email = "admin@casadelastortas.com",
+                    Nombre = "Admin Sistema",
+                    Email = "admin@casadetortas.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-                    Telefono = "2664123456",
                     Rol = "Admin",
-                    FechaRegistro = DateTime.Now,
-                    Activo = true
-                },
-                // Vendedores
-                new Persona
-                {
-                    Nombre = "María",
-                    Apellido = "González",
-                    Email = "maria.gonzalez@torteria.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Vendedor123!"),
-                    Telefono = "2664234567",
-                    Rol = "Vendedor",
+                    Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-6),
-                    Activo = true
+                    Avatar = "https://ui-avatars.com/api/?name=Admin+Sistema&background=dc3545&color=fff"
                 },
+                // Vendedor 1 - Con datos de pago completos
                 new Persona
                 {
-                    Nombre = "Carlos",
-                    Apellido = "Rodríguez",
-                    Email = "carlos.rodriguez@reposteria.com",
+                    Nombre = "Carlos González",
+                    Email = "carlos@pasteleria.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Vendedor123!"),
-                    Telefono = "2664345678",
                     Rol = "Vendedor",
+                    Telefono = "3541234567",
+                    Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-4),
-                    Activo = true
+                    Avatar = "https://ui-avatars.com/api/?name=Carlos+Gonzalez&background=28a745&color=fff"
                 },
+                // Vendedor 2 - Con datos de pago completos
                 new Persona
                 {
-                    Nombre = "Ana",
-                    Apellido = "Martínez",
-                    Email = "ana.martinez@pasteleria.com",
+                    Nombre = "María López",
+                    Email = "maria@reposteria.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Vendedor123!"),
-                    Telefono = "2664456789",
                     Rol = "Vendedor",
+                    Telefono = "3549876543",
+                    Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-3),
-                    Activo = true
+                    Avatar = "https://ui-avatars.com/api/?name=Maria+Lopez&background=17a2b8&color=fff"
                 },
-                // Compradores
+                // Comprador 1
                 new Persona
                 {
-                    Nombre = "Juan",
-                    Apellido = "Pérez",
-                    Email = "juan.perez@email.com",
+                    Nombre = "Juan Pérez",
+                    Email = "juan@cliente.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Comprador123!"),
-                    Telefono = "2664567890",
                     Rol = "Comprador",
+                    Telefono = "3541112233",
+                    Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-2),
-                    Activo = true
+                    Avatar = "https://ui-avatars.com/api/?name=Juan+Perez&background=ffc107&color=000"
                 },
+                // Comprador 2
                 new Persona
                 {
-                    Nombre = "Laura",
-                    Apellido = "Fernández",
-                    Email = "laura.fernandez@email.com",
+                    Nombre = "Ana Martínez",
+                    Email = "ana@cliente.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Comprador123!"),
-                    Telefono = "2664678901",
                     Rol = "Comprador",
+                    Telefono = "3544445566",
+                    Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-1),
-                    Activo = true
-                },
-                new Persona
-                {
-                    Nombre = "Diego",
-                    Apellido = "López",
-                    Email = "diego.lopez@email.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Comprador123!"),
-                    Telefono = "2664789012",
-                    Rol = "Comprador",
-                    FechaRegistro = DateTime.Now.AddDays(-15),
-                    Activo = true
+                    Avatar = "https://ui-avatars.com/api/?name=Ana+Martinez&background=6f42c1&color=fff"
                 }
             };
 
-            await context.Personas.AddRangeAsync(personas);
+            context.Personas.AddRange(personas);
             await context.SaveChangesAsync();
 
-            // ==================== VENDEDORES ====================
+            // ==================== 3. VENDEDORES (con datos de pago) ====================
             var vendedores = new List<Vendedor>
             {
                 new Vendedor
                 {
-                    PersonaId = personas[1].Id, // María González
-                    NombreComercial = "Tortería María",
-                    Especialidad = "Tortas de Chocolate y Crema",
-                    Descripcion = "Especialistas en tortas artesanales con más de 10 años de experiencia. Usamos ingredientes premium y recetas tradicionales.",
+                    PersonaId = personas[1].Id, // Carlos
+                    NombreComercial = "Pastelería Don Carlos",
+                    Especialidad = "Tortas de Chocolate y Cheesecakes",
+                    Descripcion = "Pastelería artesanal con más de 10 años de experiencia. Especialistas en tortas de chocolate belga y cheesecakes cremosos.",
+                    Horario = "Lunes a Viernes 9:00 - 18:00, Sábados 9:00 - 14:00",
                     Calificacion = 4.8m,
                     TotalVentas = 150,
-                    Horario = "Lunes a Sábado: 9:00 - 20:00",
-                    FechaCreacion = DateTime.Now.AddMonths(-6),
+                    Verificado = true,
                     Activo = true,
-                    Verificado = true
+                    // Datos de pago completos
+                    AliasCBU = "pasteleria.doncarlos.mp",
+                    CBU = "0140012301234567890123",
+                    Banco = "Banco Galicia",
+                    TitularCuenta = "Carlos Alberto González",
+                    CUIT = "20-25678901-3",
+                    DatosPagoCompletos = true,
+                    FechaDatosPago = DateTime.Now.AddMonths(-4),
+                    TotalCobrado = 1500000m,
+                    TotalComisiones = 150000m,
+                    PendienteCobro = 0
                 },
                 new Vendedor
                 {
-                    PersonaId = personas[2].Id, // Carlos Rodríguez
-                    NombreComercial = "Repostería Don Carlos",
-                    Especialidad = "Tortas de Frutas y Cheesecakes",
-                    Descripcion = "Creaciones únicas con frutas frescas de estación. Cada torta es una obra de arte.",
-                    Calificacion = 4.5m,
-                    TotalVentas = 95,
-                    Horario = "Martes a Domingo: 10:00 - 19:00",
-                    FechaCreacion = DateTime.Now.AddMonths(-4),
-                    Activo = true,
-                    Verificado = true
-                },
-                new Vendedor
-                {
-                    PersonaId = personas[3].Id, // Ana Martínez
-                    NombreComercial = "Pastelería Anita",
-                    Especialidad = "Tortas Temáticas Infantiles",
-                    Descripcion = "Diseños personalizados para cumpleaños infantiles. Trabajamos con fondant y decoraciones 3D.",
+                    PersonaId = personas[2].Id, // María
+                    NombreComercial = "Dulces Sueños Repostería",
+                    Especialidad = "Tortas Frutales y Decoradas",
+                    Descripcion = "Repostería creativa especializada en tortas decoradas para eventos especiales. Trabajamos con frutas de estación.",
+                    Horario = "Lunes a Sábado 10:00 - 20:00",
                     Calificacion = 4.9m,
-                    TotalVentas = 120,
-                    Horario = "Lunes a Viernes: 8:00 - 18:00",
-                    FechaCreacion = DateTime.Now.AddMonths(-3),
+                    TotalVentas = 89,
+                    Verificado = true,
                     Activo = true,
-                    Verificado = true
+                    // Datos de pago completos
+                    AliasCBU = "dulces.suenos.maria",
+                    CBU = "0170012345678901234567",
+                    Banco = "Banco Santander",
+                    TitularCuenta = "María Elena López",
+                    CUIT = "27-30456789-1",
+                    DatosPagoCompletos = true,
+                    FechaDatosPago = DateTime.Now.AddMonths(-3),
+                    TotalCobrado = 890000m,
+                    TotalComisiones = 89000m,
+                    PendienteCobro = 0
                 }
             };
 
-            await context.Vendedores.AddRangeAsync(vendedores);
+            context.Vendedores.AddRange(vendedores);
             await context.SaveChangesAsync();
 
-            // ==================== COMPRADORES ====================
+            // ==================== 4. COMPRADORES ====================
             var compradores = new List<Comprador>
             {
                 new Comprador
                 {
-                    PersonaId = personas[4].Id, // Juan Pérez
-                    Direccion = "Barrio Centro 111, Villa Mercedes",
-                    Telefono = "2664567890",
+                    PersonaId = personas[3].Id, // Juan
+                    Direccion = "Av. San Martín 1234",
+                    Telefono = "3541112233",
                     Ciudad = "Villa Mercedes",
                     Provincia = "San Luis",
                     CodigoPostal = "5730",
                     TotalCompras = 5,
-                    FechaCreacion = DateTime.Now.AddMonths(-2),
-                    Activo = true
+                    Preferencias = "Chocolate, Sin TACC"
                 },
                 new Comprador
                 {
-                    PersonaId = personas[5].Id, // Laura Fernández
-                    Direccion = "Barrio Norte 222, Villa Mercedes",
-                    Telefono = "2664678901",
+                    PersonaId = personas[4].Id, // Ana
+                    Direccion = "Calle Belgrano 567",
+                    Telefono = "3544445566",
                     Ciudad = "Villa Mercedes",
                     Provincia = "San Luis",
                     CodigoPostal = "5730",
                     TotalCompras = 3,
-                    FechaCreacion = DateTime.Now.AddMonths(-1),
-                    Activo = true
-                },
-                new Comprador
+                    Preferencias = "Frutas, Vegano"
+                }
+            };
+
+            context.Compradores.AddRange(compradores);
+            await context.SaveChangesAsync();
+
+            // ==================== 5. TORTAS ====================
+            var tortas = new List<Torta>
+            {
+                // Tortas de Carlos (Vendedor 1)
+                new Torta
                 {
-                    PersonaId = personas[6].Id, // Diego López
-                    Direccion = "Barrio Sur 333, Villa Mercedes",
-                    Telefono = "2664789012",
+                    VendedorId = vendedores[0].Id,
+                    Nombre = "Torta de Chocolate Belga",
+                    Descripcion = "Exquisita torta de chocolate belga con ganache y decoración artesanal. Tres capas de bizcochuelo húmedo bañadas en chocolate.",
+                    Precio = 45000m,
+                    Stock = 5,
+                    Categoria = "Chocolate",
+                    Tamanio = "Grande",
+                    TiempoPreparacion = 48,
+                    Ingredientes = "Chocolate belga, harina, huevos, manteca, azúcar, crema",
+                    Personalizable = true,
+                    VecesVendida = 78,
+                    Calificacion = 4.9m,
+                    Disponible = true
+                },
+                new Torta
+                {
+                    VendedorId = vendedores[0].Id,
+                    Nombre = "Cheesecake New York",
+                    Descripcion = "Auténtico cheesecake estilo New York con base de galletas y cobertura de frutos rojos.",
+                    Precio = 38000m,
+                    Stock = 3,
+                    Categoria = "Cheesecake",
+                    Tamanio = "Mediana",
+                    TiempoPreparacion = 24,
+                    Ingredientes = "Queso crema, huevos, azúcar, vainilla, galletas, manteca, frutos rojos",
+                    Personalizable = true,
+                    VecesVendida = 45,
+                    Calificacion = 4.8m,
+                    Disponible = true
+                },
+                new Torta
+                {
+                    VendedorId = vendedores[0].Id,
+                    Nombre = "Brownie Tower",
+                    Descripcion = "Torre de brownies con nueces y chocolate, perfecta para compartir.",
+                    Precio = 28000m,
+                    Stock = 8,
+                    Categoria = "Chocolate",
+                    Tamanio = "Mediana",
+                    TiempoPreparacion = 12,
+                    Ingredientes = "Chocolate, nueces, harina, huevos, manteca, azúcar",
+                    Personalizable = false,
+                    VecesVendida = 32,
+                    Calificacion = 4.7m,
+                    Disponible = true
+                },
+                // Tortas de María (Vendedor 2)
+                new Torta
+                {
+                    VendedorId = vendedores[1].Id,
+                    Nombre = "Torta de Frutillas con Crema",
+                    Descripcion = "Delicada torta de vainilla con capas de crema chantilly y frutillas frescas de estación.",
+                    Precio = 42000m,
+                    Stock = 4,
+                    Categoria = "Frutas",
+                    Tamanio = "Grande",
+                    TiempoPreparacion = 24,
+                    Ingredientes = "Frutillas, crema, bizcochuelo de vainilla, azúcar, gelatina",
+                    Personalizable = true,
+                    VecesVendida = 56,
+                    Calificacion = 4.9m,
+                    Disponible = true
+                },
+                new Torta
+                {
+                    VendedorId = vendedores[1].Id,
+                    Nombre = "Selva Negra",
+                    Descripcion = "Clásica torta alemana con chocolate, cerezas y crema. Una combinación perfecta.",
+                    Precio = 48000m,
+                    Stock = 2,
+                    Categoria = "Chocolate",
+                    Tamanio = "Grande",
+                    TiempoPreparacion = 36,
+                    Ingredientes = "Chocolate, cerezas, crema, kirsch, bizcochuelo",
+                    Personalizable = true,
+                    VecesVendida = 28,
+                    Calificacion = 4.8m,
+                    Disponible = true
+                },
+                new Torta
+                {
+                    VendedorId = vendedores[1].Id,
+                    Nombre = "Lemon Pie",
+                    Descripcion = "Tarta de limón con merengue italiano tostado. Refrescante y deliciosa.",
+                    Precio = 32000m,
+                    Stock = 6,
+                    Categoria = "Cítricos",
+                    Tamanio = "Mediana",
+                    TiempoPreparacion = 12,
+                    Ingredientes = "Limones, huevos, azúcar, manteca, masa quebrada",
+                    Personalizable = false,
+                    VecesVendida = 19,
+                    Calificacion = 4.6m,
+                    Disponible = true
+                }
+            };
+
+            context.Tortas.AddRange(tortas);
+            await context.SaveChangesAsync();
+
+            // ==================== 6. IMÁGENES DE TORTAS ====================
+            var imagenes = new List<ImagenTorta>
+            {
+                // Torta Chocolate Belga
+                new ImagenTorta { TortaId = tortas[0].Id, UrlImagen = "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600", NombreArchivo = "chocolate_belga.jpg", EsPrincipal = true, Orden = 1 },
+                // Cheesecake
+                new ImagenTorta { TortaId = tortas[1].Id, UrlImagen = "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=600", NombreArchivo = "cheesecake.jpg", EsPrincipal = true, Orden = 1 },
+                // Brownie
+                new ImagenTorta { TortaId = tortas[2].Id, UrlImagen = "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600", NombreArchivo = "brownie.jpg", EsPrincipal = true, Orden = 1 },
+                // Frutillas
+                new ImagenTorta { TortaId = tortas[3].Id, UrlImagen = "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600", NombreArchivo = "frutillas.jpg", EsPrincipal = true, Orden = 1 },
+                // Selva Negra
+                new ImagenTorta { TortaId = tortas[4].Id, UrlImagen = "https://images.unsplash.com/photo-1602351447937-745cb720612f?w=600", NombreArchivo = "selva_negra.jpg", EsPrincipal = true, Orden = 1 },
+                // Lemon Pie
+                new ImagenTorta { TortaId = tortas[5].Id, UrlImagen = "https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=600", NombreArchivo = "lemon_pie.jpg", EsPrincipal = true, Orden = 1 }
+            };
+
+            context.ImagenesTorta.AddRange(imagenes);
+            await context.SaveChangesAsync();
+
+            // ==================== 7. VENTAS DE EJEMPLO ====================
+            var ventas = new List<Venta>
+            {
+                // Venta completada (con pago verificado)
+                new Venta
+                {
+                    CompradorId = compradores[0].Id,
+                    NumeroOrden = $"ORD-{DateTime.Now.AddDays(-15):yyyyMMdd}-001",
+                    FechaVenta = DateTime.Now.AddDays(-15),
+                    Estado = EstadoVenta.Entregada,
+                    Subtotal = 83000m,
+                    DescuentoTotal = 0,
+                    Total = 83000m,
+                    PorcentajeComision = 10.00m,
+                    ComisionPlataforma = 8300m,
+                    MontoVendedores = 74700m,
+                    FondosLiberados = true,
+                    FechaLiberacion = DateTime.Now.AddDays(-10),
+                    DireccionEntrega = "Av. San Martín 1234, Villa Mercedes, San Luis",
                     Ciudad = "Villa Mercedes",
                     Provincia = "San Luis",
                     CodigoPostal = "5730",
-                    TotalCompras = 2,
-                    FechaCreacion = DateTime.Now.AddDays(-15),
-                    Activo = true
+                    FechaEntregaEstimada = DateTime.Now.AddDays(-12),
+                    FechaEntregaReal = DateTime.Now.AddDays(-12)
+                },
+                // Venta pendiente de pago
+                new Venta
+                {
+                    CompradorId = compradores[1].Id,
+                    NumeroOrden = $"ORD-{DateTime.Now:yyyyMMdd}-002",
+                    FechaVenta = DateTime.Now.AddHours(-2),
+                    Estado = EstadoVenta.Pendiente,
+                    Subtotal = 90000m,
+                    DescuentoTotal = 0,
+                    Total = 90000m,
+                    PorcentajeComision = 10.00m,
+                    ComisionPlataforma = 9000m,
+                    MontoVendedores = 81000m,
+                    FondosLiberados = false,
+                    DireccionEntrega = "Calle Belgrano 567, Villa Mercedes, San Luis",
+                    Ciudad = "Villa Mercedes",
+                    Provincia = "San Luis",
+                    CodigoPostal = "5730",
+                    FechaEntregaEstimada = DateTime.Now.AddDays(3)
+                },
+                // Venta con pago en revisión
+                new Venta
+                {
+                    CompradorId = compradores[0].Id,
+                    NumeroOrden = $"ORD-{DateTime.Now.AddDays(-1):yyyyMMdd}-003",
+                    FechaVenta = DateTime.Now.AddDays(-1),
+                    Estado = EstadoVenta.PagoEnRevision,
+                    Subtotal = 45000m,
+                    DescuentoTotal = 0,
+                    Total = 45000m,
+                    PorcentajeComision = 10.00m,
+                    ComisionPlataforma = 4500m,
+                    MontoVendedores = 40500m,
+                    FondosLiberados = false,
+                    DireccionEntrega = "Av. San Martín 1234, Villa Mercedes, San Luis",
+                    Ciudad = "Villa Mercedes",
+                    Provincia = "San Luis",
+                    CodigoPostal = "5730",
+                    FechaEntregaEstimada = DateTime.Now.AddDays(2)
                 }
             };
 
-            await context.Compradores.AddRangeAsync(compradores);
+            context.Ventas.AddRange(ventas);
             await context.SaveChangesAsync();
 
-            // ==================== TORTAS ====================
-            var tortas = new List<Torta>
+            // ==================== 8. DETALLES DE VENTA ====================
+            var detalles = new List<DetalleVenta>
             {
-                // Tortas de Tortería María
-                new Torta
+                // Detalles de Venta 1 (completada)
+                new DetalleVenta
                 {
+                    VentaId = ventas[0].Id,
+                    TortaId = tortas[0].Id, // Chocolate Belga de Carlos
                     VendedorId = vendedores[0].Id,
-                    Nombre = "Torta de Chocolate con Dulce de Leche",
-                    Descripcion = "Deliciosa torta de chocolate con capas de dulce de leche artesanal y cobertura de ganache.",
-                    Categoria = "Chocolate",
-                    Precio = 3500.00m,
-                    Stock = 5,
-                    Tamanio = "Grande",
-                    Ingredientes = "Chocolate belga, dulce de leche, harina, huevos, manteca",
-                    TiempoPreparacion = 2,
-                    Personalizable = true,
-                    Disponible = true,
-                    FechaCreacion = DateTime.Now.AddDays(-30)
+                    Cantidad = 1,
+                    PrecioUnitario = 45000m,
+                    Subtotal = 45000m,
+                    Estado = EstadoDetalleVenta.Entregado
                 },
-                new Torta
+                new DetalleVenta
                 {
+                    VentaId = ventas[0].Id,
+                    TortaId = tortas[1].Id, // Cheesecake de Carlos
                     VendedorId = vendedores[0].Id,
-                    Nombre = "Torta Chocotorta Clásica",
-                    Descripcion = "La tradicional chocotorta con chocolinas, dulce de leche y crema. Un clásico argentino.",
-                    Categoria = "Chocolate",
-                    Precio = 2800.00m,
-                    Stock = 8,
-                    Tamanio = "Mediana",
-                    Ingredientes = "Chocolinas, dulce de leche, queso crema, crema de leche",
-                    TiempoPreparacion = 1,
-                    Personalizable = false,
-                    Disponible = true,
-                    FechaCreacion = DateTime.Now.AddDays(-25)
+                    Cantidad = 1,
+                    PrecioUnitario = 38000m,
+                    Subtotal = 38000m,
+                    Estado = EstadoDetalleVenta.Entregado
                 },
-                new Torta
+                // Detalles de Venta 2 (pendiente) - Multi-vendedor
+                new DetalleVenta
                 {
-                    VendedorId = vendedores[0].Id,
-                    Nombre = "Torta Red Velvet",
-                    Descripcion = "Esponjosa torta red velvet con frosting de queso crema. Perfecta para ocasiones especiales.",
-                    Categoria = "Especiales",
-                    Precio = 4200.00m,
-                    Stock = 3,
-                    Tamanio = "Grande",
-                    Ingredientes = "Harina, cacao, buttermilk, queso crema, azúcar",
-                    TiempoPreparacion = 2,
-                    Personalizable = true,
-                    Disponible = true,
-                    FechaCreacion = DateTime.Now.AddDays(-20)
-                },
-                // Tortas de Repostería Don Carlos
-                new Torta
-                {
+                    VentaId = ventas[1].Id,
+                    TortaId = tortas[3].Id, // Frutillas de María
                     VendedorId = vendedores[1].Id,
-                    Nombre = "Cheesecake de Frutos Rojos",
-                    Descripcion = "Cremoso cheesecake horneado con coulis de frutos rojos frescos.",
-                    Categoria = "Cheesecakes",
-                    Precio = 3800.00m,
-                    Stock = 4,
-                    Tamanio = "Mediana",
-                    Ingredientes = "Queso crema Philadelphia, frutos rojos, galletas, azúcar",
-                    TiempoPreparacion = 3,
-                    Personalizable = false,
-                    Disponible = true,
-                    FechaCreacion = DateTime.Now.AddDays(-18)
+                    Cantidad = 1,
+                    PrecioUnitario = 42000m,
+                    Subtotal = 42000m,
+                    Estado = EstadoDetalleVenta.Pendiente
                 },
-                new Torta
+                new DetalleVenta
                 {
+                    VentaId = ventas[1].Id,
+                    TortaId = tortas[4].Id, // Selva Negra de María
                     VendedorId = vendedores[1].Id,
-                    Nombre = "Torta de Limón y Merengue",
-                    Descripcion = "Torta de limón con relleno cítrico y merengue italiano flameado.",
-                    Categoria = "Frutas",
-                    Precio = 3200.00m,
-                    Stock = 6,
-                    Tamanio = "Mediana",
-                    Ingredientes = "Limones, huevos, azúcar, harina, manteca",
-                    TiempoPreparacion = 2,
-                    Personalizable = false,
-                    Disponible = true,
-                    FechaCreacion = DateTime.Now.AddDays(-15)
+                    Cantidad = 1,
+                    PrecioUnitario = 48000m,
+                    Subtotal = 48000m,
+                    Estado = EstadoDetalleVenta.Pendiente
                 },
-                // Tortas de Pastelería Anita
-                new Torta
+                // Detalles de Venta 3 (pago en revisión)
+                new DetalleVenta
                 {
-                    VendedorId = vendedores[2].Id,
-                    Nombre = "Torta Unicornio",
-                    Descripcion = "Torta decorada con fondant en colores pastel, cuerno dorado y detalles mágicos. Ideal para cumpleaños infantiles.",
-                    Categoria = "Infantiles",
-                    Precio = 4500.00m,
-                    Stock = 2,
-                    Tamanio = "Grande",
-                    Ingredientes = "Bizcochuelo de vainilla, dulce de leche, fondant, decoraciones comestibles",
-                    TiempoPreparacion = 3,
-                    Personalizable = true,
-                    Disponible = true,
-                    FechaCreacion = DateTime.Now.AddDays(-10)
-                },
-                new Torta
-                {
-                    VendedorId = vendedores[2].Id,
-                    Nombre = "Torta Paw Patrol",
-                    Descripcion = "Torta temática de Paw Patrol con personajes en 3D de fondant.",
-                    Categoria = "Infantiles",
-                    Precio = 5000.00m,
-                    Stock = 1,
-                    Tamanio = "Extra Grande",
-                    Ingredientes = "Bizcochuelo de chocolate, relleno de dulce de leche, fondant",
-                    TiempoPreparacion = 4,
-                    Personalizable = true,
-                    Disponible = true,
-                    FechaCreacion = DateTime.Now.AddDays(-7)
+                    VentaId = ventas[2].Id,
+                    TortaId = tortas[0].Id, // Chocolate Belga de Carlos
+                    VendedorId = vendedores[0].Id,
+                    Cantidad = 1,
+                    PrecioUnitario = 45000m,
+                    Subtotal = 45000m,
+                    Estado = EstadoDetalleVenta.Pendiente
                 }
             };
 
-            await context.Tortas.AddRangeAsync(tortas);
+            context.DetallesVenta.AddRange(detalles);
             await context.SaveChangesAsync();
 
-            // ==================== IMÁGENES ====================
-            var imagenes = new List<ImagenTorta>();
-            foreach (var torta in tortas)
-            {
-                imagenes.Add(new ImagenTorta
-                {
-                    TortaId = torta.Id,
-                    UrlImagen = $"/images/tortas/torta_{torta.Id}_1.jpg",
-                    NombreArchivo = $"torta_{torta.Id}_1.jpg",
-                    EsPrincipal = true,
-                    Orden = 1,
-                    FechaSubida = DateTime.Now.AddDays(-5)
-                });
-
-                // Agregar imagen secundaria para algunas tortas
-                if (torta.Id % 2 == 0)
-                {
-                    imagenes.Add(new ImagenTorta
-                    {
-                        TortaId = torta.Id,
-                        UrlImagen = $"/images/tortas/torta_{torta.Id}_2.jpg",
-                        NombreArchivo = $"torta_{torta.Id}_2.jpg",
-                        EsPrincipal = false,
-                        Orden = 2,
-                        FechaSubida = DateTime.Now.AddDays(-5)
-                    });
-                }
-            }
-
-            await context.ImagenesTorta.AddRangeAsync(imagenes);
-            await context.SaveChangesAsync();
-
-            // ==================== PAGOS (solo en desarrollo) ====================
+            // ==================== 9. PAGOS DE EJEMPLO ====================
             var pagos = new List<Pago>
             {
+                // Pago completado (Venta 1)
                 new Pago
                 {
-                    TortaId = tortas[0].Id,
+                    VentaId = ventas[0].Id,
                     CompradorId = compradores[0].Id,
-                    VendedorId = vendedores[0].Id,
-                    Monto = 3500.00m,
-                    Cantidad = 1,
-                    PrecioUnitario = 3500.00m,
-                    Subtotal = 3500.00m,
-                    MetodoPago = MetodoPago.Transferencia,
-                    Estado = EstadoPago.Completado,
-                    FechaPago = DateTime.Now.AddDays(-20),
-                    NumeroTransaccion = "TRF-001-2024"
-                },
-                new Pago
-                {
-                    TortaId = tortas[3].Id,
-                    CompradorId = compradores[1].Id,
-                    VendedorId = vendedores[1].Id,
-                    Monto = 3800.00m,
-                    Cantidad = 1,
-                    PrecioUnitario = 3800.00m,
-                    Subtotal = 3800.00m,
-                    MetodoPago = MetodoPago.MercadoPago,
-                    Estado = EstadoPago.Completado,
+                    Monto = 83000m,
+                    ComisionPlataforma = 8300m,
+                    MontoVendedores = 74700m,
                     FechaPago = DateTime.Now.AddDays(-15),
-                    NumeroTransaccion = "MP-002-2024"
+                    Estado = EstadoPago.Completado,
+                    MetodoPago = MetodoPago.MercadoPago,
+                    ArchivoComprobante = "/uploads/comprobantes/pago_001.jpg",
+                    NumeroTransaccion = "MP-2025-001234",
+                    FechaComprobante = DateTime.Now.AddDays(-15),
+                    FechaVerificacion = DateTime.Now.AddDays(-15),
+                    VerificadoPorId = personas[0].Id, // Admin
+                    ObservacionesAdmin = "Pago verificado correctamente"
                 },
+                // Pago en revisión (Venta 3)
                 new Pago
                 {
-                    TortaId = tortas[5].Id,
-                    CompradorId = compradores[2].Id,
-                    VendedorId = vendedores[2].Id,
-                    Monto = 4500.00m,
-                    Cantidad = 1,
-                    PrecioUnitario = 4500.00m,
-                    Subtotal = 4500.00m,
-                    MetodoPago = MetodoPago.Efectivo,
-                    Estado = EstadoPago.Pendiente,
-                    FechaPago = DateTime.Now.AddDays(-2)
+                    VentaId = ventas[2].Id,
+                    CompradorId = compradores[0].Id,
+                    Monto = 45000m,
+                    ComisionPlataforma = 4500m,
+                    MontoVendedores = 40500m,
+                    FechaPago = DateTime.Now.AddDays(-1),
+                    Estado = EstadoPago.EnRevision,
+                    MetodoPago = MetodoPago.Transferencia,
+                    ArchivoComprobante = "/uploads/comprobantes/pago_003.jpg",
+                    NumeroTransaccion = "TRF-2025-005678",
+                    FechaComprobante = DateTime.Now.AddDays(-1)
                 }
             };
 
-            await context.Pagos.AddRangeAsync(pagos);
+            context.Pagos.AddRange(pagos);
             await context.SaveChangesAsync();
 
-            Console.WriteLine($"✅ DESARROLLO: {personas.Count} personas, {vendedores.Count} vendedores, {compradores.Count} compradores, {tortas.Count} tortas, {pagos.Count} pagos creados");
+            // ==================== 10. LIBERACIONES DE EJEMPLO ====================
+            var liberaciones = new List<LiberacionFondos>
+            {
+                // Liberación completada (de Venta 1)
+                new LiberacionFondos
+                {
+                    VentaId = ventas[0].Id,
+                    VendedorId = vendedores[0].Id, // Carlos
+                    MontoBruto = 83000m,
+                    Comision = 8300m,
+                    MontoNeto = 74700m,
+                    Estado = EstadoLiberacion.Confirmado,
+                    FechaCreacion = DateTime.Now.AddDays(-15),
+                    FechaListoParaLiberar = DateTime.Now.AddDays(-12),
+                    FechaTransferencia = DateTime.Now.AddDays(-10),
+                    FechaConfirmacion = DateTime.Now.AddDays(-10),
+                    NumeroOperacion = "LIB-2025-0001",
+                    ArchivoComprobante = "/uploads/liberaciones/lib_001.jpg",
+                    AliasDestino = "pasteleria.doncarlos.mp",
+                    CBUDestino = "0140012301234567890123",
+                    TitularDestino = "Carlos Alberto González",
+                    ProcesadoPorId = personas[0].Id
+                }
+            };
+
+            context.LiberacionesFondos.AddRange(liberaciones);
+            await context.SaveChangesAsync();
+
+            Console.WriteLine("✅ Base de datos inicializada con datos de prueba");
+            Console.WriteLine($"   - 1 Configuración de plataforma");
+            Console.WriteLine($"   - {personas.Count} Personas");
+            Console.WriteLine($"   - {vendedores.Count} Vendedores (con datos de pago)");
+            Console.WriteLine($"   - {compradores.Count} Compradores");
+            Console.WriteLine($"   - {tortas.Count} Tortas");
+            Console.WriteLine($"   - {imagenes.Count} Imágenes");
+            Console.WriteLine($"   - {ventas.Count} Ventas");
+            Console.WriteLine($"   - {detalles.Count} Detalles de venta");
+            Console.WriteLine($"   - {pagos.Count} Pagos");
+            Console.WriteLine($"   - {liberaciones.Count} Liberaciones");
         }
     }
 }

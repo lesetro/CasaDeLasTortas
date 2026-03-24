@@ -1,0 +1,106 @@
+@model PersonaViewModel
+@{
+    ViewData["Title"] = "Eliminar Persona";
+}
+
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+        <!-- Header -->
+        <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Confirmar eliminación
+            </h5>
+        </div>
+
+        <!-- Contenido -->
+        <div class="card-body">
+            <div class="text-center mb-4">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 100px; height: 100px;">
+                    @if (!string.IsNullOrEmpty(Model.Avatar))
+                    {
+                        <img src="@Model.Avatar" class="rounded-circle w-100 h-100 object-fit-cover" />
+                    }
+                    else
+                    {
+                        <i class="fas fa-user fa-3x text-danger"></i>
+                    }
+                </div>
+                
+                <h3 class="fw-bold text-dark mb-1">@Model.Nombre @Model.Apellido</h3>
+                <p class="text-secondary">@Model.Email</p>
+            </div>
+
+            <!-- Información de la persona -->
+            <div class="bg-light p-3 rounded mb-4">
+                <div class="row g-3 small">
+                    <div class="col-6">
+                        <span class="text-secondary">Rol:</span>
+                        <span class="fw-semibold ms-2">@Model.Rol</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-secondary">Teléfono:</span>
+                        <span class="fw-semibold ms-2">@(Model.Telefono ?? "-")</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-secondary">Estado:</span>
+                        <span class="fw-semibold ms-2">
+                            @if (Model.Activo)
+                            {
+                                <span class="text-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">Inactivo</span>
+                            }
+                        </span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-secondary">Registro:</span>
+                        <span class="fw-semibold ms-2">@Model.FechaRegistro.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advertencias -->
+            @if (Model.Vendedor != null || Model.Comprador != null)
+            {
+                <div class="alert alert-warning border-start border-4 border-warning mb-4">
+                    <div class="d-flex">
+                        <i class="fas fa-exclamation-triangle me-3 mt-1"></i>
+                        <div>
+                            <p class="fw-medium mb-2">Esta persona tiene información asociada:</p>
+                            <ul class="small mb-2 ps-3">
+                                @if (Model.Vendedor != null)
+                                {
+                                    <li>Es vendedor con @Model.Vendedor.TotalVentas ventas realizadas</li>
+                                }
+                                @if (Model.Comprador != null)
+                                {
+                                    <li>Es comprador con @Model.Comprador.TotalCompras compras realizadas</li>
+                                }
+                            </ul>
+                            <p class="small mb-0">Eliminar esta persona también eliminará su información de vendedor/comprador.</p>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Formulario de confirmación -->
+            <form asp-action="DeleteConfirmed" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="flex-fill btn btn-danger fw-semibold py-2">
+                        <i class="fas fa-trash me-2"></i>Sí, eliminar persona
+                    </button>
+                    <a asp-action="Index" class="flex-fill btn btn-light border fw-semibold py-2 text-center">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

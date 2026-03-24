@@ -1,0 +1,147 @@
+@model PagoDetalleViewModel
+@{
+    ViewData["Title"] = "Detalle del Pago";
+}
+
+<div class="container py-4" style="max-width: 960px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            @if (User.IsInRole("Comprador"))
+            {
+                <li class="breadcrumb-item"><a asp-controller="Venta" asp-action="MisCompras" class="text-decoration-none">Mis Compras</a></li>
+            }
+            else if (User.IsInRole("Vendedor"))
+            {
+                <li class="breadcrumb-item"><a asp-controller="Venta" asp-action="MisPedidos" class="text-decoration-none">Mis Pedidos</a></li>
+            }
+            else if (User.IsInRole("Admin"))
+            {
+                <li class="breadcrumb-item"><a asp-controller="Pago" asp-action="Index" class="text-decoration-none">Pagos</a></li>
+            }
+            <li class="breadcrumb-item active">Pago #@Model.Pago.Id</li>
+        </ol>
+    </nav>
+
+    <h1 class="fw-bold mb-1"><i class="fas fa-receipt text-success me-2"></i>Detalle del Pago</h1>
+    <p class="text-muted mb-4">Orden #@Model.Venta.NumeroOrden</p>
+
+    <div class="row g-4">
+        <!-- Col izquierda -->
+        <div class="col-lg-8">
+            <!-- Estado -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3"><i class="fas fa-info-circle me-2"></i>Estado del pago</h5>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle fs-4"
+                             style="width:56px;height:56px;
+                             @(Model.Pago.Estado == EstadoPago.Completado ? "background-color:#d1fae5;color:#16a34a;" :
+                               Model.Pago.Estado == EstadoPago.Pendiente ? "background-color:#fef3c7;color:#d97706;" :
+                               "background-color:#fee2e2;color:#dc2626;")">
+                            <i class="fas @(Model.Pago.Estado == EstadoPago.Completado ? "fa-check-circle" : Model.Pago.Estado == EstadoPago.Pendiente ? "fa-clock" : "fa-times-circle")"></i>
+                        </div>
+                        <div>
+                            <div class="fs-5 fw-bold @(Model.Pago.Estado == EstadoPago.Completado ? "text-success" : Model.Pago.Estado == EstadoPago.Pendiente ? "text-warning" : "text-danger")">
+                                @Model.Pago.Estado
+                            </div>
+                            <small class="text-muted">@Model.Pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                    </div>
+                    @if (Model.Pago.Estado == EstadoPago.Completado && Model.Pago.FechaConfirmacion.HasValue)
+                    {
+                        <div class="alert alert-success small mb-0">
+                            <i class="fas fa-check-circle me-1"></i>
+                            Confirmado el @Model.Pago.FechaConfirmacion.Value.ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Detalles transacción -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3"><i class="fas fa-credit-card me-2"></i>Detalles de la transacción</h5>
+                    <table class="table table-borderless mb-0">
+                        <tr><td class="text-muted" style="width:200px">ID de pago:</td><td class="fw-semibold">#@Model.Pago.Id</td></tr>
+                        <tr><td class="text-muted">Método de pago:</td><td class="fw-semibold">@(Model.Pago.MetodoPago?.ToString() ?? "No especificado")</td></tr>
+                        @if (!string.IsNullOrEmpty(Model.Pago.NumeroTransaccion))
+                        {
+                            <tr><td class="text-muted">Nº de transacción:</td><td class="fw-semibold">@Model.Pago.NumeroTransaccion</td></tr>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Pago.ArchivoComprobante))
+                        {
+                            <tr>
+                                <td class="text-muted">Comprobante:</td>
+                                <td><a href="@Model.Pago.ArchivoComprobante" target="_blank" class="text-decoration-none"><i class="fas fa-file-pdf me-1"></i>Ver comprobante</a></td>
+                            </tr>
+                        }
+                    </table>
+                    @if (!string.IsNullOrEmpty(Model.Pago.Observaciones))
+                    {
+                        <div class="mt-3">
+                            <small class="text-muted d-block mb-1">Observaciones:</small>
+                            <div class="bg-light rounded p-3">@Model.Pago.Observaciones</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Col derecha -->
+        <div class="col-lg-4">
+            <!-- Venta asociada -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3"><i class="fas fa-shopping-bag me-2"></i>Venta asociada</h6>
+                    <div class="mb-2"><small class="text-muted">Orden:</small><div class="fw-bold">@Model.Venta.NumeroOrden</div></div>
+                    <div class="mb-2"><small class="text-muted">Total:</small><div class="fs-5 fw-bold text-success">$@Model.Venta.Total.ToString("N2")</div></div>
+                    <div class="mb-2"><small class="text-muted">Items:</small><div class="fw-semibold">@Model.Venta.TotalItems productos</div></div>
+                    <div class="mb-3">
+                        <small class="text-muted">Estado:</small>
+                        <div><span class="badge @(Model.Venta.Estado == EstadoVenta.Pagada ? "bg-success" : Model.Venta.Estado == EstadoVenta.Pendiente ? "bg-warning text-dark" : "bg-secondary")">@Model.Venta.Estado</span></div>
+                    </div>
+                    <a asp-controller="Venta" asp-action="Details" asp-route-id="@Model.Pago.VentaId" class="btn btn-outline-primary w-100">
+                        Ver detalle de la venta
+                    </a>
+                </div>
+            </div>
+
+            <!-- Comprador -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3"><i class="fas fa-user me-2"></i>Comprador</h6>
+                    <div class="mb-2"><small class="text-muted">Nombre:</small><div class="fw-semibold">@(Model.Comprador?.NombrePersona ?? "N/A")</div></div>
+                    <div class="mb-2"><small class="text-muted">Email:</small><div class="fw-semibold">@(Model.Comprador?.Email ?? "N/A")</div></div>
+                    @if (!string.IsNullOrEmpty(Model.Comprador?.Telefono))
+                    {
+                        <div><small class="text-muted">Teléfono:</small><div class="fw-semibold">@Model.Comprador.Telefono</div></div>
+                    }
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            @if (Model.PuedeEditar && Model.Pago.Estado == EstadoPago.Pendiente)
+            {
+                <div class="card border-warning shadow-sm">
+                    <div class="card-body">
+                        <h6 class="fw-semibold text-warning mb-3"><i class="fas fa-cog me-2"></i>Acciones</h6>
+                        <div class="d-grid gap-2">
+                            @if (User.IsInRole("Vendedor") || User.IsInRole("Admin"))
+                            {
+                                <a asp-action="ConfirmarPago" asp-route-id="@Model.Pago.Id" class="btn btn-success">
+                                    <i class="fas fa-check-circle me-2"></i>Confirmar pago
+                                </a>
+                            }
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-action="Edit" asp-route-id="@Model.Pago.Id" class="btn btn-outline-warning">
+                                    <i class="fas fa-edit me-2"></i>Editar pago
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

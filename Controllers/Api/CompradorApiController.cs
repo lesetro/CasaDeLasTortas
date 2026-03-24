@@ -162,156 +162,184 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Obtener pagos del comprador
         /// </summary>
         [HttpGet("{id}/pagos")]
-        public async Task<IActionResult> GetPagos(int id)
+public async Task<IActionResult> GetPagos(int id)
+{
+    var comprador = await _unitOfWork.CompradorRepository.GetByIdWithPersonaAsync(id);
+
+    if (comprador == null)
+        return NotFound(new { message = "Comprador no encontrado" });
+
+    // Obtener pagos a través de Ventas
+    var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
+    var pagos = ventas.SelectMany(v => v.Pagos).ToList();
+
+    var pagosDTO = pagos.Select(p => new
+    {
+        id = p.Id,
+        ventaId = p.VentaId,
+        numeroOrden = p.Venta?.NumeroOrden,
+        monto = p.Monto,
+        fechaPago = p.FechaPago,
+        estado = p.Estado.ToString(),
+        metodoPago = p.MetodoPago?.ToString(),
+        tieneComprobante = !string.IsNullOrEmpty(p.ArchivoComprobante),
+        totalItems = p.Venta?.Detalles?.Sum(d => d.Cantidad) ?? 0,
+        productos = p.Venta?.Detalles?.Select(d => new
         {
-            var comprador = await _unitOfWork.CompradorRepository.GetByIdWithPagosAsync(id);
+            tortaId = d.TortaId,
+            nombreTorta = d.Torta.Nombre,
+            cantidad = d.Cantidad,
+            precioUnitario = d.PrecioUnitario,
+            imagenTorta = d.Torta.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
+        }).ToList()
+    }).ToList();
 
-            if (comprador == null)
-                return NotFound(new { message = "Comprador no encontrado" });
+    return Ok(pagosDTO);
+}
 
-            var pagosDTO = comprador.Pagos?.Select(p => new PagoListDTO
-            {
-                Id = p.Id,
-                NombreTorta = p.Torta?.Nombre ?? "Torta no disponible",
-                NombreComprador = comprador.Persona?.Nombre ?? "Comprador no disponible",
-                NombreVendedor = p.Vendedor?.Persona?.Nombre ?? "Vendedor no disponible",
-                Cantidad = p.Cantidad,
-                Monto = p.Monto,
-                FechaPago = p.FechaPago,
-                Estado = p.Estado,
-                MetodoPago = p.MetodoPago,
-                TieneComprobante = !string.IsNullOrEmpty(p.ArchivoComprobante),
-                ImagenTorta = p.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
-            }).ToList() ?? new List<PagoListDTO>();
+[HttpGet("{id}/estadisticas")]
+public async Task<IActionResult> GetEstadisticas(int id)
+{
+    var comprador = await _unitOfWork.CompradorRepository.GetByIdWithPersonaAsync(id);
 
-            return Ok(pagosDTO);
-        }
+    if (comprador == null)
+        return NotFound(new { message = "Comprador no encontrado" });
 
-        /// <summary>
-        /// Obtener estadísticas del comprador
-        /// </summary>
-        [HttpGet("{id}/estadisticas")]
-        public async Task<IActionResult> GetEstadisticas(int id)
+    // Obtener ventas y pagos
+    var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
+    var pagosCompletados = ventas.SelectMany(v => v.Pagos.Where(p => p.Estado == EstadoPago.Completado)).ToList();
+    
+    var totalCompras = pagosCompletados.Count;
+    var totalGastado = pagosCompletados.Sum(p => p.Monto);
+    var compraPromedio = totalCompras > 0 ? totalGastado / totalCompras : 0;
+
+    // Compras del último mes
+    var ultimoMes = DateTime.Now.AddMonths(-1);
+    var comprasUltimoMes = pagosCompletados.Count(p => p.FechaPago >= ultimoMes);
+    var gastoUltimoMes = pagosCompletados.Where(p => p.FechaPago >= ultimoMes).Sum(p => p.Monto);
+
+    return Ok(new
+    {
+        idComprador = comprador.Id,
+        nombrePersona = comprador.Persona?.Nombre ?? "N/A",
+        email = comprador.Persona?.Email ?? "N/A",
+        totalCompras,
+        totalGastado,
+        compraPromedio,
+        comprasUltimoMes,
+        gastoUltimoMes,
+        fechaPrimeraCompra = pagosCompletados.Any() ? pagosCompletados.Min(p => p.FechaPago) : (DateTime?)null,
+        fechaUltimaCompra = pagosCompletados.Any() ? pagosCompletados.Max(p => p.FechaPago) : (DateTime?)null
+    });
+}
+
+/// <summary>
+/// Obtener historial de compras del comprador (MÉTODO CORREGIDO)
+/// </summary>
+[HttpGet("{id}/historial")]
+public async Task<IActionResult> GetHistorial(int id, [FromQuery] int pagina = 1, [FromQuery] int registrosPorPagina = 10)
+{
+    var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
+    
+    var historial = ventas
+        .OrderByDescending(v => v.FechaVenta)
+        .Skip((pagina - 1) * registrosPorPagina)
+        .Take(registrosPorPagina)
+        .Select(v => new
         {
-            var comprador = await _unitOfWork.CompradorRepository.GetByIdWithPagosAsync(id);
-
-            if (comprador == null)
-                return NotFound(new { message = "Comprador no encontrado" });
-
-            var pagosCompletados = comprador.Pagos?.Where(p => p.Estado == EstadoPago.Completado).ToList() ?? new List<Pago>();
-            var totalCompras = pagosCompletados.Count;
-            var totalGastado = pagosCompletados.Sum(p => p.Monto);
-            var compraPromedio = totalCompras > 0 ? totalGastado / totalCompras : 0;
-
-            // Compras del último mes
-            var ultimoMes = DateTime.Now.AddMonths(-1);
-            var comprasUltimoMes = pagosCompletados.Count(p => p.FechaPago >= ultimoMes);
-            var gastoUltimoMes = pagosCompletados.Where(p => p.FechaPago >= ultimoMes).Sum(p => p.Monto);
-
-            return Ok(new
+            ventaId = v.Id,
+            numeroOrden = v.NumeroOrden,
+            fechaVenta = v.FechaVenta,
+            estado = v.Estado.ToString(),
+            total = v.Total,
+            totalItems = v.Detalles.Sum(d => d.Cantidad),
+            pagos = v.Pagos.Select(p => new
             {
-                idComprador = comprador.Id,
-                nombrePersona = comprador.Persona?.Nombre ?? "N/A",
-                email = comprador.Persona?.Email ?? "N/A",
-                totalCompras,
-                totalGastado,
-                compraPromedio,
-                comprasUltimoMes,
-                gastoUltimoMes,
-                fechaPrimeraCompra = pagosCompletados.Any() ? pagosCompletados.Min(p => p.FechaPago) : (DateTime?)null,
-                fechaUltimaCompra = pagosCompletados.Any() ? pagosCompletados.Max(p => p.FechaPago) : (DateTime?)null
-            });
-        }
+                pagoId = p.Id,
+                monto = p.Monto,
+                fechaPago = p.FechaPago,
+                estado = p.Estado.ToString(),
+                metodoPago = p.MetodoPago?.ToString()
+            }),
+            productos = v.Detalles.Select(d => new
+            {
+                tortaId = d.TortaId,
+                nombreTorta = d.Torta.Nombre,
+                cantidad = d.Cantidad,
+                precioUnitario = d.PrecioUnitario,
+                subtotal = d.Subtotal,
+                imagenTorta = d.Torta.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
+            })
+        })
+        .ToList();
 
-        /// <summary>
-        /// Obtener historial de compras del comprador
-        /// </summary>
-        [HttpGet("{id}/historial")]
-        public async Task<IActionResult> GetHistorial(int id, [FromQuery] int pagina = 1, [FromQuery] int registrosPorPagina = 10)
+    var totalVentas = ventas.Count();
+
+    return Ok(new
+    {
+        data = historial,
+        pagina,
+        registrosPorPagina,
+        totalRegistros = totalVentas,
+        totalPaginas = (int)Math.Ceiling((double)totalVentas / registrosPorPagina)
+    });
+}
+
+/// <summary>
+/// Obtener perfil completo del comprador (MÉTODO CORREGIDO)
+/// </summary>
+[HttpGet("{id}/perfil")]
+public async Task<IActionResult> GetPerfil(int id)
+{
+    var comprador = await _unitOfWork.CompradorRepository.GetByIdWithPersonaAsync(id);
+
+    if (comprador == null)
+        return NotFound(new { message = "Comprador no encontrado" });
+
+    var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
+    var pagosCompletados = ventas.SelectMany(v => v.Pagos.Where(p => p.Estado == EstadoPago.Completado)).ToList();
+    var totalGastado = pagosCompletados.Sum(p => p.Monto);
+
+    var historialCompras = ventas
+        .OrderByDescending(v => v.FechaVenta)
+        .Take(10)
+        .Select(v => new
         {
-            var comprador = await _unitOfWork.CompradorRepository.GetByIdWithPagosAsync(id);
-
-            if (comprador == null)
-                return NotFound(new { message = "Comprador no encontrado" });
-
-            var pagos = comprador.Pagos?
-                .OrderByDescending(p => p.FechaPago)
-                .Skip((pagina - 1) * registrosPorPagina)
-                .Take(registrosPorPagina)
-                .Select(p => new PagoHistorialDTO
-                {
-                    Id = p.Id,
-                    FechaPago = p.FechaPago,
-                    NombreTorta = p.Torta?.Nombre ?? "Torta no disponible",
-                    NombreVendedor = p.Vendedor?.Persona?.Nombre ?? "Vendedor no disponible",
-                    Cantidad = p.Cantidad,
-                    Monto = p.Monto,
-                    Estado = p.Estado,
-                    EstadoTexto = p.Estado.ToString(),
-                    ImagenTorta = p.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen,
-                    FechaEntrega = p.FechaEntrega,
-                    PuedeCalificar = p.Estado == EstadoPago.Completado && p.FechaEntrega.HasValue && p.FechaEntrega.Value.AddDays(7) >= DateTime.Now
-                })
-                .ToList() ?? new List<PagoHistorialDTO>();
-
-            var totalPagos = comprador.Pagos?.Count ?? 0;
-
-            return Ok(new
+            ventaId = v.Id,
+            numeroOrden = v.NumeroOrden,
+            fechaVenta = v.FechaVenta,
+            total = v.Total,
+            estado = v.Estado.ToString(),
+            productos = v.Detalles.Select(d => new
             {
-                data = pagos,
-                pagina,
-                registrosPorPagina,
-                totalRegistros = totalPagos,
-                totalPaginas = (int)Math.Ceiling((double)totalPagos / registrosPorPagina)
-            });
-        }
+                tortaId = d.TortaId,
+                nombreTorta = d.Torta.Nombre,
+                cantidad = d.Cantidad,
+                imagenTorta = d.Torta.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
+            }).ToList()
+        })
+        .ToList();
 
-        /// <summary>
-        /// Obtener perfil completo del comprador
-        /// </summary>
-        [HttpGet("{id}/perfil")]
-        public async Task<IActionResult> GetPerfil(int id)
-        {
-            var comprador = await _unitOfWork.CompradorRepository.GetByIdWithPagosAsync(id);
+    var perfil = new
+    {
+        id = comprador.Id,
+        personaId = comprador.PersonaId,
+        nombrePersona = comprador.Persona?.Nombre ?? "N/A",
+        email = comprador.Persona?.Email ?? "N/A",
+        telefono = comprador.Telefono,
+        direccion = comprador.Direccion,
+        ciudad = comprador.Ciudad,
+        provincia = comprador.Provincia,
+        codigoPostal = comprador.CodigoPostal,
+        fechaNacimiento = comprador.FechaNacimiento,
+        avatar = comprador.Persona?.Avatar,
+        fechaRegistro = comprador.FechaCreacion,
+        totalCompras = comprador.TotalCompras,
+        totalGastado = totalGastado,
+        historialCompras = historialCompras
+    };
 
-            if (comprador == null)
-                return NotFound(new { message = "Comprador no encontrado" });
-
-            var pagosCompletados = comprador.Pagos?.Where(p => p.Estado == EstadoPago.Completado).ToList() ?? new List<Pago>();
-            var totalGastado = pagosCompletados.Sum(p => p.Monto);
-
-            var historialCompras = pagosCompletados
-                .OrderByDescending(p => p.FechaPago)
-                .Take(10) // Últimas 10 compras
-                .Select(p => new PagoHistorialDTO
-                {
-                    Id = p.Id,
-                    FechaPago = p.FechaPago,
-                    NombreTorta = p.Torta?.Nombre ?? "Torta no disponible",
-                    NombreVendedor = p.Vendedor?.Persona?.Nombre ?? "Vendedor no disponible",
-                    Cantidad = p.Cantidad,
-                    Monto = p.Monto,
-                    Estado = p.Estado,
-                    EstadoTexto = p.Estado.ToString(),
-                    ImagenTorta = p.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen,
-                    FechaEntrega = p.FechaEntrega,
-                    PuedeCalificar = p.Estado == EstadoPago.Completado && p.FechaEntrega.HasValue && p.FechaEntrega.Value.AddDays(7) >= DateTime.Now
-                })
-                .ToList();
-
-            var perfil = new CompradorPerfilDTO
-            {
-                Id = comprador.Id,
-                NombrePersona = comprador.Persona?.Nombre ?? "N/A",
-                Email = comprador.Persona?.Email ?? "N/A",
-                Telefono = comprador.Telefono,
-                DireccionCompleta = $"{comprador.Direccion}, {comprador.Ciudad}, {comprador.Provincia}",
-                TotalCompras = comprador.TotalCompras,
-                TotalGastado = totalGastado,
-                HistorialCompras = historialCompras
-            };
-
-            return Ok(perfil);
-        }
+    return Ok(perfil);
+}
     }
 }

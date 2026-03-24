@@ -1,0 +1,480 @@
+@model CasaDeLasTortas.Models.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Panel de Administración";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    body { background-color: #f1f5f9; }
+    .admin-main { margin-left: 260px; padding: 2rem; }
+    .kpi-card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); transition: transform .15s; }
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .action-card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .action-item { padding: 1rem; border-bottom: 1px solid #f1f5f9; transition: background .15s; }
+    .action-item:hover { background: #f8fafc; }
+    .action-item:last-child { border-bottom: none; }
+    .alert-badge { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .65rem; font-weight: 700; }
+    .chart-container { height: 200px; }
+    @@media (max-width:991px) { .admin-main { margin-left: 0; padding: 1rem; } }
+</style>
+}
+
+<partial name="_AdminSidebar" />
+
+<div class="admin-main">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-0" style="font-size:1.6rem;">
+                <i class="fas fa-tachometer-alt text-primary me-2"></i>Dashboard
+            </h1>
+            <p class="text-muted mb-0 small">Bienvenido al panel de administración de Casa de las Tortas</p>
+        </div>
+        <div class="text-muted small">
+            <i class="fas fa-calendar me-1"></i>@DateTime.Now.ToString("dddd, dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-AR"))
+        </div>
+    </div>
+
+    <!-- Alertas del sistema -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model == null)
+    {
+        <div class="alert alert-warning border-0 rounded-3">
+            <i class="fas fa-exclamation-triangle me-2"></i>No se pudieron cargar los datos del dashboard.
+        </div>
+    }
+    else
+    {
+        <!-- KPIs principales -->
+        <div class="row g-3 mb-4">
+            <!-- Ventas Hoy -->
+            <div class="col-6 col-md-3">
+                <div class="kpi-card card p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1">Ventas Hoy</div>
+                            <div class="fs-3 fw-bold">@Model.Resumen.VentasHoy</div>
+                            @if (Model.Resumen.CambioVentasVsAyer != 0)
+                            {
+                                var cambioClass = Model.Resumen.CambioVentasVsAyer > 0 ? "text-success" : "text-danger";
+                                var cambioIcon = Model.Resumen.CambioVentasVsAyer > 0 ? "fa-arrow-up" : "fa-arrow-down";
+                                <div class="@cambioClass small">
+                                    <i class="fas @cambioIcon me-1"></i>@Math.Abs(Model.Resumen.CambioVentasVsAyer).ToString("N0")% vs ayer
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingresos Hoy -->
+            <div class="col-6 col-md-3">
+                <div class="kpi-card card p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1">Ingresos Hoy</div>
+                            <div class="fs-3 fw-bold text-success">$@Model.Resumen.IngresosHoy.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comisiones Hoy -->
+            <div class="col-6 col-md-3">
+                <div class="kpi-card card p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1">Comisiones Hoy</div>
+                            <div class="fs-3 fw-bold text-warning">$@Model.Resumen.ComisionesHoy.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usuarios Nuevos -->
+            <div class="col-6 col-md-3">
+                <div class="kpi-card card p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1">Nuevos Usuarios</div>
+                            <div class="fs-3 fw-bold">@Model.Resumen.NuevosUsuariosHoy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Pendientes -->
+        <div class="row g-4 mb-4">
+            <!-- Pagos Pendientes -->
+            <div class="col-md-6 col-lg-3">
+                <div class="action-card card h-100">
+                    <div class="card-header bg-warning bg-opacity-10 border-0 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-warning">
+                                <i class="fas fa-clock me-2"></i>Pagos Pendientes
+                            </h6>
+                            @if (Model.TotalPagosPendientes > 0)
+                            {
+                                <span class="badge bg-warning text-dark rounded-pill">@Model.TotalPagosPendientes</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Model.PagosPendientes.Any())
+                        {
+                            @foreach (var pago in Model.PagosPendientes.Take(3))
+                            {
+                                <div class="action-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold small">#@pago.NumeroOrden</div>
+                                        <div class="text-muted" style="font-size:.72rem;">@pago.NombreComprador</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-success">$@pago.Monto.ToString("N0")</div>
+                                    </div>
+                                </div>
+                            }
+                            <div class="p-3 text-center border-top">
+                                <a asp-action="Pagos" class="btn btn-sm btn-warning w-100">
+                                    <i class="fas fa-eye me-1"></i>Ver todos
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                                <p class="text-muted small mb-0">Sin pagos pendientes</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liberaciones Pendientes -->
+            <div class="col-md-6 col-lg-3">
+                <div class="action-card card h-100">
+                    <div class="card-header bg-success bg-opacity-10 border-0 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-success">
+                                <i class="fas fa-hand-holding-usd me-2"></i>Liberaciones
+                            </h6>
+                            @if (Model.TotalLiberacionesPendientes > 0)
+                            {
+                                <span class="badge bg-success rounded-pill">@Model.TotalLiberacionesPendientes</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Model.LiberacionesPendientes.Any())
+                        {
+                            @foreach (var lib in Model.LiberacionesPendientes.Take(3))
+                            {
+                                <div class="action-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold small">@lib.NombreVendedor</div>
+                                        <div class="text-muted" style="font-size:.72rem;">#@lib.NumeroOrden</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-success">$@lib.MontoNeto.ToString("N0")</div>
+                                    </div>
+                                </div>
+                            }
+                            <div class="p-3 text-center border-top">
+                                <a asp-action="Liberaciones" class="btn btn-sm btn-success w-100">
+                                    <i class="fas fa-eye me-1"></i>Ver todos
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                                <p class="text-muted small mb-0">Sin liberaciones pendientes</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disputas Abiertas -->
+            <div class="col-md-6 col-lg-3">
+                <div class="action-card card h-100">
+                    <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Disputas
+                            </h6>
+                            @if (Model.TotalDisputasAbiertas > 0)
+                            {
+                                <span class="badge bg-danger rounded-pill">@Model.TotalDisputasAbiertas</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Model.DisputasAbiertas.Any())
+                        {
+                            @foreach (var disputa in Model.DisputasAbiertas.Take(3))
+                            {
+                                <div class="action-item">
+                                    <div class="fw-semibold small">#DIS-@disputa.Id</div>
+                                    <div class="text-muted" style="font-size:.72rem;">
+                                        @(disputa.Titulo.Length > 30 ? disputa.Titulo.Substring(0, 30) + "..." : disputa.Titulo)
+                                    </div>
+                                </div>
+                            }
+                            <div class="p-3 text-center border-top">
+                                <a asp-action="Disputas" class="btn btn-sm btn-danger w-100">
+                                    <i class="fas fa-eye me-1"></i>Ver todas
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-handshake text-success fa-2x mb-2"></i>
+                                <p class="text-muted small mb-0">Sin disputas abiertas</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vendedores Pendientes -->
+            <div class="col-md-6 col-lg-3">
+                <div class="action-card card h-100">
+                    <div class="card-header bg-primary bg-opacity-10 border-0 py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-primary">
+                                <i class="fas fa-user-check me-2"></i>Verificaciones
+                            </h6>
+                            @if (Model.TotalVendedoresPendientes > 0)
+                            {
+                                <span class="badge bg-primary rounded-pill">@Model.TotalVendedoresPendientes</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Model.VendedoresPendientes.Any())
+                        {
+                            @foreach (var vendedor in Model.VendedoresPendientes.Take(3))
+                            {
+                                <div class="action-item d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:.75rem;font-weight:700;">
+                                        @vendedor.NombreComercial.Substring(0,1).ToUpper()
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold small">@vendedor.NombreComercial</div>
+                                        <div class="text-muted" style="font-size:.72rem;">@vendedor.Email</div>
+                                    </div>
+                                </div>
+                            }
+                            <div class="p-3 text-center border-top">
+                                <a asp-action="Usuarios" asp-route-filtroRol="Vendedor" class="btn btn-sm btn-primary w-100">
+                                    <i class="fas fa-eye me-1"></i>Ver todos
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                                <p class="text-muted small mb-0">Todos verificados</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen del Mes + Top Vendedores -->
+        <div class="row g-4 mb-4">
+            <!-- Resumen del Mes -->
+            <div class="col-lg-8">
+                <div class="card border-0 rounded-3 shadow-sm">
+                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                        <h6 class="fw-bold mb-0">
+                            <i class="fas fa-chart-line text-primary me-2"></i>Resumen del Mes
+                        </h6>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <div class="row g-4">
+                            <div class="col-md-4 text-center">
+                                <div class="fs-1 fw-bold text-primary">@Model.Resumen.VentasMes</div>
+                                <div class="text-muted small">Ventas</div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="fs-1 fw-bold text-success">$@Model.Resumen.IngresosMes.ToString("N0")</div>
+                                <div class="text-muted small">Ingresos</div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="fs-1 fw-bold text-warning">$@Model.Resumen.ComisionesMes.ToString("N0")</div>
+                                <div class="text-muted small">Comisiones</div>
+                            </div>
+                        </div>
+                        <hr class="my-4" />
+                        <div class="row g-3 text-center">
+                            <div class="col-4">
+                                <div class="fw-bold">@Model.Resumen.TotalUsuarios</div>
+                                <div class="text-muted small">Usuarios</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold">@Model.Resumen.VendedoresActivos</div>
+                                <div class="text-muted small">Vendedores Activos</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold">@Model.Resumen.TortasDisponibles</div>
+                                <div class="text-muted small">Tortas Disponibles</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Vendedores -->
+            <div class="col-lg-4">
+                <div class="card border-0 rounded-3 shadow-sm h-100">
+                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                        <h6 class="fw-bold mb-0">
+                            <i class="fas fa-trophy text-warning me-2"></i>Top Vendedores
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Model.TopVendedores.Any())
+                        {
+                            @foreach (var vendedor in Model.TopVendedores.Take(5))
+                            {
+                                var medalColor = vendedor.Posicion switch {
+                                    1 => "#fbbf24",
+                                    2 => "#9ca3af",
+                                    3 => "#d97706",
+                                    _ => "#e5e7eb"
+                                };
+                                <div class="d-flex align-items-center gap-3 px-4 py-3 border-bottom">
+                                    <div class="fw-bold text-center" style="width:24px;color:@medalColor;">
+                                        @if (vendedor.Posicion <= 3)
+                                        {
+                                            <i class="fas fa-medal"></i>
+                                        }
+                                        else
+                                        {
+                                            @vendedor.Posicion
+                                        }
+                                    </div>
+                                    <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:.8rem;font-weight:700;">
+                                        @vendedor.NombreComercial.Substring(0,1).ToUpper()
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small">@vendedor.NombreComercial</div>
+                                        <div class="text-muted" style="font-size:.72rem;">@vendedor.TotalVentas ventas</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-success small">$@vendedor.TotalIngresos.ToString("N0")</div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-chart-bar text-muted fa-2x mb-2"></i>
+                                <p class="text-muted small mb-0">Sin datos aún</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ventas Recientes -->
+        <div class="card border-0 rounded-3 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">
+                    <i class="fas fa-history text-muted me-2"></i>Ventas Recientes
+                </h6>
+                <a asp-action="Ventas" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.VentasRecientes.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4" style="font-size:.75rem;">Orden</th>
+                                    <th style="font-size:.75rem;">Comprador</th>
+                                    <th class="text-end" style="font-size:.75rem;">Total</th>
+                                    <th class="text-center" style="font-size:.75rem;">Estado</th>
+                                    <th class="text-center" style="font-size:.75rem;">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var venta in Model.VentasRecientes.Take(5))
+                                {
+                                    var estadoClass = venta.Estado switch {
+                                        EstadoVenta.Pendiente     => "bg-warning text-dark",
+                                        EstadoVenta.Pagada        => "bg-info",
+                                        EstadoVenta.EnPreparacion => "bg-primary",
+                                        EstadoVenta.Entregada     => "bg-success",
+                                        EstadoVenta.Cancelada     => "bg-danger",
+                                        _                         => "bg-secondary"
+                                    };
+                                    <tr>
+                                        <td class="ps-4">
+                                            <a asp-controller="Venta" asp-action="Details" asp-route-id="@venta.Id" class="fw-semibold text-decoration-none">
+                                                #@venta.NumeroOrden
+                                            </a>
+                                        </td>
+                                        <td class="text-muted small">@venta.NombreComprador</td>
+                                        <td class="text-end fw-bold text-success">$@venta.Total.ToString("N0")</td>
+                                        <td class="text-center">
+                                            <span class="badge @estadoClass rounded-pill px-2">@venta.EstadoTexto</span>
+                                        </td>
+                                        <td class="text-center text-muted small">@venta.FechaVenta.ToString("dd/MM HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-shopping-cart text-muted fa-2x mb-2"></i>
+                        <p class="text-muted small mb-0">Sin ventas recientes</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

@@ -13,9 +13,9 @@ namespace CasaDeLasTortas.Controllers
     public class ImagenTortaController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly FileService _fileService;
+        private readonly IFileService _fileService;
 
-        public ImagenTortaController(IUnitOfWork unitOfWork, FileService fileService)
+        public ImagenTortaController(IUnitOfWork unitOfWork, IFileService fileService)
         {
             _unitOfWork = unitOfWork;
             _fileService = fileService;

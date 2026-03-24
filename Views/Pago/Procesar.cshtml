@@ -1,0 +1,149 @@
+@model ProcesarPagoViewModel
+@{
+    ViewData["Title"] = "Procesar Pago";
+}
+
+<div class="container py-4" style="max-width: 700px;">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a asp-controller="Venta" asp-action="MisCompras" class="text-decoration-none">Mis Compras</a></li>
+                <li class="breadcrumb-item active">Procesar Pago</li>
+            </ol>
+        </nav>
+        <h1 class="fw-bold"><i class="fas fa-credit-card text-success me-2"></i>Procesar Pago</h1>
+        <p class="text-muted">Orden #@Model.NumeroOrden</p>
+    </div>
+
+    <!-- Resumen -->
+    <div class="card shadow-sm mb-4 border-success">
+        <div class="card-header bg-success bg-opacity-10">
+            <h5 class="mb-0 text-success fw-semibold"><i class="fas fa-shopping-bag me-2"></i>Resumen de la compra</h5>
+        </div>
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <span class="text-muted">Total a pagar:</span>
+            <span class="display-6 fw-bold text-success">$@Model.MontoTotal.ToString("N2")</span>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0 fw-semibold"><i class="fas fa-lock me-2"></i>Datos del pago</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="RealizarPago" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="VentaId" />
+                <input type="hidden" asp-for="CompradorId" />
+                <input type="hidden" asp-for="CompradorNombre" />
+                <input type="hidden" asp-for="CompradorEmail" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <!-- Método de pago -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Método de pago *</label>
+                    <div class="row g-2">
+                        @foreach (var metodo in Model.MetodosDisponibles)
+                        {
+                            <div class="col-6 col-md-4">
+                                <input type="radio" class="btn-check" name="MetodoPago" value="@metodo" id="metodo_@metodo" autocomplete="off"
+                                       @(metodo == MetodoPago.Transferencia ? "checked" : "") onchange="seleccionarMetodo('@metodo')" />
+                                <label class="btn btn-outline-success w-100" for="metodo_@metodo">
+                                    @switch (metodo)
+                                    {
+                                        case MetodoPago.Transferencia: <span><i class="fas fa-university me-1"></i>Transferencia</span> break;
+                                        case MetodoPago.Efectivo: <span><i class="fas fa-money-bill-wave me-1"></i>Efectivo</span> break;
+                                        case MetodoPago.TarjetaCredito: <span><i class="fas fa-credit-card me-1"></i>Crédito</span> break;
+                                        case MetodoPago.TarjetaDebito: <span><i class="fas fa-credit-card me-1"></i>Débito</span> break;
+                                        case MetodoPago.MercadoPago: <span><i class="fas fa-hand-holding-usd me-1"></i>MercadoPago</span> break;
+                                    }
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Campos transferencia -->
+                <div id="transferenciaFields">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Número de transferencia (opcional)</label>
+                        <input type="text" name="NumeroTransaccion" class="form-control" placeholder="Ej: 123456789" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Comprobante de pago</label>
+                        <input type="file" name="ArchivoComprobante" accept="image/*,application/pdf" class="form-control" />
+                        <div class="form-text">Formatos: JPG, PNG, PDF. Máximo 5MB</div>
+                    </div>
+                    <div class="alert alert-info small">
+                        <h6 class="fw-semibold"><i class="fas fa-info-circle me-1"></i>Datos para transferencia</h6>
+                        <p class="mb-1"><strong>Banco:</strong> Banco Ejemplo</p>
+                        <p class="mb-1"><strong>Titular:</strong> Casa de las Tortas S.R.L.</p>
+                        <p class="mb-1"><strong>CBU:</strong> 1234567890123456789012</p>
+                        <p class="mb-1"><strong>Alias:</strong> casa.tortas.mp</p>
+                        <p class="mb-0"><strong>Monto:</strong> $@Model.MontoTotal.ToString("N2")</p>
+                    </div>
+                </div>
+
+                <!-- Campos tarjeta -->
+                <div id="tarjetaFields" class="d-none">
+                    <div class="alert alert-warning small">
+                        <i class="fas fa-info-circle me-1"></i>La integración con tarjetas estará disponible próximamente. Selecciona transferencia o efectivo.
+                    </div>
+                </div>
+
+                <!-- Campos efectivo -->
+                <div id="efectivoFields" class="d-none">
+                    <div class="alert alert-success small">
+                        <i class="fas fa-info-circle me-1"></i>El pago en efectivo se realiza al momento del retiro en el local. El vendedor confirmará cuando recibas el producto.
+                    </div>
+                </div>
+
+                <!-- Campos MercadoPago -->
+                <div id="mercadopagoFields" class="d-none">
+                    <div class="alert alert-warning small">
+                        <i class="fas fa-info-circle me-1"></i>La integración con MercadoPago estará disponible próximamente.
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="mt-3 mb-4">
+                    <label class="form-label fw-semibold">Observaciones (opcional)</label>
+                    <textarea name="Observaciones" rows="2" class="form-control" placeholder="Información adicional sobre el pago..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-3">
+                    <a asp-controller="Venta" asp-action="Details" asp-route-id="@Model.VentaId" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success fw-semibold">
+                        <i class="fas fa-check-circle me-2"></i>Confirmar pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="text-center mt-3 small text-muted">
+        <i class="fas fa-lock me-1"></i>Tus datos están seguros
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function seleccionarMetodo(metodo) {
+            document.getElementById('transferenciaFields').classList.add('d-none');
+            document.getElementById('tarjetaFields').classList.add('d-none');
+            document.getElementById('efectivoFields').classList.add('d-none');
+            document.getElementById('mercadopagoFields').classList.add('d-none');
+
+            switch(metodo) {
+                case 'Transferencia': document.getElementById('transferenciaFields').classList.remove('d-none'); break;
+                case 'TarjetaCredito':
+                case 'TarjetaDebito': document.getElementById('tarjetaFields').classList.remove('d-none'); break;
+                case 'Efectivo': document.getElementById('efectivoFields').classList.remove('d-none'); break;
+                case 'MercadoPago': document.getElementById('mercadopagoFields').classList.remove('d-none'); break;
+            }
+        }
+    </script>
+}

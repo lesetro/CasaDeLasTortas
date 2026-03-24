@@ -1,0 +1,191 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction    = ViewContext.RouteData.Values["action"]?.ToString()     ?? "";
+
+    bool IsActive(string ctrl, string? action = null)
+    {
+        if (ctrl != currentController) return false;
+        return action == null || action == currentAction;
+    }
+
+    string Li(string ctrl, string? action = null)
+        => IsActive(ctrl, action) ? "nav-item active" : "nav-item";
+
+    string A(string ctrl, string? action = null)
+        => IsActive(ctrl, action)
+            ? "nav-link d-flex align-items-center gap-2 py-2 px-3 rounded fw-semibold text-white"
+            : "nav-link d-flex align-items-center gap-2 py-2 px-3 rounded text-white text-opacity-75";
+}
+
+<style>
+    .admin-sidebar {
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        min-height: 100vh;
+        width: 260px;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 100;
+        overflow-y: auto;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+    }
+    .admin-sidebar .nav-link.fw-semibold {
+        background: rgba(249,115,22,0.18);
+        border-left: 3px solid #f97316;
+        color: #fff !important;
+    }
+    .admin-sidebar .nav-link:not(.fw-semibold):hover {
+        background: rgba(255,255,255,0.06);
+        color: #fff !important;
+        text-decoration: none;
+    }
+    .admin-sidebar .nav-link { transition: all 0.18s; }
+    .sidebar-section-title {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        color: rgba(255,255,255,0.35);
+        padding: 0.5rem 1rem 0.25rem;
+        margin-top: 0.5rem;
+    }
+    .sidebar-badge {
+        font-size: 0.65rem;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+    .admin-sidebar-brand {
+        padding: 1.4rem 1rem 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    /* Offset para el contenido principal */
+    .admin-content-offset { margin-left: 260px; }
+    @@media (max-width: 991px) {
+        .admin-sidebar { transform: translateX(-100%); transition: transform .25s; }
+        .admin-sidebar.open { transform: translateX(0); }
+        .admin-content-offset { margin-left: 0; }
+    }
+</style>
+
+<div class="admin-sidebar d-flex flex-column" id="adminSidebar">
+
+    <!-- Marca -->
+    <div class="admin-sidebar-brand">
+        <a asp-controller="Home" asp-action="Index"
+           class="d-flex align-items-center gap-2 text-decoration-none">
+            <span style="font-size:2rem;">🎂</span>
+            <div>
+                <div class="text-white fw-bold lh-1" style="font-size:.95rem;">Casa de las Tortas</div>
+                <div class="text-white text-opacity-50" style="font-size:.7rem;">Panel de Administración</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Navegación -->
+    <nav class="flex-grow-1 px-2 py-3">
+        <ul class="nav flex-column gap-1">
+
+            <!-- GENERAL -->
+            <li class="sidebar-section-title">General</li>
+
+            <li class="@Li("Admin","Index")">
+                <a asp-controller="Admin" asp-action="Index" class="@A("Admin","Index")">
+                    <i class="fas fa-tachometer-alt fa-fw"></i> Dashboard
+                </a>
+            </li>
+
+            <!-- GESTIÓN DE PAGOS -->
+            <li class="sidebar-section-title">Gestión de Pagos</li>
+
+            <li class="@Li("Admin","Pagos")">
+                <a asp-controller="Admin" asp-action="Pagos" class="@A("Admin","Pagos")">
+                    <i class="fas fa-file-invoice-dollar fa-fw"></i>
+                    <span class="flex-grow-1">Verificar Pagos</span>
+                    @if (ViewBag.PagosPendientes != null && (int)ViewBag.PagosPendientes > 0)
+                    {
+                        <span class="badge bg-warning text-dark sidebar-badge">@ViewBag.PagosPendientes</span>
+                    }
+                </a>
+            </li>
+
+            <li class="@Li("Admin","Liberaciones")">
+                <a asp-controller="Admin" asp-action="Liberaciones" class="@A("Admin","Liberaciones")">
+                    <i class="fas fa-hand-holding-usd fa-fw"></i>
+                    <span class="flex-grow-1">Liberar Fondos</span>
+                    @if (ViewBag.LiberacionesPendientes != null && (int)ViewBag.LiberacionesPendientes > 0)
+                    {
+                        <span class="badge bg-success sidebar-badge">@ViewBag.LiberacionesPendientes</span>
+                    }
+                </a>
+            </li>
+
+            <li class="@Li("Admin","Disputas")">
+                <a asp-controller="Admin" asp-action="Disputas" class="@A("Admin","Disputas")">
+                    <i class="fas fa-exclamation-triangle fa-fw"></i>
+                    <span class="flex-grow-1">Disputas</span>
+                    @if (ViewBag.DisputasAbiertas != null && (int)ViewBag.DisputasAbiertas > 0)
+                    {
+                        <span class="badge bg-danger sidebar-badge">@ViewBag.DisputasAbiertas</span>
+                    }
+                </a>
+            </li>
+
+            <!-- USUARIOS Y PRODUCTOS -->
+            <li class="sidebar-section-title">Usuarios y Productos</li>
+
+            <li class="@Li("Admin","Usuarios")">
+                <a asp-controller="Admin" asp-action="Usuarios" class="@A("Admin","Usuarios")">
+                    <i class="fas fa-users fa-fw"></i> Usuarios
+                </a>
+            </li>
+
+            <li class="@Li("Admin","Ventas")">
+                <a asp-controller="Admin" asp-action="Ventas" class="@A("Admin","Ventas")">
+                    <i class="fas fa-shopping-cart fa-fw"></i> Ventas
+                </a>
+            </li>
+
+            <li class="@Li("Admin","Reportes")">
+                <a asp-controller="Admin" asp-action="Reportes" class="@A("Admin","Reportes")">
+                    <i class="fas fa-chart-bar fa-fw"></i> Reportes
+                </a>
+            </li>
+
+            <!-- CONFIGURACIÓN -->
+            <li class="sidebar-section-title">Configuración</li>
+
+            <li class="@Li("Admin","Configuracion")">
+                <a asp-controller="Admin" asp-action="Configuracion" class="@A("Admin","Configuracion")">
+                    <i class="fas fa-cog fa-fw"></i> Config. Plataforma
+                </a>
+            </li>
+
+        </ul>
+    </nav>
+
+    <!-- Footer sidebar -->
+    <div class="px-3 py-3 border-top" style="border-color: rgba(255,255,255,0.08) !important;">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="rounded-circle d-flex align-items-center justify-content-center bg-warning text-dark fw-bold"
+                 style="width:34px;height:34px;font-size:.85rem;">
+                @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")
+            </div>
+            <div>
+                <div class="text-white fw-semibold" style="font-size:.8rem;">@User.Identity?.Name</div>
+                <div class="text-white text-opacity-40" style="font-size:.68rem;">Administrador</div>
+            </div>
+        </div>
+        <a asp-controller="Account" asp-action="Logout"
+           class="btn btn-sm w-100 text-white text-opacity-75 border border-white border-opacity-25"
+           style="font-size:.78rem;">
+            <i class="fas fa-sign-out-alt me-1"></i> Cerrar sesión
+        </a>
+    </div>
+</div>
+
+<!-- Toggle mobile -->
+<button class="btn btn-dark d-lg-none position-fixed"
+        style="top:10px;left:10px;z-index:200;"
+        onclick="document.getElementById('adminSidebar').classList.toggle('open')">
+    <i class="fas fa-bars"></i>
+</button>

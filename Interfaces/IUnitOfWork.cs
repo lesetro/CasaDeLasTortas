@@ -3,34 +3,33 @@ using System.Threading.Tasks;
 
 namespace CasaDeLasTortas.Interfaces
 {
-    /// <summary>
-    /// Patrón Unit of Work que agrupa todos los repositorios
-    /// y maneja las transacciones de base de datos
-    /// </summary>
     public interface IUnitOfWork : IDisposable
     {
-        // Repositorios
+        // Repositorios existentes
         IPersonaRepository PersonaRepository { get; }
         IVendedorRepository VendedorRepository { get; }
         ICompradorRepository CompradorRepository { get; }
         ITortaRepository TortaRepository { get; }
         IImagenTortaRepository ImagenesTorta { get; }
         IPagoRepository PagoRepository { get; }
+        IVentaRepository Ventas { get; }
+        IDetalleVentaRepository DetallesVenta { get; }
         
-        // Métodos de transacción básicos
+        // ✅ NUEVOS REPOSITORIOS
+        ILiberacionRepository Liberaciones { get; }
+        IDisputaRepository Disputas { get; }
+        IConfiguracionRepository Configuracion { get; }
+        
+        // Transacciones
         Task<int> SaveChangesAsync();
         Task<int> SaveAsync();
-        
-        // Transacciones explícitas
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
         Task RollbackTransactionAsync();
         
-        // Métodos adicionales
+        // Utilidades
         void DetachAllEntities();
         Task<bool> SaveChangesReturnBoolAsync();
-        
-        // ✅ MÉTODOS NUEVOS AGREGADOS
         Task<bool> AnyChangesAsync();
         void Update<TEntity>(TEntity entity) where TEntity : class;
         void Remove<TEntity>(TEntity entity) where TEntity : class;

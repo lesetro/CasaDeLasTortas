@@ -77,15 +77,17 @@ namespace CasaDeLasTortas.Repositories
                 .Include(t => t.Vendedor)
                     .ThenInclude(v => v.Persona)
                 .Include(t => t.Imagenes)
-                .Include(t => t.Pagos)
+                .Include(t => t.DetallesVenta)  
+                    .ThenInclude(d => d.Venta)   // Incluir la venta asociada
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
 
-        public async Task<IEnumerable<Torta>> GetAllWithVendedorAsync()
+       public async Task<IEnumerable<Torta>> GetAllWithVendedorAsync()
         {
             return await _context.Tortas
                 .Include(t => t.Vendedor)
                     .ThenInclude(v => v.Persona)
+                .Include(t => t.Imagenes)          
                 .OrderBy(t => t.Nombre)
                 .ToListAsync();
         }
@@ -162,6 +164,8 @@ namespace CasaDeLasTortas.Repositories
                 .OrderBy(t => t.Nombre)
                 .ToListAsync();
         }
+
+        
 
         // ==================== ESTADÍSTICAS ====================
 
@@ -263,17 +267,23 @@ namespace CasaDeLasTortas.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Torta>> GetTortasPorCategoriasAsync(List<string> categorias, int cantidad)
-        {
-            return await _context.Tortas
-                .Include(t => t.Vendedor)
-                    .ThenInclude(v => v.Persona)
-                .Include(t => t.Imagenes)
-                .Where(t => t.Disponible && t.Stock > 0 && categorias.Contains(t.Categoria))
-                .OrderByDescending(t => t.VecesVendida)
-                .Take(cantidad)
-                .ToListAsync();
-        }
+        public async Task<IEnumerable<Torta>> GetTortasPorCategoriasAsync(List<string?> categorias, int cantidad)
+{
+    if (categorias == null || !categorias.Any() || categorias.All(c => string.IsNullOrEmpty(c)))
+    {
+        return new List<Torta>();
+    }
+
+    var categoriasValidas = categorias.Where(c => !string.IsNullOrEmpty(c)).Select(c => c!);
+    
+    return await _context.Tortas
+        .Include(t => t.Vendedor)
+        .Include(t => t.Imagenes)
+        .Where(t => t.Disponible && t.Stock > 0 && categoriasValidas.Contains(t.Categoria))
+        .OrderByDescending(t => t.FechaCreacion)
+        .Take(cantidad)
+        .ToListAsync();
+}
 
         public async Task<IEnumerable<Torta>> GetTortasNuevasHoyAsync()
         {
@@ -284,6 +294,16 @@ namespace CasaDeLasTortas.Repositories
                 .Where(t => t.Disponible && t.Stock > 0 && t.FechaCreacion.Date == hoy)
                 .OrderByDescending(t => t.FechaCreacion)
                 .ToListAsync();
+        }
+        
+        public async Task<Torta?> GetByIdWithVentasAsync(int id)
+        {
+            return await _context.Tortas
+                .Include(t => t.Vendedor)
+                .Include(t => t.Imagenes)
+                .Include(t => t.DetallesVenta)
+                    .ThenInclude(d => d.Venta)
+                .FirstOrDefaultAsync(t => t.Id == id);
         }
 
         // ==================== MÉTODOS NUEVOS PARA EL PAGO CONTROLLER ====================
@@ -300,22 +320,22 @@ namespace CasaDeLasTortas.Repositories
         public async Task<Torta?> GetByIdWithDetallesAsync(int id)
         {
             return await _context.Tortas
-                .Include(t => t.Vendedor) // Incluir información del vendedor
-                    .ThenInclude(v => v.Persona) // Incluir datos de la persona del vendedor
-                .Include(t => t.Imagenes) // Incluir todas las imágenes
-                .Include(t => t.Pagos) // Incluir pagos relacionados (opcional)
-                .FirstOrDefaultAsync(t => t.Id == id);
-        }
-        public async Task<Torta?> GetByIdWithPagosAsync(int id)
-        {
-            return await _context.Tortas
-                .Include(t => t.Pagos)
-                    .ThenInclude(p => p.Comprador)
-                        .ThenInclude(c => c.Persona)
                 .Include(t => t.Vendedor)
                     .ThenInclude(v => v.Persona)
+                .Include(t => t.Imagenes)
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
+      public async Task<Torta?> GetByIdWithPagosAsync(int id)  
+{
+    // Los pagos ahora están en Venta a través de DetallesVenta
+    return await _context.Tortas
+        .Include(t => t.Vendedor)
+        .Include(t => t.Imagenes)
+        .Include(t => t.DetallesVenta)
+            .ThenInclude(d => d.Venta)
+                .ThenInclude(v => v.Pagos)
+        .FirstOrDefaultAsync(t => t.Id == id);
+}
         public async Task<IEnumerable<Torta>> GetByPrecioRangoAsync(decimal min, decimal max)
         {
             return await _context.Tortas

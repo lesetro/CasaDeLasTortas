@@ -8,6 +8,12 @@
   ![SignalR]
   ![MariaDB]
 
+## Comandos utiles para migraciones
+
+dotnet ef database update 0       # revierte todo
+dotnet ef migrations remove       # borra la última migración si hay conflicto
+dotnet ef migrations add Inicial     # crea una migración limpia
+dotnet ef database update            # aplica todo
 
 ## Descripción del Proyecto
 

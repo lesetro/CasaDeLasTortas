@@ -1,0 +1,159 @@
+@model CasaDeLasTortas.Models.ViewModels.PersonaEditViewModel
+@{
+    ViewData["Title"] = "Editar Persona";
+}
+
+<div class="container py-4" style="max-width:700px">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Personas</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Editar</li>
+        </ol>
+    </nav>
+
+    <h2 class="fw-bold mb-4">
+        <i class="bi bi-person-gear me-2 text-primary"></i>Editar Persona
+    </h2>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @* enctype multipart es obligatorio cuando hay IFormFile (NuevoAvatar) *@
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        @* Id oculto *@
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="AvatarActual" />
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                @* Avatar actual *@
+                <div class="text-center mb-4">
+                    @if (!string.IsNullOrEmpty(Model.AvatarActual))
+                    {
+                        <img id="previewAvatar" src="@Model.AvatarActual" alt="Avatar"
+                             class="rounded-circle border" style="width:100px;height:100px;object-fit:cover;">
+                    }
+                    else
+                    {
+                        <div id="previewAvatar" class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center border"
+                             style="width:100px;height:100px;">
+                            <i class="bi bi-person-fill text-white fs-2"></i>
+                        </div>
+                    }
+                    <div class="mt-2">
+                        <label asp-for="NuevoAvatar" class="form-label text-muted small d-block">Cambiar foto (opcional)</label>
+                        <input asp-for="NuevoAvatar" type="file" class="form-control form-control-sm" style="max-width:300px; margin:0 auto;"
+                               accept="image/*" onchange="previewImg(this)" />
+                        <span asp-validation-for="NuevoAvatar" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    @* Nombre *@
+                    <div class="col-md-6">
+                        <label asp-for="Nombre" class="form-label fw-semibold"></label>
+                        <input asp-for="Nombre" class="form-control" placeholder="Nombre" />
+                        <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    </div>
+
+                    @* Apellido *@
+                    <div class="col-md-6">
+                        <label asp-for="Apellido" class="form-label fw-semibold"></label>
+                        <input asp-for="Apellido" class="form-control" placeholder="Apellido" />
+                        <span asp-validation-for="Apellido" class="text-danger small"></span>
+                    </div>
+
+                    @* Email *@
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label fw-semibold"></label>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="correo@ejemplo.com" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    @* Teléfono *@
+                    <div class="col-md-6">
+                        <label asp-for="Telefono" class="form-label fw-semibold"></label>
+                        <input asp-for="Telefono" type="tel" class="form-control" placeholder="Ej: 2664123456" />
+                        <span asp-validation-for="Telefono" class="text-danger small"></span>
+                    </div>
+
+                    @* DNI *@
+                    <div class="col-md-6">
+                        <label asp-for="Dni" class="form-label fw-semibold"></label>
+                        <input asp-for="Dni" class="form-control" placeholder="Ej: 30123456" />
+                        <span asp-validation-for="Dni" class="text-danger small"></span>
+                    </div>
+
+                    @* Fecha de Nacimiento *@
+                    <div class="col-md-6">
+                        <label asp-for="FechaNacimiento" class="form-label fw-semibold"></label>
+                        <input asp-for="FechaNacimiento" type="date" class="form-control" />
+                        <span asp-validation-for="FechaNacimiento" class="text-danger small"></span>
+                    </div>
+
+                    @* Dirección *@
+                    <div class="col-12">
+                        <label asp-for="Direccion" class="form-label fw-semibold"></label>
+                        <input asp-for="Direccion" class="form-control" placeholder="Calle, número, ciudad..." />
+                        <span asp-validation-for="Direccion" class="text-danger small"></span>
+                    </div>
+
+                    @* Activo *@
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input asp-for="Activo" class="form-check-input" type="checkbox" role="switch" id="Activo" />
+                            <label class="form-check-label fw-semibold" for="Activo">Cuenta activa</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white d-flex justify-content-between py-3">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-floppy me-1"></i>Guardar cambios
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function previewImg(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const preview = document.getElementById('previewAvatar');
+                    
+                    // Si el preview actual es un DIV, lo reemplazamos con una IMG
+                    if (preview.tagName === 'DIV') {
+                        const img = document.createElement('img');
+                        img.id = 'previewAvatar';
+                        img.className = 'rounded-circle border';
+                        img.style.cssText = 'width:100px;height:100px;object-fit:cover;';
+                        img.alt = 'Avatar preview';
+                        preview.parentNode.replaceChild(img, preview);
+                        img.src = e.target.result;
+                    } else {
+                        // Si ya es una IMG, solo actualizamos el src
+                        preview.src = e.target.result;
+                    }
+                };
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

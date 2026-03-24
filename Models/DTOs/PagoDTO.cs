@@ -1,288 +1,202 @@
 using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using CasaDeLasTortas.Models.Entities;
-using Microsoft.AspNetCore.Http;
 
 namespace CasaDeLasTortas.Models.DTOs
 {
-    // DTO Principal
+    /// <summary>
+    /// DTO para mostrar información de un pago
+    /// </summary>
     public class PagoDTO
     {
         public int Id { get; set; }
-        public int TortaId { get; set; }
+        public int VentaId { get; set; }
+        public string NumeroOrden { get; set; } = string.Empty;
         public int CompradorId { get; set; }
-        public int VendedorId { get; set; }
+        public string NombreComprador { get; set; } = string.Empty;
+        
+        // Montos
         public decimal Monto { get; set; }
-        public decimal PrecioUnitario { get; set; }
-        public int Cantidad { get; set; }
-        public decimal Subtotal { get; set; }
-        public decimal Descuento { get; set; }
-        public DateTime FechaPago { get; set; }
+        public decimal ComisionPlataforma { get; set; }
+        public decimal MontoVendedores { get; set; }
+        
+        // Estado
         public EstadoPago Estado { get; set; }
+        public string EstadoTexto { get; set; } = string.Empty;
         public MetodoPago? MetodoPago { get; set; }
+        public string? MetodoPagoTexto { get; set; }
+        
+        // Fechas
+        public DateTime FechaPago { get; set; }
+        public DateTime? FechaVerificacion { get; set; }
+        public DateTime? FechaComprobante { get; set; }
+        public DateTime? FechaRechazo { get; set; }
+        public DateTime? FechaReembolso { get; set; }
+        
+        // Comprobante
         public string? ArchivoComprobante { get; set; }
         public string? NumeroTransaccion { get; set; }
-        public string? Observaciones { get; set; }
-        public string? DireccionEntrega { get; set; }
-        public DateTime? FechaEntrega { get; set; }
-        public DateTime? FechaActualizacion { get; set; }
-        public bool NotificacionEnviada { get; set; }
         
-        // Información relacionada
-        public string NombreTorta { get; set; }
-        public string NombreComprador { get; set; }
-        public string NombreVendedor { get; set; }
-        public string? ImagenTorta { get; set; }
-    }
-
-    // DTO para Crear Pago
-    public class PagoCreateDTO
-    {
-        public int TortaId { get; set; }
-        public int CompradorId { get; set; }
-        public int Cantidad { get; set; }
-        public decimal? Descuento { get; set; }
-        public MetodoPago MetodoPago { get; set; }
-        public string? NumeroTransaccion { get; set; }
-        public string? Observaciones { get; set; }
-        public string? DireccionEntrega { get; set; }
-        public DateTime? FechaEntrega { get; set; }
-        public IFormFile? ArchivoComprobante { get; set; }
-    }
-
-    // DTO para Actualizar Pago
-    public class PagoUpdateDTO
-    {
-        public EstadoPago Estado { get; set; }
-        public MetodoPago? MetodoPago { get; set; }
-        public string? NumeroTransaccion { get; set; }
-        public string? Observaciones { get; set; }
-        public string? DireccionEntrega { get; set; }
-        public DateTime? FechaEntrega { get; set; }
-        public IFormFile? ArchivoComprobante { get; set; }
-    }
-
-    // DTO para Listado de Pagos
-    public class PagoListDTO
-    {
-        public int Id { get; set; }
-        public string NombreTorta { get; set; }
-        public string NombreComprador { get; set; }
-        public string NombreVendedor { get; set; }
-        public int Cantidad { get; set; }
-        public decimal Monto { get; set; }
-        public DateTime FechaPago { get; set; }
-        public EstadoPago Estado { get; set; }
-        public MetodoPago? MetodoPago { get; set; }
-        public bool TieneComprobante { get; set; }
-        public string? ImagenTorta { get; set; }
-    }
-
-    // DTO para Detalle de Pago
-    public class PagoDetalleDTO
-    {
-        public int Id { get; set; }
+        // Verificación
+        public int? VerificadoPorId { get; set; }
+        public string? VerificadoPorNombre { get; set; }
+        public string? ObservacionesAdmin { get; set; }
         
-        // Información de la Torta
-        public TortaListDTO Torta { get; set; }
+        // Rechazo
+        public string? MotivoRechazo { get; set; }
+        public int IntentosRechazados { get; set; }
         
-        // Información del Comprador
-        public CompradorListDTO Comprador { get; set; }
+        // Reembolso
+        public string? ArchivoReembolso { get; set; }
+        public string? NumeroTransaccionReembolso { get; set; }
+        public string? MotivoReembolso { get; set; }
         
-        // Información del Vendedor
-        public VendedorListDTO Vendedor { get; set; }
-        
-        // Detalles del Pago
-        public decimal Monto { get; set; }
-        public decimal PrecioUnitario { get; set; }
-        public int Cantidad { get; set; }
-        public decimal Subtotal { get; set; }
-        public decimal Descuento { get; set; }
-        public DateTime FechaPago { get; set; }
-        public EstadoPago Estado { get; set; }
-        public MetodoPago? MetodoPago { get; set; }
-        public string? ArchivoComprobante { get; set; }
-        public string? NumeroTransaccion { get; set; }
-        public string? Observaciones { get; set; }
-        public string? DireccionEntrega { get; set; }
-        public DateTime? FechaEntrega { get; set; }
-        public DateTime? FechaActualizacion { get; set; }
-        public bool NotificacionEnviada { get; set; }
-        
-        // Información adicional
-        public bool PuedeActualizar { get; set; }
-        public bool PuedeCancelar { get; set; }
-        public List<string> HistorialEstados { get; set; }
-    }
-
-    // DTO para Historial de Compras
-    public class PagoHistorialDTO
-    {
-        public int Id { get; set; }
-        public DateTime FechaPago { get; set; }
-        public string NombreTorta { get; set; }
-        public string NombreVendedor { get; set; }
-        public int Cantidad { get; set; }
-        public decimal Monto { get; set; }
-        public EstadoPago Estado { get; set; }
-        public string EstadoTexto { get; set; }
-        public string? ImagenTorta { get; set; }
-        public DateTime? FechaEntrega { get; set; }
-        public bool PuedeCalificar { get; set; }
-    }
-
-    // DTO para Dashboard del Vendedor
-    public class PagoVendedorDTO
-    {
-        public int Id { get; set; }
-        public string NombreTorta { get; set; }
-        public string NombreComprador { get; set; }
-        public string EmailComprador { get; set; }
-        public string TelefonoComprador { get; set; }
-        public int Cantidad { get; set; }
-        public decimal Monto { get; set; }
-        public DateTime FechaPago { get; set; }
-        public EstadoPago Estado { get; set; }
-        public MetodoPago? MetodoPago { get; set; }
-        public string? DireccionEntrega { get; set; }
-        public DateTime? FechaEntrega { get; set; }
-        public bool TieneComprobante { get; set; }
-        public string? ArchivoComprobante { get; set; }
-    }
-
-    // DTO para Dashboard del Comprador
-    public class PagoCompradorDTO
-    {
-        public int Id { get; set; }
-        public string NombreTorta { get; set; }
-        public string NombreVendedor { get; set; }
-        public string TelefonoVendedor { get; set; }
-        public int Cantidad { get; set; }
-        public decimal Monto { get; set; }
-        public DateTime FechaPago { get; set; }
-        public EstadoPago Estado { get; set; }
-        public DateTime? FechaEntrega { get; set; }
-        public string? ImagenTorta { get; set; }
+        // Flags
+        public bool PuedeSerVerificado { get; set; }
         public bool PuedeSubirComprobante { get; set; }
-        public bool PuedeCancelar { get; set; }
+        public bool RequiereReembolso { get; set; }
+        
+        // Observaciones
+        public string? Observaciones { get; set; }
     }
 
-    // DTO para Estadísticas
-    public class PagoEstadisticasDTO
-    {
-        // Totales generales
-        public decimal TotalVentas { get; set; }
-        public int CantidadVentas { get; set; }
-        public decimal PromedioVenta { get; set; }
-        
-        // Por estado
-        public int VentasPendientes { get; set; }
-        public int VentasCompletadas { get; set; }
-        public int VentasCanceladas { get; set; }
-        
-        // Montos por estado
-        public decimal MontoPendiente { get; set; }
-        public decimal MontoCompletado { get; set; }
-        public decimal MontoCancelado { get; set; }
-        
-        // Estadísticas por período
-        public Dictionary<string, decimal> VentasPorMes { get; set; }
-        public Dictionary<string, int> CantidadPorMes { get; set; }
-        public Dictionary<string, decimal> VentasPorDia { get; set; }
-        
-        // Por categoría
-        public Dictionary<string, int> VentasPorCategoria { get; set; }
-        public Dictionary<string, decimal> MontosPorCategoria { get; set; }
-        
-        // Top productos
-        public List<TortaMasVendidaDTO> TortasMasVendidas { get; set; }
-        
-        // Top compradores
-        public List<CompradorFrecuenteDTO> CompradoresFrecuentes { get; set; }
-    }
-
-    // DTOs auxiliares para estadísticas
-    public class TortaMasVendidaDTO
-    {
-        public int TortaId { get; set; }
-        public string NombreTorta { get; set; }
-        public int CantidadVendida { get; set; }
-        public decimal MontoTotal { get; set; }
-        public string? ImagenTorta { get; set; }
-    }
-
-    public class CompradorFrecuenteDTO
-    {
-        public int CompradorId { get; set; }
-        public string NombreComprador { get; set; }
-        public int CantidadCompras { get; set; }
-        public decimal MontoTotal { get; set; }
-        public DateTime UltimaCompra { get; set; }
-    }
-
-    // DTO para confirmar pago
-    public class ConfirmarPagoDTO
-    {
-        public int PagoId { get; set; }
-        public string NumeroTransaccion { get; set; }
-        public DateTime? FechaConfirmacion { get; set; }
-        public IFormFile? ArchivoComprobante { get; set; }
-        public string? NotasConfirmacion { get; set; }
-    }
-
-    // DTO para cancelar pago
-    public class CancelarPagoDTO
-    {
-        public int PagoId { get; set; }
-        public string MotivoCancelacion { get; set; }
-        public bool NotificarComprador { get; set; }
-    }
-
-    // DTO para subir comprobante
+    /// <summary>
+    /// DTO para subir un comprobante de pago
+    /// </summary>
     public class SubirComprobanteDTO
     {
-        public int PagoId { get; set; }
-        public IFormFile ArchivoComprobante { get; set; }
+        [Required(ErrorMessage = "El ID de la venta es requerido")]
+        public int VentaId { get; set; }
+
+        [Required(ErrorMessage = "El método de pago es requerido")]
+        public MetodoPago MetodoPago { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Número de Transacción/Operación")]
         public string? NumeroTransaccion { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Observaciones")]
+        public string? Observaciones { get; set; }
+
+        // El archivo se maneja por separado (IFormFile)
     }
 
-    // DTO para filtros de búsqueda
-    public class PagoFiltrosDTO
+    /// <summary>
+    /// DTO para que el admin verifique un pago
+    /// </summary>
+    public class VerificarPagoDTO
     {
-        public int? VendedorId { get; set; }
-        public int? CompradorId { get; set; }
-        public int? TortaId { get; set; }
-        public EstadoPago? Estado { get; set; }
-        public MetodoPago? MetodoPago { get; set; }
-        public DateTime? FechaDesde { get; set; }
-        public DateTime? FechaHasta { get; set; }
-        public decimal? MontoMinimo { get; set; }
-        public decimal? MontoMaximo { get; set; }
-        public string? Busqueda { get; set; }
-        public string? OrdenarPor { get; set; }
-        public bool OrdenDescendente { get; set; }
-    }
-
-    // DTO para resumen de pago
-    public class PagoResumenDTO
-    {
-        public int TotalPagos { get; set; }
-        public decimal MontoTotal { get; set; }
-        public int PagosPendientes { get; set; }
-        public int PagosCompletados { get; set; }
-        public int PagosCancelados { get; set; }
-        public decimal PromedioMonto { get; set; }
-        public DateTime? UltimoPago { get; set; }
-    }
-
-    // DTO para notificación de pago
-    public class PagoNotificacionDTO
-    {
+        [Required]
         public int PagoId { get; set; }
-        public string TipoNotificacion { get; set; } // "Nuevo", "Actualizado", "Cancelado", "Completado"
-        public string Mensaje { get; set; }
-        public int DestinatarioId { get; set; }
-        public string RolDestinatario { get; set; } // "Vendedor" o "Comprador"
-        public DateTime FechaNotificacion { get; set; }
+
+        [Required]
+        public bool Aprobado { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Observaciones")]
+        public string? Observaciones { get; set; }
+
+        /// <summary>
+        /// Motivo de rechazo (requerido si Aprobado = false)
+        /// </summary>
+        [StringLength(500)]
+        [Display(Name = "Motivo de Rechazo")]
+        public string? MotivoRechazo { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para procesar un reembolso
+    /// </summary>
+    public class ProcesarReembolsoDTO
+    {
+        [Required]
+        public int PagoId { get; set; }
+
+        [Required(ErrorMessage = "El número de transacción es requerido")]
+        [StringLength(100)]
+        public string NumeroTransaccion { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string? Observaciones { get; set; }
+
+        // El archivo de comprobante se maneja por separado
+    }
+
+    /// <summary>
+    /// DTO para listar pagos pendientes de verificación (Admin)
+    /// </summary>
+    public class PagoPendienteDTO
+    {
+        public int Id { get; set; }
+        public int VentaId { get; set; }
+        public string NumeroOrden { get; set; } = string.Empty;
+        
+        // Comprador
+        public string NombreComprador { get; set; } = string.Empty;
+        public string EmailComprador { get; set; } = string.Empty;
+        
+        // Monto
+        public decimal Monto { get; set; }
+        public string MetodoPago { get; set; } = string.Empty;
+        
+        // Comprobante
+        public string? ArchivoComprobante { get; set; }
+        public string? NumeroTransaccion { get; set; }
+        public DateTime? FechaComprobante { get; set; }
+        
+        // Tiempo
+        public DateTime FechaPago { get; set; }
+        public int HorasEsperando { get; set; }
+        
+        // Intentos previos
+        public int IntentosRechazados { get; set; }
+        
+        // Vendedores involucrados
+        public int CantidadVendedores { get; set; }
+        public List<string> NombresVendedores { get; set; } = new();
+    }
+
+    /// <summary>
+    /// DTO para estadísticas de pagos
+    /// </summary>
+    public class EstadisticasPagosDTO
+    {
+        // Contadores
+        public int TotalPagos { get; set; }
+        public int PagosPendientes { get; set; }
+        public int PagosEnRevision { get; set; }
+        public int PagosVerificados { get; set; }
+        public int PagosRechazados { get; set; }
+        public int ReembolsosPendientes { get; set; }
+        
+        // Montos
+        public decimal MontoTotalRecibido { get; set; }
+        public decimal MontoEnRevision { get; set; }
+        public decimal MontoPendienteLiberacion { get; set; }
+        public decimal ComisionesTotales { get; set; }
+        
+        // Hoy
+        public int PagosHoy { get; set; }
+        public decimal MontoHoy { get; set; }
+        
+        // Tiempos promedio
+        public double HorasPromedioVerificacion { get; set; }
+    }
+
+    /// <summary>
+    /// DTO con información de la plataforma para el checkout
+    /// </summary>
+    public class DatosPagoPlataformaDTO
+    {
+        public string NombrePlataforma { get; set; } = string.Empty;
+        public string AliasCBU { get; set; } = string.Empty;
+        public string CBU { get; set; } = string.Empty;
+        public string Banco { get; set; } = string.Empty;
+        public string TitularCuenta { get; set; } = string.Empty;
+        public string? ImagenQR { get; set; }
+        public string? InstruccionesPago { get; set; }
+        public decimal ComisionPorcentaje { get; set; }
+        public int DiasLimitePago { get; set; }
     }
 }

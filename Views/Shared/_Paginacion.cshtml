@@ -1,0 +1,75 @@
+@model PaginacionViewModel
+
+@if (Model != null && Model.TotalPaginas > 1)
+{
+    <nav aria-label="Paginación">
+        <ul class="pagination justify-content-center mb-0">
+            @* Botón Anterior *@
+            <li class="page-item @(!Model.TienePaginaAnterior ? "disabled" : "")">
+                @if (Model.TienePaginaAnterior)
+                {
+                    <a class="page-link" href="@Url.Action(null, new {
+                        pagina = Model.PaginaActual - 1,
+                        busqueda = Model.Busqueda,
+                        filtroCategoria = ViewBag.FiltroCategoria,
+                        filtroVendedorId = ViewBag.FiltroVendedorId,
+                        filtroRol = ViewBag.FiltroRol,
+                        filtroEstado = ViewBag.FiltroEstado,
+                        ordenarPor = ViewBag.OrdenarPor
+                    })">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                }
+            </li>
+
+            @* Números de página *@
+            @foreach (var pagina in Model.NumerosPagina)
+            {
+                <li class="page-item @(pagina == Model.PaginaActual ? "active" : "")">
+                    <a class="page-link" href="@Url.Action(null, new {
+                        pagina = pagina,
+                        busqueda = Model.Busqueda,
+                        filtroCategoria = ViewBag.FiltroCategoria,
+                        filtroVendedorId = ViewBag.FiltroVendedorId,
+                        filtroRol = ViewBag.FiltroRol,
+                        filtroEstado = ViewBag.FiltroEstado,
+                        ordenarPor = ViewBag.OrdenarPor
+                    })">@pagina</a>
+                </li>
+            }
+
+            @* Botón Siguiente *@
+            <li class="page-item @(!Model.TienePaginaSiguiente ? "disabled" : "")">
+                @if (Model.TienePaginaSiguiente)
+                {
+                    <a class="page-link" href="@Url.Action(null, new {
+                        pagina = Model.PaginaActual + 1,
+                        busqueda = Model.Busqueda,
+                        filtroCategoria = ViewBag.FiltroCategoria,
+                        filtroVendedorId = ViewBag.FiltroVendedorId,
+                        filtroRol = ViewBag.FiltroRol,
+                        filtroEstado = ViewBag.FiltroEstado,
+                        ordenarPor = ViewBag.OrdenarPor
+                    })">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                }
+            </li>
+        </ul>
+    </nav>
+
+    <div class="text-center mt-2">
+        <small class="text-muted">
+            Página @Model.PaginaActual de @Model.TotalPaginas
+            (@Model.TotalItems registros)
+        </small>
+    </div>
+}

@@ -18,230 +18,269 @@ namespace CasaDeLasTortas.Repositories
         // ==================== CRUD BÁSICO ====================
 
         public async Task<Vendedor?> GetByIdAsync(int id)
-        {
-            return await _context.Vendedores
-                .FirstOrDefaultAsync(v => v.Id == id);
-        }
+            => await _context.Vendedores.FirstOrDefaultAsync(v => v.Id == id);
 
         public async Task<IEnumerable<Vendedor>> GetAllAsync(int pagina = 1, int registrosPorPagina = 10)
-        {
-            return await _context.Vendedores
+            => await _context.Vendedores
                 .Include(v => v.Persona)
                 .OrderBy(v => v.NombreComercial)
                 .Skip((pagina - 1) * registrosPorPagina)
                 .Take(registrosPorPagina)
                 .ToListAsync();
-        }
 
         public async Task AddAsync(Vendedor vendedor)
-        {
-            await _context.Vendedores.AddAsync(vendedor);
-        }
+            => await _context.Vendedores.AddAsync(vendedor);
 
         public void Update(Vendedor vendedor)
-        {
-            _context.Vendedores.Update(vendedor);
-        }
+            => _context.Vendedores.Update(vendedor);
 
         public void Delete(Vendedor vendedor)
-        {
-            _context.Vendedores.Remove(vendedor);
-        }
+            => _context.Vendedores.Remove(vendedor);
 
-        // ==================== MÉTODOS CON RELACIONES ====================
-
-        public async Task<Vendedor?> GetByIdWithPersonaAsync(int id)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .FirstOrDefaultAsync(v => v.Id == id);
-        }
-
-        public async Task<Vendedor?> GetByIdWithTortasAsync(int id)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Include(v => v.Tortas)
-                .FirstOrDefaultAsync(v => v.Id == id);
-        }
-
-        public async Task<Vendedor?> GetByIdWithDetallesCompletosAsync(int id)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Include(v => v.Tortas)
-                .Include(v => v.PagosRecibidos)
-                .FirstOrDefaultAsync(v => v.Id == id);
-        }
-
-        public async Task<IEnumerable<Vendedor>> GetAllWithPersonaAsync()
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .OrderBy(v => v.NombreComercial)
-                .ToListAsync();
-        }
-
-        // ==================== BÚSQUEDA POR PERSONA ====================
-
-        public async Task<Vendedor?> GetByPersonaIdAsync(int idPersona)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .FirstOrDefaultAsync(v => v.PersonaId == idPersona);
-        }
-
-        public async Task<bool> ExistsByPersonaIdAsync(int idPersona)
-        {
-            return await _context.Vendedores
-                .AnyAsync(v => v.PersonaId == idPersona);
-        }
-
-        // ==================== FILTROS ====================
-
-        public async Task<IEnumerable<Vendedor>> GetByEspecialidadAsync(string especialidad)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Where(v => v.Especialidad != null && v.Especialidad.Contains(especialidad))
-                .OrderBy(v => v.NombreComercial)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Vendedor>> GetActivosAsync()
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Where(v => v.Activo)
-                .OrderBy(v => v.NombreComercial)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Vendedor>> GetVerificadosAsync()
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Where(v => v.Verificado)
-                .OrderBy(v => v.NombreComercial)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Vendedor>> SearchAsync(string termino)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Where(v => 
-                    v.NombreComercial.Contains(termino) ||
-                    (v.Especialidad != null && v.Especialidad.Contains(termino)) ||
-                    (v.Descripcion != null && v.Descripcion.Contains(termino)) ||
-                    v.Persona.Nombre.Contains(termino) ||
-                    v.Persona.Email.Contains(termino))
-                .OrderBy(v => v.NombreComercial)
-                .ToListAsync();
-        }
-
-        // ==================== ESTADÍSTICAS ====================
-
-        public async Task<int> CountAsync()
-        {
-            return await _context.Vendedores.CountAsync();
-        }
-
-        public async Task<int> CountActivosAsync()
-        {
-            return await _context.Vendedores
-                .CountAsync(v => v.Activo);
-        }
-
-        public async Task<decimal> GetCalificacionPromedioAsync(int idVendedor)
-        {
-            return await _context.Vendedores
-                .Where(v => v.Id == idVendedor)
-                .Select(v => v.Calificacion)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<int> GetTotalVentasAsync(int idVendedor)
-        {
-            return await _context.Vendedores
-                .Where(v => v.Id == idVendedor)
-                .Select(v => v.TotalVentas)
-                .FirstOrDefaultAsync();
-        }
-
-        // ==================== ORDENAMIENTO ====================
-
-        public async Task<IEnumerable<Vendedor>> GetTopByCalificacionAsync(int cantidad = 10)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Where(v => v.Activo)
-                .OrderByDescending(v => v.Calificacion)
-                .ThenBy(v => v.NombreComercial)
-                .Take(cantidad)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Vendedor>> GetTopByVentasAsync(int cantidad = 10)
-        {
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Where(v => v.Activo)
-                .OrderByDescending(v => v.TotalVentas)
-                .ThenBy(v => v.NombreComercial)
-                .Take(cantidad)
-                .ToListAsync();
-        }
-
-        // ==================== MÉTODOS ADICIONALES ====================
         public async Task UpdateAsync(Vendedor vendedor)
         {
             _context.Vendedores.Update(vendedor);
-            // No llamamos SaveChangesAsync aquí para permitir transacciones en UnitOfWork
-            await Task.CompletedTask; // Para cumplir con la firma async
-        }
-        // ✅ MÉTODO IMPLEMENTADO
-        public async Task<bool> ExistsAsync(Expression<Func<Vendedor, bool>> predicate)
-        {
-            return await _context.Vendedores.AnyAsync(predicate);
+            await Task.CompletedTask;
         }
 
-        // ✅ MÉTODO PARA GUARDAR CAMBIOS (Útil para operaciones que requieren persistencia inmediata)
-        public async Task<bool> SaveChangesAsync()
-        {
-            return await _context.SaveChangesAsync() > 0;
-        }
-
-        // ✅ MÉTODO PARA OBTENER VENDEDORES RECIENTES
-        public async Task<IEnumerable<Vendedor>> GetVendedoresRecientesAsync(int dias = 30)
-        {
-            var fechaLimite = DateTime.Now.AddDays(-dias);
-            return await _context.Vendedores
-                .Include(v => v.Persona)
-                .Where(v => v.FechaCreacion >= fechaLimite)
-                .OrderByDescending(v => v.FechaCreacion)
-                .ToListAsync();
-        }
         public async Task DeleteAsync(Vendedor vendedor)
         {
             _context.Vendedores.Remove(vendedor);
             await Task.CompletedTask;
         }
 
+        // ==================== CON RELACIONES ====================
+
+        public async Task<Vendedor?> GetByIdWithPersonaAsync(int id)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+        public async Task<Vendedor?> GetByIdWithTortasAsync(int id)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Include(v => v.Tortas)
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+        public async Task<Vendedor?> GetByIdWithDetallesCompletosAsync(int id)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Include(v => v.Tortas).ThenInclude(t => t.Imagenes)
+                .Include(v => v.DetallesVenta).ThenInclude(d => d.Venta)
+                .Include(v => v.Liberaciones)
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+        public async Task<IEnumerable<Vendedor>> GetAllWithPersonaAsync()
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .OrderBy(v => v.NombreComercial)
+                .ToListAsync();
+
+        public async Task<Vendedor?> GetByIdWithLiberacionesAsync(int id)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Include(v => v.Liberaciones.OrderByDescending(l => l.FechaCreacion).Take(10))
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+        // ==================== BÚSQUEDA POR PERSONA ====================
+
+        public async Task<Vendedor?> GetByPersonaIdAsync(int idPersona)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .FirstOrDefaultAsync(v => v.PersonaId == idPersona);
+
+        public async Task<bool> ExistsByPersonaIdAsync(int idPersona)
+            => await _context.Vendedores.AnyAsync(v => v.PersonaId == idPersona);
+
         public async Task<IEnumerable<Persona>> GetPersonasSinVendedorAsync()
-        {
-            return await _context.Personas
-                .Include(p => p.Vendedor) // Incluir la relación con Vendedor para poder verificar
-                .Where(p => p.Vendedor == null) // Personas que no tienen vendedor asociado
-                .Where(p => p.Activo) // Solo personas activas
+            => await _context.Personas
+                .Include(p => p.Vendedor)
+                .Where(p => p.Vendedor == null && p.Activo)
                 .OrderBy(p => p.Nombre)
                 .ToListAsync();
-        }
-        public async Task<int> GetCountAsync()
-        {
-            return await _context.Vendedores
+
+        // ==================== FILTROS ====================
+
+        public async Task<IEnumerable<Vendedor>> GetByEspecialidadAsync(string especialidad)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.Especialidad != null && v.Especialidad.Contains(especialidad))
+                .ToListAsync();
+
+        public async Task<IEnumerable<Vendedor>> GetActivosAsync()
+            => await _context.Vendedores
+                .Include(v => v.Persona)
                 .Where(v => v.Activo)
-                .CountAsync();
+                .ToListAsync();
+
+        public async Task<IEnumerable<Vendedor>> GetVerificadosAsync()
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.Verificado)
+                .ToListAsync();
+
+        public async Task<IEnumerable<Vendedor>> SearchAsync(string termino)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.NombreComercial.Contains(termino) ||
+                           (v.Especialidad != null && v.Especialidad.Contains(termino)) ||
+                           v.Persona.Nombre.Contains(termino))
+                .ToListAsync();
+
+        // ✅ NUEVOS: Filtros de datos de pago
+        public async Task<IEnumerable<Vendedor>> GetConDatosPagoCompletosAsync()
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.DatosPagoCompletos && v.Activo)
+                .ToListAsync();
+
+        public async Task<IEnumerable<Vendedor>> GetSinDatosPagoAsync()
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => !v.DatosPagoCompletos && v.Activo)
+                .ToListAsync();
+
+        public async Task<IEnumerable<Vendedor>> GetConPendientesCobroAsync()
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.PendienteCobro > 0)
+                .OrderByDescending(v => v.PendienteCobro)
+                .ToListAsync();
+
+        // ==================== ESTADÍSTICAS ====================
+
+        public async Task<int> CountAsync()
+            => await _context.Vendedores.CountAsync();
+
+        public async Task<int> CountActivosAsync()
+            => await _context.Vendedores.CountAsync(v => v.Activo);
+
+        public async Task<int> GetCountAsync()
+            => await _context.Vendedores.CountAsync(v => v.Activo);
+
+        public async Task<decimal> GetCalificacionPromedioAsync(int idVendedor)
+            => await _context.Vendedores
+                .Where(v => v.Id == idVendedor)
+                .Select(v => v.Calificacion)
+                .FirstOrDefaultAsync();
+
+        public async Task<int> GetTotalVentasAsync(int idVendedor)
+            => await _context.Vendedores
+                .Where(v => v.Id == idVendedor)
+                .Select(v => v.TotalVentas)
+                .FirstOrDefaultAsync();
+
+        // ✅ NUEVOS: Estadísticas financieras
+        public async Task<decimal> GetTotalCobradoAsync(int vendedorId)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            return vendedor?.TotalCobrado ?? 0;
+        }
+
+        public async Task<decimal> GetTotalComisionesAsync(int vendedorId)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            return vendedor?.TotalComisiones ?? 0;
+        }
+
+        public async Task<decimal> GetPendienteCobroAsync(int vendedorId)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            return vendedor?.PendienteCobro ?? 0;
+        }
+
+        public async Task<int> CountConDatosPagoAsync()
+            => await _context.Vendedores.CountAsync(v => v.DatosPagoCompletos && v.Activo);
+
+        // ==================== ORDENAMIENTO ====================
+
+        public async Task<IEnumerable<Vendedor>> GetTopByCalificacionAsync(int cantidad = 10)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.Activo)
+                .OrderByDescending(v => v.Calificacion)
+                .Take(cantidad)
+                .ToListAsync();
+
+        public async Task<IEnumerable<Vendedor>> GetTopByVentasAsync(int cantidad = 10)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.Activo)
+                .OrderByDescending(v => v.TotalVentas)
+                .Take(cantidad)
+                .ToListAsync();
+
+        public async Task<IEnumerable<Vendedor>> GetTopByIngresosAsync(int cantidad = 10)
+            => await _context.Vendedores
+                .Include(v => v.Persona)
+                .Where(v => v.Activo)
+                .OrderByDescending(v => v.TotalCobrado)
+                .Take(cantidad)
+                .ToListAsync();
+
+        // ==================== VERIFICACIONES ====================
+
+        public async Task<bool> ExistsAsync(Expression<Func<Vendedor, bool>> predicate)
+            => await _context.Vendedores.AnyAsync(predicate);
+
+        public async Task<bool> TieneDatosPagoCompletosAsync(int vendedorId)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            return vendedor?.TieneDatosPagoValidos() ?? false;
+        }
+
+        public async Task<bool> PuedePublicarTortasAsync(int vendedorId)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            return vendedor != null && vendedor.Activo && vendedor.DatosPagoCompletos;
+        }
+
+        // ==================== OPERACIONES DE DATOS DE PAGO ====================
+
+        public async Task ActualizarDatosPagoAsync(int vendedorId, string aliasCBU, string cbu, 
+            string banco, string titularCuenta, string? cuit = null, string? imagenQR = null)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            if (vendedor != null)
+            {
+                vendedor.AliasCBU = aliasCBU;
+                vendedor.CBU = cbu;
+                vendedor.Banco = banco;
+                vendedor.TitularCuenta = titularCuenta;
+                vendedor.CUIT = cuit;
+                vendedor.ImagenQR = imagenQR;
+                vendedor.ActualizarEstadoDatosPago();
+            }
+        }
+
+        public async Task AgregarPendienteCobroAsync(int vendedorId, decimal monto)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            if (vendedor != null)
+            {
+                vendedor.PendienteCobro += monto;
+            }
+        }
+
+        public async Task ProcesarLiberacionAsync(int vendedorId, decimal montoBruto, decimal comision)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            if (vendedor != null)
+            {
+                var montoNeto = montoBruto - comision;
+                vendedor.TotalCobrado += montoNeto;
+                vendedor.TotalComisiones += comision;
+                vendedor.PendienteCobro -= montoBruto;
+                if (vendedor.PendienteCobro < 0) vendedor.PendienteCobro = 0;
+            }
+        }
+
+        public async Task<(decimal TotalCobrado, decimal TotalComisiones, decimal PendienteCobro)> GetResumenFinancieroAsync(int vendedorId)
+        {
+            var vendedor = await _context.Vendedores.FindAsync(vendedorId);
+            if (vendedor == null)
+                return (0, 0, 0);
+            return (vendedor.TotalCobrado, vendedor.TotalComisiones, vendedor.PendienteCobro);
         }
     }
 }

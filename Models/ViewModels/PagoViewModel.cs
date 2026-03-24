@@ -1,161 +1,102 @@
-using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Http;
 using CasaDeLasTortas.Models.Entities;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace CasaDeLasTortas.Models.ViewModels
 {
-    public class PagoViewModel
+    // =============================================
+    // VIEWMODELS PARA PROCESAR PAGO
+    // =============================================
+
+    public class ProcesarPagoViewModel
     {
-        public int Id { get; set; }
-        public int TortaId { get; set; }
+        public int VentaId { get; set; }
+        public string NumeroOrden { get; set; } = string.Empty;
+        public decimal MontoTotal { get; set; }
+        public List<MetodoPago> MetodosDisponibles { get; set; } = new();
+        
+        // Datos del comprador (solo lectura)
         public int CompradorId { get; set; }
-        public int VendedorId { get; set; }
-
-        [Display(Name = "Monto Total")]
-        [DataType(DataType.Currency)]
-        public decimal Monto { get; set; }
-
-        [Display(Name = "Precio Unitario")]
-        [DataType(DataType.Currency)]
-        public decimal PrecioUnitario { get; set; }
-
-        [Display(Name = "Cantidad")]
-        public int Cantidad { get; set; }
-
-        [Display(Name = "Subtotal")]
-        [DataType(DataType.Currency)]
-        public decimal Subtotal { get; set; }
-
-        [Display(Name = "Descuento")]
-        [DataType(DataType.Currency)]
-        public decimal Descuento { get; set; }
-
-        [Display(Name = "Fecha de Pago")]
-        [DataType(DataType.DateTime)]
-        public DateTime FechaPago { get; set; }
-
-        [Display(Name = "Estado")]
-        public EstadoPago Estado { get; set; }
-
-        [Display(Name = "Método de Pago")]
-        public MetodoPago? MetodoPago { get; set; }
-
-        [Display(Name = "Comprobante")]
-        public string? ArchivoComprobante { get; set; }
-
-        [Display(Name = "Número de Transacción")]
-        public string? NumeroTransaccion { get; set; }
-
-        [Display(Name = "Observaciones")]
-        [DataType(DataType.MultilineText)]
-        public string? Observaciones { get; set; }
-
-        [Display(Name = "Dirección de Entrega")]
-        public string? DireccionEntrega { get; set; }
-
-        [Display(Name = "Fecha de Entrega")]
-        [DataType(DataType.DateTime)]
-        public DateTime? FechaEntrega { get; set; }
-
-        // Información relacionada
-        public string NombreTorta { get; set; }
-        public string NombreComprador { get; set; }
-        public string NombreVendedor { get; set; }
-        public string? ImagenTorta { get; set; }
-        public string? TelefonoComprador { get; set; }
-        public string? EmailComprador { get; set; }
+        public string CompradorNombre { get; set; } = string.Empty;
+        public string CompradorEmail { get; set; } = string.Empty;
     }
 
-    public class PagoCreateViewModel
+    public class RealizarPagoViewModel
     {
-        [Required(ErrorMessage = "Debe seleccionar una torta")]
-        [Display(Name = "Torta")]
-        public int TortaId { get; set; }
+        [Required]
+        public int VentaId { get; set; }
 
-        public int CompradorId { get; set; }
-        public int VendedorId { get; set; }
-
-        [Required(ErrorMessage = "La cantidad es requerida")]
-        [Range(1, int.MaxValue, ErrorMessage = "La cantidad debe ser al menos 1")]
-        [Display(Name = "Cantidad")]
-        public int Cantidad { get; set; }
-
-        [Display(Name = "Descuento")]
-        [DataType(DataType.Currency)]
-        [Range(0, 999999.99)]
-        public decimal Descuento { get; set; }
-
-        [Required(ErrorMessage = "Debe seleccionar un método de pago")]
+        [Required(ErrorMessage = "Seleccione un método de pago")]
         [Display(Name = "Método de Pago")]
         public MetodoPago MetodoPago { get; set; }
 
         [Display(Name = "Número de Transacción")]
         public string? NumeroTransaccion { get; set; }
 
-        [Display(Name = "Observaciones")]
-        [DataType(DataType.MultilineText)]
-        public string? Observaciones { get; set; }
-
-        [Required(ErrorMessage = "La dirección de entrega es requerida")]
-        [Display(Name = "Dirección de Entrega")]
-        public string DireccionEntrega { get; set; }
-
-        [Display(Name = "Fecha de Entrega Deseada")]
-        [DataType(DataType.DateTime)]
-        public DateTime? FechaEntrega { get; set; }
-
         [Display(Name = "Comprobante de Pago")]
         public IFormFile? ArchivoComprobante { get; set; }
 
-        // Para mostrar en la vista
-        public TortaViewModel? Torta { get; set; }
-        public decimal PrecioUnitario { get; set; }
-        public decimal Subtotal { get; set; }
-        public decimal MontoTotal { get; set; }
+        [Display(Name = "Observaciones")]
+        [DataType(DataType.MultilineText)]
+        public string? Observaciones { get; set; }
     }
 
-    public class PagoEditViewModel
+    public class ConfirmacionPagoViewModel
     {
-        public int Id { get; set; }
-
-        [Display(Name = "Estado del Pago")]
+        public int PagoId { get; set; }
+        public int VentaId { get; set; }
+        public string NumeroOrden { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
+        public DateTime FechaPago { get; set; }
         public EstadoPago Estado { get; set; }
-
-        [Display(Name = "Método de Pago")]
         public MetodoPago? MetodoPago { get; set; }
+        public string Mensaje { get; set; } = string.Empty;
+    }
+
+    // =============================================
+    // VIEWMODEL PARA CONFIRMAR PAGO (VENDEDOR)
+    // =============================================
+
+    public class ConfirmarPagoViewModel
+    {
+        [Required]
+        public int PagoId { get; set; }
+
+        [Required(ErrorMessage = "El monto es requerido")]
+        [Display(Name = "Monto")]
+        [DataType(DataType.Currency)]
+        public decimal Monto { get; set; }
+
+        [Required(ErrorMessage = "El nombre de la torta es requerido")]
+        [Display(Name = "Torta")]
+        public string NombreTorta { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La cantidad es requerida")]
+        [Display(Name = "Cantidad")]
+        [Range(1, int.MaxValue, ErrorMessage = "La cantidad debe ser al menos 1")]
+        public int Cantidad { get; set; }
 
         [Display(Name = "Número de Transacción")]
         public string? NumeroTransaccion { get; set; }
 
-        [Display(Name = "Observaciones")]
+        [Display(Name = "Comprobante de Pago")]
+        public IFormFile? ArchivoComprobante { get; set; }
+
+        [Display(Name = "Notas de Confirmación")]
         [DataType(DataType.MultilineText)]
-        public string? Observaciones { get; set; }
-
-        [Display(Name = "Dirección de Entrega")]
-        public string? DireccionEntrega { get; set; }
-
-        [Display(Name = "Fecha de Entrega")]
-        [DataType(DataType.DateTime)]
-        public DateTime? FechaEntrega { get; set; }
-
-        [Display(Name = "Nuevo Comprobante")]
-        public IFormFile? NuevoComprobante { get; set; }
-
-        [Display(Name = "Comprobante Actual")]
-        public string? ComprobanteActual { get; set; }
-
-        // Información para mostrar (solo lectura)
-        public string NombreTorta { get; set; }
-        public string NombreComprador { get; set; }
-        public int Cantidad { get; set; }
-        public decimal MontoTotal { get; set; }
-        public DateTime FechaPago { get; set; }
+        public string? NotasConfirmacion { get; set; }
     }
+
+    // =============================================
+    // VIEWMODEL PARA LISTADO DE PAGOS
+    // =============================================
 
     public class PagoListViewModel
     {
-        public List<PagoViewModel> Pagos { get; set; }
-        public PaginacionViewModel Paginacion { get; set; }
+        public List<PagoItemViewModel> Pagos { get; set; } = new();
+        public PaginacionViewModel Paginacion { get; set; } = new();
         
         // Filtros
         public EstadoPago? FiltroEstado { get; set; }
@@ -170,61 +111,133 @@ namespace CasaDeLasTortas.Models.ViewModels
         // Estadísticas
         public decimal TotalMonto { get; set; }
         public int TotalPagos { get; set; }
-        public Dictionary<EstadoPago, int> PagosPorEstado { get; set; }
+        public Dictionary<EstadoPago, int>? PagosPorEstado { get; set; }
     }
 
-    public class PagoDetalleViewModel
+    public class PagoItemViewModel
     {
-        public PagoViewModel Pago { get; set; }
-        public TortaViewModel Torta { get; set; }
-        public CompradorViewModel Comprador { get; set; }
-        public VendedorViewModel Vendedor { get; set; }
-        
-        // Permisos
-        public bool PuedeEditar { get; set; }
-        public bool PuedeCancelar { get; set; }
-        public bool PuedeConfirmar { get; set; }
-        public bool PuedeSubirComprobante { get; set; }
-    }
-
-    public class ConfirmarPagoViewModel
-    {
-        [Required]
-        public int PagoId { get; set; }
-
-        [Required(ErrorMessage = "El número de transacción es requerido")]
-        [Display(Name = "Número de Transacción")]
-        public string NumeroTransaccion { get; set; }
-
-        [Display(Name = "Comprobante de Pago")]
-        public IFormFile? ArchivoComprobante { get; set; }
-
-        [Display(Name = "Notas de Confirmación")]
-        [DataType(DataType.MultilineText)]
-        public string? NotasConfirmacion { get; set; }
-
-        // Info para mostrar
+        public int Id { get; set; }
+        public int VentaId { get; set; }
+        public string NumeroOrden { get; set; } = string.Empty;
+        public string NombreComprador { get; set; } = string.Empty;
+        public string NombreTorta { get; set; } = string.Empty;
         public decimal Monto { get; set; }
-        public string NombreTorta { get; set; }
-        public int Cantidad { get; set; }
+        public DateTime FechaPago { get; set; }
+        public EstadoPago Estado { get; set; }
+        public MetodoPago? MetodoPago { get; set; }
+        public bool TieneComprobante { get; set; }
+        public string? ImagenTorta { get; set; }
+
+        public string EstadoDisplay => Estado.ToString();
+        public string EstadoColor => Estado switch
+        {
+            EstadoPago.Pendiente => "warning",
+            EstadoPago.Completado => "success",
+            EstadoPago.Cancelado => "danger",
+            _ => "secondary"
+        };
     }
+
+    // =============================================
+    // VIEWMODEL PARA CANCELAR PAGO
+    // =============================================
 
     public class CancelarPagoViewModel
     {
         [Required]
         public int PagoId { get; set; }
 
-        [Required(ErrorMessage = "Debe proporcionar un motivo de cancelación")]
-        [Display(Name = "Motivo de Cancelación")]
-        [DataType(DataType.MultilineText)]
-        public string MotivoCancelacion { get; set; }
-
-        [Display(Name = "Notificar al Comprador")]
-        public bool NotificarComprador { get; set; } = true;
-
-        // Info para mostrar
+        [Required]
+        [Display(Name = "Monto")]
+        [DataType(DataType.Currency)]
         public decimal Monto { get; set; }
-        public string NombreTorta { get; set; }
-        public string NombreComprador { get; set; }
+
+        [Required]
+        [Display(Name = "Producto")]
+        public string NombreTorta { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Comprador")]
+        public string NombreComprador { get; set; } = string.Empty;
+
+        [Display(Name = "Motivo de Cancelación")]
+        public string? MotivoCancelacion { get; set; }
+    }
+
+    public class ProcesarCancelacionViewModel
+    {
+        [Required]
+        public int PagoId { get; set; }
+
+        [Required(ErrorMessage = "Debe seleccionar un motivo de cancelación")]
+        [Display(Name = "Motivo de Cancelación")]
+        public string MotivoCancelacion { get; set; } = string.Empty;
+
+        [Display(Name = "Comentarios adicionales")]
+        [DataType(DataType.MultilineText)]
+        public string? Comentarios { get; set; }
+
+        [Display(Name = "Notificar al comprador")]
+        public bool NotificarComprador { get; set; } = true;
+    }
+
+    // =============================================
+    // VIEWMODEL PARA DETALLE DE PAGO
+    // =============================================
+
+    public class PagoDetalleViewModel
+    {
+        public PagoViewModel Pago { get; set; } = new();
+        public VentaResumenViewModel Venta { get; set; } = new();
+        public CompradorViewModel Comprador { get; set; } = new();
+        public bool PuedeEditar { get; set; }
+        public bool PuedeCancelar { get; set; }
+        public bool PuedeConfirmar { get; set; }
+        public bool PuedeSubirComprobante { get; set; }
+        public List<DetalleVentaViewModel>? DetallesVenta { get; set; }
+    }
+
+    public class PagoViewModel
+    {
+        public int Id { get; set; }
+        public int VentaId { get; set; }
+        public int CompradorId { get; set; }
+        public int? VendedorId { get; set; }
+        
+        [Display(Name = "Monto")]
+        [DataType(DataType.Currency)]
+        public decimal Monto { get; set; }
+        
+        [Display(Name = "Fecha de Pago")]
+        [DataType(DataType.DateTime)]
+        public DateTime FechaPago { get; set; }
+        
+        [Display(Name = "Estado")]
+        public EstadoPago Estado { get; set; }
+        
+        [Display(Name = "Método de Pago")]
+        public MetodoPago? MetodoPago { get; set; }
+        
+        [Display(Name = "Comprobante")]
+        public string? ArchivoComprobante { get; set; }
+        
+        [Display(Name = "Número de Transacción")]
+        public string? NumeroTransaccion { get; set; }
+        
+        [Display(Name = "Observaciones")]
+        [DataType(DataType.MultilineText)]
+        public string? Observaciones { get; set; }
+        
+        [Display(Name = "Fecha de Confirmación")]
+        [DataType(DataType.DateTime)]
+        public DateTime? FechaConfirmacion { get; set; }
+        
+        [Display(Name = "Confirmado Por")]
+        public int? ConfirmadoPorVendedorId { get; set; }
+
+        public string? NombreComprador { get; set; }
+        public string? EmailComprador { get; set; }
+        public string? TelefonoComprador { get; set; }
+        public string? NumeroOrden { get; set; }
     }
 }

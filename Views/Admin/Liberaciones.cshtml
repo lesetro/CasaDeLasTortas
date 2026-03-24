@@ -1,0 +1,357 @@
+@* 
+   Views/Admin/Liberaciones.cshtml
+   ViewModel esperado: AdminVentasViewModel (reutilizado, filtrado por estado Entregada)
+   O puede usarse un ViewModel específico de Liberaciones si lo creaste en Fase 1.
+   Acá usamos ViewBag.Liberaciones = List<LiberacionFondos> para la tabla principal.
+*@
+@{
+    ViewData["Title"] = "Liberar Fondos - Admin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var liberaciones = ViewBag.Liberaciones as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var totalPendiente = ViewBag.TotalPendiente ?? 0m;
+    var totalLiberado  = ViewBag.TotalLiberado  ?? 0m;
+    var countPendiente = ViewBag.CountPendiente ?? 0;
+    var countLiberado  = ViewBag.CountLiberado  ?? 0;
+}
+
+@section Styles {
+<style>
+    body { background-color: #f1f5f9; }
+    .admin-main { margin-left: 260px; padding: 2rem; }
+    .kpi-card   { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .lib-table th { font-size:.75rem; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; font-weight:600; border:none; }
+    .lib-table td { vertical-align:middle; border-color:#f1f5f9; }
+    .lib-table tr:last-child td { border-bottom:none; }
+    .lib-table tbody tr:hover { background:#f8fafc; }
+    .flujo-step { display:flex; align-items:center; gap:.5rem; }
+    .flujo-step .circle { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; flex-shrink:0; }
+    @@media (max-width:991px){ .admin-main{ margin-left:0; padding:1rem; } }
+</style>
+}
+
+<partial name="_AdminSidebar" />
+
+<div class="admin-main">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-0" style="font-size:1.6rem;">
+                <i class="fas fa-hand-holding-usd text-success me-2"></i>Liberar Fondos
+            </h1>
+            <p class="text-muted mb-0 small">
+                Transferí el dinero a los vendedores después de confirmar la entrega
+            </p>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Dashboard
+        </a>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Diagrama rápido del flujo -->
+    <div class="card border-0 rounded-3 shadow-sm mb-4" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+        <div class="card-body py-3 px-4">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="flujo-step">
+                    <div class="circle bg-success text-white">1</div>
+                    <span class="small fw-semibold">Comprador pagó</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted"></i>
+                <div class="flujo-step">
+                    <div class="circle bg-success text-white">2</div>
+                    <span class="small fw-semibold">Admin verificó</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted"></i>
+                <div class="flujo-step">
+                    <div class="circle bg-success text-white">3</div>
+                    <span class="small fw-semibold">Entrega confirmada</span>
+                </div>
+                <i class="fas fa-chevron-right text-muted"></i>
+                <div class="flujo-step">
+                    <div class="circle bg-warning text-dark">4</div>
+                    <span class="small fw-semibold text-warning">⬅ Estás acá: liberar fondos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">⏳ Pendientes</div>
+                <div class="fs-2 fw-bold text-warning">@countPendiente</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">💰 Monto a liberar</div>
+                <div class="fs-2 fw-bold text-primary">$@((totalPendiente as decimal? ?? 0m).ToString("N0"))</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">✅ Liberadas</div>
+                <div class="fs-2 fw-bold text-success">@countLiberado</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card card p-3">
+                <div class="text-muted small mb-1">💸 Total liberado</div>
+                <div class="fs-2 fw-bold text-success">$@((totalLiberado as decimal? ?? 0m).ToString("N0"))</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liberaciones pendientes -->
+    <div class="card border-0 rounded-3 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-clock text-warning me-2"></i>Liberaciones pendientes
+                <span class="badge bg-warning text-dark ms-2">@countPendiente</span>
+            </h6>
+        </div>
+        <div class="card-body px-4 pb-4 pt-2">
+
+            @* 
+               NOTA AL DESARROLLADOR:
+               Cuando implementes el controlador, pasá las liberaciones así:
+               ViewBag.LiberacionesPendientes = await _unitOfWork.LiberacionRepository.GetPendientesAsync();
+               
+               Por ahora la tabla muestra ventas entregadas y pendientes de liquidar,
+               obtenidas via ViewBag.VentasEntregadas = List<Venta>.
+            *@
+
+            @{
+                var ventasEntregadas = ViewBag.VentasEntregadas as IEnumerable<CasaDeLasTortas.Models.Entities.Venta>;
+            }
+
+            @if (ventasEntregadas != null && ventasEntregadas.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table lib-table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Vendedor</th>
+                                <th>Orden</th>
+                                <th class="text-end">Venta</th>
+                                <th class="text-end">Comisión (10%)</th>
+                                <th class="text-end text-success fw-bold">A transferir</th>
+                                <th class="text-center">Datos de pago</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var venta in ventasEntregadas)
+                            {
+                                var detallesPorVendedor = venta.Detalles?
+                                    .GroupBy(d => d.Vendedor) ?? Enumerable.Empty<IGrouping<CasaDeLasTortas.Models.Entities.Vendedor, CasaDeLasTortas.Models.Entities.DetalleVenta>>();
+
+                                @foreach (var grupo in detallesPorVendedor)
+                                {
+                                    var v = grupo.Key;
+                                    var subtotalVendedor = grupo.Sum(d => d.Subtotal);
+                                    var comision = subtotalVendedor * 0.10m;
+                                    var aTransferir = subtotalVendedor - comision;
+
+                                    <tr>
+                                        <td class="ps-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
+                                                     style="width:34px;height:34px;background:#22c55e;font-size:.8rem;flex-shrink:0;">
+                                                    @(v?.NombreComercial?.Substring(0,1) ?? "?")
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold small">@(v?.NombreComercial ?? "N/A")</div>
+                                                    <div class="text-muted" style="font-size:.7rem;">@(v?.Persona?.Email ?? "")</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold small">#@venta.NumeroOrden</div>
+                                            <div class="text-muted" style="font-size:.7rem;">@venta.FechaEntregaReal?.ToString("dd/MM/yy")</div>
+                                        </td>
+                                        <td class="text-end fw-semibold">$@subtotalVendedor.ToString("N0")</td>
+                                        <td class="text-end text-danger small">-$@comision.ToString("N0")</td>
+                                        <td class="text-end fw-bold text-success">$@aTransferir.ToString("N0")</td>
+                                        <td class="text-center">
+                                            @* Mostrar alias/CBU del vendedor si están en el nuevo modelo *@
+                                            @if (ViewBag.DatosBancarios != null)
+                                            {
+                                                <span class="badge bg-light text-dark rounded-pill" style="font-size:.7rem;">
+                                                    <i class="fas fa-university me-1"></i>@ViewBag.DatosBancarios
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning rounded-pill" style="font-size:.7rem;">
+                                                    <i class="fas fa-exclamation me-1"></i>Sin datos
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-success fw-semibold"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalLiberar"
+                                                    data-venta-id="@venta.Id"
+                                                    data-vendedor-id="@v?.Id"
+                                                    data-vendedor-nombre="@v?.NombreComercial"
+                                                    data-monto="@aTransferir.ToString("N2")"
+                                                    data-monto-display="$@aTransferir.ToString("N0")">
+                                                <i class="fas fa-paper-plane me-1"></i>Liberar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle text-success fa-3x mb-3 d-block"></i>
+                    <p class="text-muted mb-0">No hay liberaciones pendientes.</p>
+                    <p class="text-muted small">Aparecerán acá las ventas confirmadas como entregadas.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Historial de liberaciones -->
+    <div class="card border-0 rounded-3 shadow-sm">
+        <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-history text-muted me-2"></i>Historial de liberaciones
+            </h6>
+        </div>
+        <div class="card-body px-4 pb-4 pt-2">
+            @{
+                var historial = ViewBag.HistorialLiberaciones as IEnumerable<dynamic>;
+            }
+            @if (historial != null && historial.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table lib-table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Vendedor</th>
+                                <th>Orden</th>
+                                <th class="text-end">Monto transferido</th>
+                                <th class="text-center">Fecha</th>
+                                <th class="text-center">Comprobante</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var lib in historial)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-semibold small">@lib.NombreVendedor</td>
+                                    <td class="text-muted small">#@lib.NumeroOrden</td>
+                                    <td class="text-end fw-bold text-success">$@((lib.MontoTransferido as decimal? ?? 0m).ToString("N0"))</td>
+                                    <td class="text-center text-muted small">@lib.FechaLiberacion?.ToString("dd/MM/yy")</td>
+                                    <td class="text-center">
+                                        @if (lib.ComprobanteUrl != null)
+                                        {
+                                            <a href="@lib.ComprobanteUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-file-image"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted text-center small py-3 mb-0">No hay liberaciones registradas aún.</p>
+            }
+        </div>
+    </div>
+
+</div><!-- /admin-main -->
+
+<!-- ── Modal: Confirmar liberación ── -->
+<div class="modal fade" id="modalLiberar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-success">
+                    <i class="fas fa-hand-holding-usd me-2"></i>Confirmar liberación de fondos
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="LiberarFondos" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="ventaId"    id="liberarVentaId" />
+                    <input type="hidden" name="vendedorId" id="liberarVendedorId" />
+
+                    <div class="alert border-0 rounded-3 mb-3" style="background:#f0fdf4;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small fw-semibold" id="liberarVendedorNombre"></span>
+                            <span class="fs-5 fw-bold text-success" id="liberarMontoDisplay"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">
+                            Comprobante de transferencia <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" name="comprobante" class="form-control" accept="image/*,.pdf" required />
+                        <div class="form-text">Foto del ticket de transferencia bancaria al vendedor.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Notas (opcional)</label>
+                        <textarea name="notas" class="form-control" rows="2"
+                                  placeholder="Ej: Transferencia realizada el día X vía banco Y…"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-semibold">
+                        <i class="fas fa-paper-plane me-1"></i>Confirmar transferencia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('modalLiberar').addEventListener('show.bs.modal', e => {
+        const btn = e.relatedTarget;
+        document.getElementById('liberarVentaId').value        = btn.dataset.ventaId;
+        document.getElementById('liberarVendedorId').value     = btn.dataset.vendedorId;
+        document.getElementById('liberarVendedorNombre').textContent = btn.dataset.vendedorNombre;
+        document.getElementById('liberarMontoDisplay').textContent   = btn.dataset.montoDisplay;
+    });
+</script>
+}

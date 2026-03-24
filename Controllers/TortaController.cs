@@ -6,6 +6,7 @@ using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Services;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace CasaDeLasTortas.Controllers
 {
@@ -14,11 +15,13 @@ namespace CasaDeLasTortas.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFileService _fileService;
+        private readonly ILogger<TortaController> _logger; 
 
-        public TortaController(IUnitOfWork unitOfWork, IFileService fileService)
+        public TortaController(IUnitOfWork unitOfWork, IFileService  fileService, ILogger<TortaController> logger)
         {
             _unitOfWork = unitOfWork;
             _fileService = fileService;
+            _logger = logger;
         }
 
         // GET: Torta
@@ -134,7 +137,7 @@ namespace CasaDeLasTortas.Controllers
                     {
                         Id = v.Id,
                         NombreComercial = v.NombreComercial,
-                        NombrePersona = v.Persona?.Nombre
+                        Nombre = v.Persona?.Nombre
                     }).ToList()
                 };
 
@@ -148,6 +151,7 @@ namespace CasaDeLasTortas.Controllers
         }
 
         // GET: Torta/Details/5
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int id)
         {
             try
@@ -198,7 +202,7 @@ namespace CasaDeLasTortas.Controllers
                         Calificacion = torta.Vendedor.Calificacion,
                         TotalVentas = torta.Vendedor.TotalVentas,
                         Verificado = torta.Vendedor.Verificado,
-                        NombrePersona = torta.Vendedor.Persona?.Nombre,
+                        Nombre = torta.Vendedor.Persona?.Nombre,
                         Avatar = torta.Vendedor.Persona?.Avatar,
                         Telefono = torta.Vendedor.Persona?.Telefono
                     }
@@ -239,13 +243,14 @@ namespace CasaDeLasTortas.Controllers
             try
             {
                 var vendedores = await _unitOfWork.VendedorRepository.GetAllWithPersonaAsync();
-                
+
                 ViewBag.VendedorId = new SelectList(
-                    vendedores.Select(v => new { 
-                        Id = v.Id, 
-                        Texto = $"{v.NombreComercial} - {v.Persona?.Nombre}" 
-                    }), 
-                    "Id", 
+                    vendedores.Select(v => new
+                    {
+                        Id = v.Id,
+                        Texto = $"{v.NombreComercial} - {v.Persona?.Nombre}"
+                    }),
+                    "Id",
                     "Texto"
                 );
 
@@ -521,11 +526,11 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                // Verificar si tiene pagos asociados
-                var tienePagos = await _unitOfWork.PagoRepository.ExistsAsync(p => p.TortaId == id);
-                if (tienePagos)
+                // ✅ CORREGIDO: Verificar si tiene detalles de venta asociados (en lugar de pagos directos)
+                var tieneDetallesVenta = torta.DetallesVenta != null && torta.DetallesVenta.Any();
+                if (tieneDetallesVenta)
                 {
-                    TempData["Error"] = "No se puede eliminar la torta porque tiene pagos asociados.";
+                    TempData["Error"] = "No se puede eliminar la torta porque tiene ventas asociadas.";
                     return RedirectToAction(nameof(Delete), new { id });
                 }
 
@@ -547,6 +552,7 @@ namespace CasaDeLasTortas.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al eliminar torta {TortaId}", id);
                 TempData["Error"] = $"Error al eliminar: {ex.Message}";
                 return RedirectToAction(nameof(Delete), new { id });
             }
@@ -639,11 +645,12 @@ namespace CasaDeLasTortas.Controllers
         {
             var vendedores = await _unitOfWork.VendedorRepository.GetAllWithPersonaAsync();
             ViewBag.VendedorId = new SelectList(
-                vendedores.Select(v => new { 
-                    Id = v.Id, 
-                    Texto = $"{v.NombreComercial} - {v.Persona?.Nombre}" 
-                }), 
-                "Id", 
+                vendedores.Select(v => new
+                {
+                    Id = v.Id,
+                    Texto = $"{v.NombreComercial} - {v.Persona?.Nombre}"
+                }),
+                "Id",
                 "Texto"
             );
 
@@ -675,7 +682,7 @@ namespace CasaDeLasTortas.Controllers
                 if (archivo.Length > 0)
                 {
                     var urlImagen = await _fileService.SaveFileAsync(archivo, "tortas");
-                    
+
                     var imagenTorta = new ImagenTorta
                     {
                         TortaId = tortaId,
@@ -709,7 +716,7 @@ namespace CasaDeLasTortas.Controllers
         private async Task CambiarImagenPrincipal(int tortaId, int nuevaImagenPrincipalId)
         {
             var imagenes = await _unitOfWork.ImagenesTorta.GetByTortaIdAsync(tortaId);
-            
+
             foreach (var imagen in imagenes)
             {
                 imagen.EsPrincipal = imagen.Id == nuevaImagenPrincipalId;

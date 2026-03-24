@@ -1,325 +1,283 @@
 @model CasaDeLasTortas.Models.ViewModels.HomeViewModel
 @{
     ViewData["Title"] = ViewBag.Title ?? "Casa de las Tortas";
-    var tortas = Model.Tortas as IEnumerable<dynamic>;
-    var tortasDestacadas = Model.TortasDestacadas as IEnumerable<dynamic>;
-    var paginacion = Model.Paginacion;
-    var filtros = Model.Filtros;
-    var estadisticas = Model.Estadisticas;
+    var tortas          = Model.Tortas;
+    var tortasDestacadas = Model.TortasDestacadas;
+    var paginacion      = Model.Paginacion;
+    var filtros         = Model.Filtros;
+    var estadisticas    = Model.Estadisticas;
 }
 
-<!-- Hero Section -->
-<section class="hero-section bg-gradient-to-r from-pink-500 to-orange-400 text-white py-20 mb-8">
-    <div class="container mx-auto px-4 text-center">
-        <h1 class="text-5xl font-bold mb-4 animate-fade-in">🎂 Casa de las Tortas</h1>
-        <p class="text-xl mb-8">Descubre las mejores tortas artesanales de vendedores locales</p>
-        
-        <!-- Estadísticas rápidas -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-8">
-            <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
-                <div class="text-3xl font-bold">@estadisticas.TotalTortas</div>
-                <div class="text-sm">Tortas Disponibles</div>
+<!-- ═══ HERO ═══ -->
+<div class="py-5 text-white text-center"
+     style="background: linear-gradient(135deg, #ec4899, #f97316)">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-2">🎂 Casa de las Tortas</h1>
+        <p class="lead mb-4">Descubrí las mejores tortas artesanales de vendedores locales</p>
+
+        <!-- Estadísticas -->
+        <div class="row g-3 justify-content-center mb-4">
+            <div class="col-6 col-md-3">
+                <div class="bg-white bg-opacity-25 rounded-3 py-3">
+                    <div class="h3 fw-bold mb-0">@estadisticas.TotalTortas</div>
+                    <div class="small">Tortas Disponibles</div>
+                </div>
             </div>
-            <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
-                <div class="text-3xl font-bold">@estadisticas.TotalVendedores</div>
-                <div class="text-sm">Vendedores</div>
+            <div class="col-6 col-md-3">
+                <div class="bg-white bg-opacity-25 rounded-3 py-3">
+                    <div class="h3 fw-bold mb-0">@estadisticas.TotalVendedores</div>
+                    <div class="small">Vendedores</div>
+                </div>
             </div>
-            <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
-                <div class="text-3xl font-bold">@estadisticas.VentasHoy</div>
-                <div class="text-sm">Ventas Hoy</div>
+            <div class="col-6 col-md-3">
+                <div class="bg-white bg-opacity-25 rounded-3 py-3">
+                    <div class="h3 fw-bold mb-0">@estadisticas.VentasHoy</div>
+                    <div class="small">Ventas Hoy</div>
+                </div>
             </div>
-            <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
-                <div class="text-3xl font-bold">@estadisticas.TortasNuevas</div>
-                <div class="text-sm">Tortas Nuevas</div>
+            <div class="col-6 col-md-3">
+                <div class="bg-white bg-opacity-25 rounded-3 py-3">
+                    <div class="h3 fw-bold mb-0">@estadisticas.TortasNuevas</div>
+                    <div class="small">Tortas Nuevas</div>
+                </div>
             </div>
         </div>
 
-        <!-- Barra de búsqueda principal -->
-        <div class="max-w-2xl mx-auto mt-8">
-            <form asp-action="Index" method="get" class="flex gap-2">
-                <input type="text" 
-                       name="busqueda" 
-                       value="@filtros.Busqueda"
-                       placeholder="Buscar tortas, vendedores, categorías..." 
-                       class="flex-1 px-6 py-3 rounded-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-300"
-                       id="searchInput" />
-                <button type="submit" 
-                        class="bg-white text-orange-500 px-8 py-3 rounded-full font-semibold hover:bg-orange-50 transition">
+        <!-- Barra de búsqueda -->
+        <div class="mx-auto" style="max-width:600px">
+            <form asp-action="Index" method="get" class="d-flex gap-2">
+                <div class="flex-grow-1 position-relative">
+                    <input type="text" name="busqueda" id="searchInput"
+                           value="@filtros.Busqueda"
+                           placeholder="Buscar tortas, vendedores, categorías..."
+                           class="form-control form-control-lg rounded-pill ps-4">
+                    <div id="searchResults"
+                         class="position-absolute start-0 end-0 mt-1 bg-white rounded-3 shadow d-none"
+                         style="z-index:1000"></div>
+                </div>
+                <button type="submit"
+                        class="btn btn-light fw-semibold rounded-pill px-4">
                     🔍 Buscar
                 </button>
             </form>
-            <!-- Resultados de búsqueda rápida (autocompletado) -->
-            <div id="searchResults" class="hidden mt-2 bg-white rounded-lg shadow-lg text-left"></div>
         </div>
     </div>
-</section>
+</div>
 
-<!-- Tortas Destacadas -->
+<!-- ═══ TORTAS DESTACADAS ═══ -->
 @if (tortasDestacadas != null && tortasDestacadas.Any())
 {
-    <section class="container mx-auto px-4 mb-12">
-        <h2 class="text-3xl font-bold mb-6 flex items-center gap-2">
-            ⭐ Tortas Más Populares
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="container py-5">
+        <h2 class="fw-bold mb-4">⭐ Tortas Más Populares</h2>
+        <div class="row g-3">
             @foreach (var torta in tortasDestacadas)
             {
-                <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition transform hover:-translate-y-1">
-                    <a asp-controller="Torta" asp-action="Details" asp-route-id="@torta.Id">
-                        <img src="@(torta.ImagenPrincipal ?? "/images/default-cake.jpg")" 
-                             alt="@torta.Nombre" 
-                             class="w-full h-40 object-cover rounded-t-lg" />
-                        <div class="p-3">
-                            <h3 class="font-semibold text-sm truncate">@torta.Nombre</h3>
-                            <div class="flex items-center gap-1 text-xs text-gray-600 mb-1">
-                                <span>⭐ @torta.Calificacion.ToString("F1")</span>
-                                <span class="text-gray-400">•</span>
-                                <span class="truncate">@torta.NombreVendedor</span>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a asp-controller="Torta" asp-action="Details" asp-route-id="@torta.Id"
+                       class="text-decoration-none">
+                        <div class="card h-100 shadow-sm border-0">
+                            <img src="@(torta.ImagenPrincipal ?? "/images/default-cake.jpg")"
+                                 class="card-img-top" style="height:140px;object-fit:cover"
+                                 alt="@torta.Nombre">
+                            <div class="card-body p-2">
+                                <div class="small fw-bold text-truncate text-dark">@torta.Nombre</div>
+                                <div class="small text-muted text-truncate">@torta.NombreVendedor</div>
+                                <div class="fw-bold text-warning small">$@torta.Precio.ToString("N2")</div>
                             </div>
-                            <p class="text-orange-600 font-bold text-lg">$@torta.Precio.ToString("N2")</p>
                         </div>
                     </a>
                 </div>
             }
         </div>
-    </section>
+    </div>
 }
 
-<!-- Filtros y Catálogo -->
-<section class="container mx-auto px-4">
-    <div class="flex flex-col lg:flex-row gap-6">
-        
-        <!-- Panel de Filtros (Sidebar) -->
-        <aside class="lg:w-64 flex-shrink-0">
-            <div class="bg-white rounded-lg shadow-md p-6 sticky top-4">
-                <h3 class="text-xl font-bold mb-4">🔍 Filtros</h3>
-                
-                <form asp-action="Index" method="get" id="filterForm">
-                    <!-- Mantener búsqueda actual -->
-                    <input type="hidden" name="busqueda" value="@filtros.Busqueda" />
-                    
-                    <!-- Categorías -->
-                    <div class="mb-6">
-                        <label class="block font-semibold mb-2">Categoría</label>
-                        <select name="categoria" 
-                                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300"
-                                onchange="this.form.submit()">
-                            <option value="">Todas las categorías</option>
-                            @foreach (var cat in filtros.CategoriasDisponibles)
-                            {
-                                <option value="@cat" selected="@(cat == filtros.Categoria)">@cat</option>
-                            }
-                        </select>
-                    </div>
-                    
-                    <!-- Ordenar por -->
-                    <div class="mb-6">
-                        <label class="block font-semibold mb-2">Ordenar por</label>
-                        <select name="ordenarPor" 
-                                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-300"
-                                onchange="this.form.submit()">
-                            <option value="Populares" selected="@(filtros.OrdenarPor == "Populares")">Más populares</option>
-                            <option value="Nuevas" selected="@(filtros.OrdenarPor == "Nuevas")">Más recientes</option>
-                            <option value="PrecioMenor" selected="@(filtros.OrdenarPor == "PrecioMenor")">Menor precio</option>
-                            <option value="PrecioMayor" selected="@(filtros.OrdenarPor == "PrecioMayor")">Mayor precio</option>
-                            <option value="Calificacion" selected="@(filtros.OrdenarPor == "Calificacion")">Mejor calificación</option>
-                            <option value="Nombre" selected="@(filtros.OrdenarPor == "Nombre")">Nombre A-Z</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Botón limpiar filtros -->
-                    <a asp-action="Index" class="block w-full text-center bg-gray-200 hover:bg-gray-300 py-2 rounded-lg transition">
-                        Limpiar filtros
-                    </a>
-                </form>
+<!-- ═══ FILTROS + CATÁLOGO ═══ -->
+<div class="container pb-5">
+    <div class="row g-4">
+
+        <!-- Sidebar filtros -->
+        <div class="col-lg-3">
+            <div class="card shadow-sm border-0 sticky-top" style="top:80px">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">🔍 Filtros</h5>
+                    <form asp-action="Index" method="get" id="filterForm">
+                        <input type="hidden" name="busqueda" value="@filtros.Busqueda">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Categoría</label>
+                            <select name="categoria" class="form-select form-select-sm"
+                                    onchange="this.form.submit()">
+                                <option value="">Todas las categorías</option>
+                                @foreach (var cat in filtros.CategoriasDisponibles)
+                                {
+                                    <option value="@cat" selected="@(cat == filtros.Categoria)">@cat</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small">Ordenar por</label>
+                            <select name="ordenarPor" class="form-select form-select-sm"
+                                    onchange="this.form.submit()">
+                                <option value="Populares" selected="@(filtros.OrdenarPor == "Populares")">Más populares</option>
+                                <option value="Nuevas" selected="@(filtros.OrdenarPor == "Nuevas")">Más recientes</option>
+                                <option value="PrecioMenor" selected="@(filtros.OrdenarPor == "PrecioMenor")">Menor precio</option>
+                                <option value="PrecioMayor" selected="@(filtros.OrdenarPor == "PrecioMayor")">Mayor precio</option>
+                                <option value="Calificacion" selected="@(filtros.OrdenarPor == "Calificacion")">Mejor calificación</option>
+                                <option value="Nombre" selected="@(filtros.OrdenarPor == "Nombre")">Nombre A-Z</option>
+                            </select>
+                        </div>
+
+                        <a asp-action="Index" class="btn btn-outline-secondary w-100 btn-sm">
+                            <i class="fas fa-times me-1"></i>Limpiar filtros
+                        </a>
+                    </form>
+                </div>
             </div>
-        </aside>
-        
-        <!-- Grid de Tortas -->
-        <main class="flex-1">
-            <!-- Resultados info -->
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">
+        </div>
+
+        <!-- Grid de tortas -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold mb-0">
                     @if (!string.IsNullOrEmpty(filtros.Busqueda))
-                    {
-                        <span>Resultados para "@filtros.Busqueda"</span>
-                    }
+                    { <span>Resultados para "@filtros.Busqueda"</span> }
                     else if (!string.IsNullOrEmpty(filtros.Categoria))
-                    {
-                        <span>Categoría: @filtros.Categoria</span>
-                    }
+                    { <span>Categoría: @filtros.Categoria</span> }
                     else
-                    {
-                        <span>Todas las Tortas</span>
-                    }
-                </h2>
-                <span class="text-gray-600">@paginacion.TotalItems tortas encontradas</span>
+                    { <span>Todas las Tortas</span> }
+                </h4>
+                <span class="badge bg-secondary">@paginacion.TotalItems tortas</span>
             </div>
-            
-            <!-- Grid de productos -->
-            @if (tortas != null && tortas.Any())
+
+            @if (tortas.Any())
             {
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                <div class="row g-3">
                     @foreach (var torta in tortas)
                     {
-                        <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
-                            <a asp-controller="Torta" asp-action="Details" asp-route-id="@torta.Id" class="block">
-                                <!-- Imagen con badges -->
-                                <div class="relative">
-                                    <img src="@(torta.ImagenPrincipal ?? "/images/default-cake.jpg")" 
-                                         alt="@torta.Nombre" 
-                                         class="w-full h-48 object-cover rounded-t-lg" />
-                                    
-                                    @if (torta.EsNuevo)
-                                    {
-                                        <span class="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                                            ✨ Nuevo
-                                        </span>
-                                    }
-                                    
-                                    @if (torta.EsPopular)
-                                    {
-                                        <span class="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                                            🔥 Popular
-                                        </span>
-                                    }
-                                    
-                                    @if (!torta.Disponible)
-                                    {
-                                        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-t-lg">
-                                            <span class="text-white font-bold">No disponible</span>
-                                        </div>
-                                    }
-                                </div>
-                                
-                                <!-- Información -->
-                                <div class="p-4">
-                                    <h3 class="font-bold text-lg mb-2 truncate">@torta.Nombre</h3>
-                                    
-                                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                                        @torta.DescripcionCorta
-                                    </p>
-                                    
-                                    <!-- Categoría -->
-                                    @if (!string.IsNullOrEmpty(torta.Categoria))
-                                    {
-                                        <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mb-2">
-                                            @torta.Categoria
-                                        </span>
-                                    }
-                                    
-                                    <!-- Rating y Vendedor -->
-                                    <div class="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                                        <span class="flex items-center gap-1">
-                                            ⭐ @torta.Calificacion.ToString("F1")
-                                        </span>
-                                        <span class="text-gray-400">•</span>
-                                        <span class="truncate">@torta.NombreVendedor</span>
-                                    </div>
-                                    
-                                    <!-- Precio -->
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-2xl font-bold text-orange-600">
-                                            $@torta.Precio.ToString("N2")
-                                        </span>
-                                        
-                                        @if (torta.Disponible)
+                        <div class="col-sm-6 col-xl-4">
+                            <a asp-controller="Torta" asp-action="Details"
+                               asp-route-id="@torta.Id" class="text-decoration-none">
+                                <div class="card h-100 shadow-sm border-0 @(!torta.Disponible ? "opacity-75" : "")">
+                                    <div class="position-relative">
+                                        <img src="@(torta.ImagenPrincipal ?? "/images/default-cake.jpg")"
+                                             class="card-img-top"
+                                             style="height:200px;object-fit:cover"
+                                             alt="@torta.Nombre">
+                                        @if (torta.EsNuevo)
                                         {
-                                            <button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition">
-                                                Ver detalles
-                                            </button>
+                                            <span class="position-absolute top-0 start-0 m-2 badge bg-success">✨ Nuevo</span>
+                                        }
+                                        @if (torta.EsPopular)
+                                        {
+                                            <span class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark">🔥 Popular</span>
+                                        }
+                                        @if (!torta.Disponible)
+                                        {
+                                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                 style="background:rgba(0,0,0,.5)">
+                                                <span class="badge bg-dark fs-6">No disponible</span>
+                                            </div>
                                         }
                                     </div>
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-dark text-truncate">@torta.Nombre</h6>
+                                        <p class="text-muted small mb-2" style="height:38px;overflow:hidden">
+                                            @torta.DescripcionCorta
+                                        </p>
+                                        @if (!string.IsNullOrEmpty(torta.Categoria))
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary mb-2">@torta.Categoria</span>
+                                        }
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="h5 fw-bold text-warning mb-0">$@torta.Precio.ToString("N2")</span>
+                                            <span class="small text-muted">⭐ @torta.Calificacion.ToString("F1")</span>
+                                        </div>
+                                        <div class="small text-muted mt-1">@torta.NombreVendedor</div>
+                                    </div>
+                                    @if (torta.Disponible)
+                                    {
+                                        <div class="card-footer bg-transparent border-0 pb-3 px-3">
+                                            <div class="btn btn-warning w-100 btn-sm fw-semibold">
+                                                Ver detalles
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                             </a>
                         </div>
                     }
                 </div>
-                
+
                 <!-- Paginación -->
                 <partial name="_PaginacionPartial" model="paginacion" />
             }
             else
             {
-                <!-- Sin resultados -->
-                <div class="text-center py-16">
-                    <div class="text-6xl mb-4">😕</div>
-                    <h3 class="text-2xl font-bold mb-2">No se encontraron tortas</h3>
-                    <p class="text-gray-600 mb-6">Intenta con otros filtros o términos de búsqueda</p>
-                    <a asp-action="Index" class="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition">
-                        Ver todas las tortas
-                    </a>
+                <div class="text-center py-5 text-muted">
+                    <div class="fs-1 mb-3">😕</div>
+                    <h4>No se encontraron tortas</h4>
+                    <p>Intentá con otros filtros o términos de búsqueda</p>
+                    <a asp-action="Index" class="btn btn-warning px-4">Ver todas las tortas</a>
                 </div>
             }
-        </main>
-    </div>
-</section>
-
-<!-- Call to Action para registrarse -->
-<section class="bg-gradient-to-r from-orange-400 to-pink-500 text-white py-16 mt-12">
-    <div class="container mx-auto px-4 text-center">
-        <h2 class="text-3xl font-bold mb-4">¿Eres vendedor de tortas?</h2>
-        <p class="text-xl mb-8">Únete a nuestra plataforma y vende tus tortas artesanales</p>
-        <div class="flex gap-4 justify-center">
-            <a asp-controller="Account" asp-action="Register" 
-               class="bg-white text-orange-600 px-8 py-3 rounded-full font-semibold hover:bg-orange-50 transition">
-                Registrarse como Vendedor
-            </a>
-            <a asp-controller="Account" asp-action="Register" 
-               class="bg-orange-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-orange-700 transition border-2 border-white">
-                Registrarse como Comprador
-            </a>
         </div>
     </div>
-</section>
+</div>
+
+<!-- ═══ CTA REGISTRO ═══ -->
+<div class="py-5 text-white text-center"
+     style="background: linear-gradient(135deg, #f97316, #ec4899)">
+    <div class="container">
+        <h2 class="fw-bold mb-3">¿Sos vendedor de tortas?</h2>
+        <p class="lead mb-4">Únete a nuestra plataforma y vendé tus tortas artesanales</p>
+        <a asp-controller="Account" asp-action="Register"
+           class="btn btn-light fw-semibold px-5 me-2">
+            Registrarse como Vendedor
+        </a>
+        <a asp-controller="Account" asp-action="Register"
+           class="btn btn-outline-light fw-semibold px-5">
+            Registrarse como Comprador
+        </a>
+    </div>
+</div>
 
 @section Scripts {
-    <script>
-        // Búsqueda rápida con autocompletado
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        let searchTimeout;
+<script>
+    const searchInput   = document.getElementById('searchInput')
+    const searchResults = document.getElementById('searchResults')
+    let searchTimeout
 
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            const termino = this.value.trim();
-            
-            if (termino.length < 2) {
-                searchResults.classList.add('hidden');
-                return;
-            }
-            
-            searchTimeout = setTimeout(() => {
-                fetch(`/Home/BusquedaRapida?termino=${encodeURIComponent(termino)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.length > 0) {
-                            searchResults.innerHTML = data.map(torta => `
-                                <a href="${torta.url}" class="flex items-center gap-3 p-3 hover:bg-gray-100 border-b">
-                                    <img src="${torta.imagen || '/images/default-cake.jpg'}" 
-                                         alt="${torta.nombre}" 
-                                         class="w-12 h-12 object-cover rounded" />
-                                    <div class="flex-1">
-                                        <div class="font-semibold">${torta.nombre}</div>
-                                        <div class="text-sm text-gray-600">${torta.vendedor}</div>
-                                    </div>
-                                    <div class="font-bold text-orange-600">$${torta.precio.toFixed(2)}</div>
-                                </a>
-                            `).join('');
-                            searchResults.classList.remove('hidden');
-                        } else {
-                            searchResults.classList.add('hidden');
-                        }
-                    })
-                    .catch(error => console.error('Error en búsqueda:', error));
-            }, 300);
-        });
+    searchInput?.addEventListener('input', function () {
+        clearTimeout(searchTimeout)
+        const term = this.value.trim()
+        if (term.length < 2) { searchResults.classList.add('d-none'); return }
 
-        // Cerrar resultados al hacer clic fuera
-        document.addEventListener('click', function(e) {
-            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.classList.add('hidden');
-            }
-        });
-    </script>
+        searchTimeout = setTimeout(() => {
+            fetch(`/Home/BusquedaRapida?termino=${encodeURIComponent(term)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.length) { searchResults.classList.add('d-none'); return }
+                    searchResults.innerHTML = data.map(t => `
+                        <a href="${t.url}"
+                           class="d-flex align-items-center gap-3 p-3 text-decoration-none text-dark border-bottom hover-bg">
+                            <img src="${t.imagen || '/images/default-cake.jpg'}"
+                                 class="rounded" style="width:44px;height:44px;object-fit:cover">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold small">${t.nombre}</div>
+                                <div class="text-muted small">${t.vendedor}</div>
+                            </div>
+                            <span class="fw-bold text-warning small">$${t.precio.toFixed(2)}</span>
+                        </a>`).join('')
+                    searchResults.classList.remove('d-none')
+                })
+                .catch(() => {})
+        }, 300)
+    })
+
+    document.addEventListener('click', e => {
+        if (!searchInput?.contains(e.target)) searchResults?.classList.add('d-none')
+    })
+</script>
 }

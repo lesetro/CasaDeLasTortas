@@ -8,23 +8,23 @@ namespace CasaDeLasTortas.Models.ViewModels
         [Required(ErrorMessage = "El nombre es requerido")]
         [StringLength(100, ErrorMessage = "El {0} no puede exceder los {1} caracteres.")]
         [Display(Name = "Nombre Completo")]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El email es requerido")]
         [EmailAddress(ErrorMessage = "Ingrese un email válido")]
         [Display(Name = "Correo Electrónico")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La contraseña es requerida")]
         [StringLength(100, ErrorMessage = "La {0} debe tener al menos {2} caracteres.", MinimumLength = 6)]
         [DataType(DataType.Password)]
         [Display(Name = "Contraseña")]
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
         [Display(Name = "Confirmar Contraseña")]
         [Compare("Password", ErrorMessage = "Las contraseñas no coinciden.")]
-        public string ConfirmPassword { get; set; }
+        public string ConfirmPassword { get; set; } = string.Empty;
 
         [Phone(ErrorMessage = "Ingrese un número de teléfono válido")]
         [Display(Name = "Teléfono")]
@@ -32,9 +32,8 @@ namespace CasaDeLasTortas.Models.ViewModels
 
         [Required(ErrorMessage = "Debe seleccionar un rol")]
         [Display(Name = "Tipo de Cuenta")]
-        public string Rol { get; set; } // "Vendedor" o "Comprador"
+        public string Rol { get; set; } = "Comprador";
 
-        // ✅ CAMBIADO: Avatar → AvatarFile
         [Display(Name = "Foto de Perfil")]
         public IFormFile? AvatarFile { get; set; }
 
