@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using CasaDeLasTortas.Models.Entities;
+using Microsoft.AspNetCore.Http;
 
 namespace CasaDeLasTortas.Models.DTOs
 {
@@ -149,9 +150,12 @@ namespace CasaDeLasTortas.Models.DTOs
         public DateTime FechaPago { get; set; }
         public int HorasEsperando { get; set; }
         
+        // Estado
+        public EstadoPago Estado { get; set; }
+
         // Intentos previos
         public int IntentosRechazados { get; set; }
-        
+
         // Vendedores involucrados
         public int CantidadVendedores { get; set; }
         public List<string> NombresVendedores { get; set; } = new();
@@ -182,6 +186,56 @@ namespace CasaDeLasTortas.Models.DTOs
         
         // Tiempos promedio
         public double HorasPromedioVerificacion { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para subir comprobante vía multipart/form-data (acepta IFormFile)
+    /// </summary>
+    public class SubirComprobanteApiDTO
+    {
+        public IFormFile? Archivo { get; set; }
+        public string? ArchivoBase64 { get; set; }
+        public string? NombreArchivo { get; set; }
+
+        [Required]
+        public MetodoPago MetodoPago { get; set; }
+
+        public string? NumeroTransaccion { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para procesar un reembolso con comprobante adjunto (multipart/form-data)
+    /// </summary>
+    public class ProcesarReembolsoApiDTO
+    {
+        [Required]
+        public IFormFile Archivo { get; set; } = null!;
+
+        [Required]
+        public string NumeroTransaccion { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// DTO para cambiar el estado de un detalle de venta
+    /// </summary>
+    public class CambiarEstadoDetalleDTO
+    {
+        [Required]
+        public string Estado { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// DTO para subir comprobante de pago identificando la venta por ID
+    /// </summary>
+    public class SubirComprobantePorVentaDTO
+    {
+        [Required(ErrorMessage = "El ID de venta es requerido")]
+        public int VentaId { get; set; }
+
+        [Required(ErrorMessage = "El comprobante es requerido")]
+        public IFormFile Comprobante { get; set; } = null!;
+
+        public string? NumeroTransaccion { get; set; }
     }
 
     /// <summary>

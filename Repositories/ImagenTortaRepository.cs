@@ -256,7 +256,7 @@ namespace CasaDeLasTortas.Repositories
                 .ToListAsync();
         }
 
-        // ✅ IMPLEMENTACIÓN DE GetPrincipalByTortaAsync
+       
         public async Task<ImagenTorta?> GetPrincipalByTortaAsync(int tortaId)
         {
             return await _context.ImagenesTorta

@@ -39,6 +39,13 @@ namespace CasaDeLasTortas.Models.DTOs
         
         // Datos de pago (visibles solo para el propio vendedor o admin)
         public DatosPagoVendedorDTO? DatosPago { get; set; }
+
+        // Datos bancarios planos (para actualización desde el perfil)
+        public string? AliasCbu { get; set; }
+        public string? Cbu { get; set; }
+        public string? BancoCuenta { get; set; }
+        public string? TitularCuenta { get; set; }
+        public string? Cuit { get; set; }
     }
 
     /// <summary>

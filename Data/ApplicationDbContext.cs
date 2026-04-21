@@ -25,7 +25,7 @@ namespace CasaDeLasTortas.Data
         public DbSet<DetalleVenta> DetallesVenta { get; set; } = null!;
         public DbSet<Pago> Pagos { get; set; } = null!;
         
-        // ✅ NUEVOS DBSETS
+        
         public DbSet<LiberacionFondos> LiberacionesFondos { get; set; } = null!;
         public DbSet<Disputa> Disputas { get; set; } = null!;
         public DbSet<MensajeDisputa> MensajesDisputa { get; set; } = null!;
@@ -128,7 +128,7 @@ namespace CasaDeLasTortas.Data
                     .HasMaxLength(100)
                     .HasColumnType("varchar(100)");
 
-                // ✅ NUEVOS CAMPOS DE PAGO
+                //  CAMPOS DE PAGO
                 entity.Property(e => e.AliasCBU)
                     .HasMaxLength(50)
                     .HasColumnType("varchar(50)");
@@ -159,7 +159,7 @@ namespace CasaDeLasTortas.Data
                 entity.Property(e => e.FechaDatosPago)
                     .HasColumnType("datetime");
 
-                // ✅ NUEVOS CAMPOS DE ESTADÍSTICAS
+                //  CAMPOS DE ESTADÍSTICAS
                 entity.Property(e => e.TotalCobrado)
                     .HasPrecision(12, 2)
                     .HasDefaultValue(0);
@@ -423,7 +423,7 @@ namespace CasaDeLasTortas.Data
                     .IsRequired()
                     .HasPrecision(12, 2);
 
-                // ✅ NUEVOS CAMPOS DE COMISIÓN
+                //  CAMPOS DE COMISIÓN
                 entity.Property(e => e.PorcentajeComision)
                     .HasPrecision(5, 2)
                     .HasDefaultValue(10.00m);
@@ -596,7 +596,7 @@ namespace CasaDeLasTortas.Data
                     .IsRequired()
                     .HasPrecision(12, 2);
 
-                // ✅ NUEVOS CAMPOS DE MONTOS
+                //  CAMPOS DE MONTOS
                 entity.Property(e => e.ComisionPlataforma)
                     .HasPrecision(10, 2)
                     .HasDefaultValue(0);
@@ -642,7 +642,7 @@ namespace CasaDeLasTortas.Data
                     .HasMaxLength(500)
                     .HasColumnType("varchar(500)");
 
-                // ✅ NUEVOS CAMPOS DE RECHAZO
+                //  CAMPOS DE RECHAZO
                 entity.Property(e => e.MotivoRechazo)
                     .HasMaxLength(500)
                     .HasColumnType("varchar(500)");
@@ -653,7 +653,7 @@ namespace CasaDeLasTortas.Data
                 entity.Property(e => e.IntentosRechazados)
                     .HasDefaultValue(0);
 
-                // ✅ NUEVOS CAMPOS DE REEMBOLSO
+                //  CAMPOS DE REEMBOLSO
                 entity.Property(e => e.ArchivoReembolso)
                     .HasMaxLength(500)
                     .HasColumnType("varchar(500)");

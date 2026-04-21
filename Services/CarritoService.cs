@@ -241,7 +241,7 @@ namespace CasaDeLasTortas.Services
 
         /// <summary>
         /// Convierte el carrito en una venta con cálculo de comisiones
-        /// ✅ MODIFICADO: Ahora calcula comisiones y crea pago inicial
+        /// Ahora calcula comisiones y crea pago inicial
         /// </summary>
         public async Task<Venta?> ConvertirAVenta(int compradorId, string direccionEntrega, string? notas = null)
         {
@@ -260,7 +260,7 @@ namespace CasaDeLasTortas.Services
                 }
             }
 
-            // ✅ Obtener configuración de comisión
+            //  Obtener configuración de comisión
             var comisionPorcentaje = await _unitOfWork.Configuracion.GetComisionPorcentajeAsync();
 
             // Crear la venta
@@ -276,11 +276,11 @@ namespace CasaDeLasTortas.Services
                 DireccionEntrega = direccionEntrega,
                 NotasCliente = notas,
                 FechaActualizacion = DateTime.Now,
-                // ✅ NUEVOS: Campos de comisión
+                //  Campos de comisión
                 PorcentajeComision = comisionPorcentaje
             };
 
-            // ✅ Calcular comisiones
+            //Calcular comisiones
             venta.CalcularComisiones();
 
             await _unitOfWork.Ventas.AddAsync(venta);
@@ -313,7 +313,7 @@ namespace CasaDeLasTortas.Services
                 }
             }
 
-            // ✅ NUEVO: Crear pago inicial (pendiente)
+            //  Crear pago inicial (pendiente)
             var pago = new Pago
             {
                 VentaId = venta.Id,
@@ -328,7 +328,7 @@ namespace CasaDeLasTortas.Services
             await _unitOfWork.PagoRepository.AddAsync(pago);
             await _unitOfWork.SaveChangesAsync();
 
-            // ✅ NUEVO: Agregar monto pendiente a cada vendedor involucrado
+            //  Agregar monto pendiente a cada vendedor involucrado
             var vendedoresMontos = carrito.Items
                 .GroupBy(i => i.VendedorId)
                 .Select(g => new { VendedorId = g.Key, Monto = g.Sum(i => i.Subtotal) });

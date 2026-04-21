@@ -10,7 +10,7 @@ using CasaDeLasTortas.Services;
 using CasaDeLasTortas.Helpers;
 using CasaDeLasTortas.Hubs;
 using CasaDeLasTortas.Middleware;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using CasaDeLasTortas.Models.Options;  
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +38,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     )
 );
 
-// ==================== AUTENTICACIÓN JWT + COOKIE ====================
+// ==================== AUTENTICACIÓN JWT ====================
+// 
+// Solo JWT como esquema por defecto
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey   = jwtSettings["SecretKey"] ?? jwtSettings["Key"];
@@ -57,51 +59,14 @@ if (string.IsNullOrEmpty(audience))
 
 var key = Encoding.UTF8.GetBytes(secretKey);
 
+// JWT es ahora el esquema por defecto
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme    = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultScheme             = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme             = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddCookie(options =>
-{
-    options.LoginPath      = "/Account/Login";
-    options.LogoutPath     = "/Account/Logout";
-    options.ExpireTimeSpan = TimeSpan.FromHours(24);
 
-    // Sin esto, las llamadas a /api devuelven HTML en vez de 401 JSON
-    options.Events = new CookieAuthenticationEvents
-    {
-        OnRedirectToLogin = context =>
-        {
-            if (context.Request.Path.StartsWithSegments("/api") ||
-                context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
-                context.Request.Headers["Accept"].ToString().Contains("application/json"))
-            {
-                context.Response.StatusCode  = 401;
-                context.Response.ContentType = "application/json";
-                return context.Response.WriteAsync(
-                    "{\"success\":false,\"message\":\"No autenticado\"}");
-            }
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        },
-        OnRedirectToAccessDenied = context =>
-        {
-            if (context.Request.Path.StartsWithSegments("/api") ||
-                context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
-                context.Request.Headers["Accept"].ToString().Contains("application/json"))
-            {
-                context.Response.StatusCode  = 403;
-                context.Response.ContentType = "application/json";
-                return context.Response.WriteAsync(
-                    "{\"success\":false,\"message\":\"Acceso denegado\"}");
-            }
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        }
-    };
-})
 .AddJwtBearer(options =>
 {
     options.SaveToken              = true;
@@ -133,7 +98,45 @@ builder.Services.AddAuthentication(options =>
         {
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<Program>>();
-            logger.LogError(context.Exception, "Error de autenticación JWT");
+            logger.LogWarning("⚠️ Error de autenticación JWT: {Message}", context.Exception.Message);
+            return Task.CompletedTask;
+        },
+        // Manejar Challenge (cuando no hay token o es inválido)
+        OnChallenge = context =>
+        {
+            // Si es petición API o AJAX → devolver JSON 401
+            if (context.Request.Path.StartsWithSegments("/api") ||
+                context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                context.Request.Headers["Accept"].ToString().Contains("application/json"))
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = 401;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync(
+                    "{\"success\":false,\"message\":\"No autenticado. Token JWT requerido.\"}");
+            }
+            
+            // Si es petición MVC normal → redirigir al login
+            context.HandleResponse();
+            context.Response.Redirect("/Account/Login");
+            return Task.CompletedTask;
+        },
+        // Manejar Forbidden (cuando no tiene permisos)
+        OnForbidden = context =>
+        {
+            // Si es petición API o AJAX → devolver JSON 403
+            if (context.Request.Path.StartsWithSegments("/api") ||
+                context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                context.Request.Headers["Accept"].ToString().Contains("application/json"))
+            {
+                context.Response.StatusCode = 403;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync(
+                    "{\"success\":false,\"message\":\"Acceso denegado. No tiene permisos.\"}");
+            }
+            
+            // Si es petición MVC normal → redirigir a AccessDenied
+            context.Response.Redirect("/Account/AccessDenied");
             return Task.CompletedTask;
         }
     };
@@ -177,7 +180,7 @@ builder.Services.AddScoped<IPagoRepository,        PagoRepository>();
 builder.Services.AddScoped<IVentaRepository,       VentaRepository>();
 builder.Services.AddScoped<IDetalleVentaRepository,DetalleVentaRepository>();
 
-// ── Repositorios NUEVOS (Fase 1 / Fase 2) ────────────────────────────────────
+// ── Repositorios 
 builder.Services.AddScoped<ILiberacionRepository,    LiberacionRepository>();
 builder.Services.AddScoped<IDisputaRepository,       DisputaRepository>();
 builder.Services.AddScoped<IConfiguracionRepository, ConfiguracionRepository>();
@@ -191,7 +194,7 @@ builder.Services.AddScoped<IAuthService,   AuthService>();
 builder.Services.AddScoped<IJwtService,    JwtService>();
 builder.Services.AddScoped<ICarritoService,CarritoService>();
 
-// ── Servicios NUEVOS (Fase 2) ─────────────────────────────────────────────────
+// ── Servicios NUEVOS 
 builder.Services.AddScoped<IPagoService,        PagoService>();
 builder.Services.AddScoped<ILiberacionService,  LiberacionService>();
 
@@ -208,7 +211,6 @@ builder.Services.AddSingleton<JwtHelper>(provider =>
 });
 
 // ── Configuración de Plataforma (options pattern) ────────────────────────────
-// Permite inyectar IOptions<PlataformaPagosOptions> en cualquier servicio
 builder.Services.Configure<PlataformaPagosOptions>(
     builder.Configuration.GetSection("PlataformaPagos"));
 
@@ -220,7 +222,6 @@ builder.Services.Configure<FileStorageOptions>(
 
 builder.Services.AddSignalR(options =>
 {
-    // Tiempo máximo sin actividad antes de desconectar (default 30s)
     options.ClientTimeoutInterval     = TimeSpan.FromSeconds(60);
     options.HandshakeTimeout          = TimeSpan.FromSeconds(15);
     options.KeepAliveInterval         = TimeSpan.FromSeconds(15);
@@ -242,6 +243,8 @@ builder.Services.AddControllersWithViews().AddJsonOptions(jsonOptions);
 builder.Services.AddControllers().AddJsonOptions(jsonOptions);
 
 // ==================== SESIÓN / CACHÉ ====================
+//  Mantenemos Session para el carrito (usa cookie de SESIÓN, no de AUTH)
+//
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -324,6 +327,11 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseCors(app.Environment.IsDevelopment() ? "AllowDevelopment" : "Production");
 app.UseSession();
+
+//  ORDEN IMPORTANTE del pipeline de autenticación:
+// 1. UseAuthentication() - Configura el esquema JWT por defecto
+// 2. JwtMiddleware - Extrae token de Header/Query/Cookie y establece context.User
+// 3. UseAuthorization() - Verifica [Authorize] basado en context.User
 app.UseAuthentication();
 app.UseMiddleware<JwtMiddleware>();
 app.UseAuthorization();
@@ -363,7 +371,8 @@ app.MapGet("/health", async (ApplicationDbContext db) =>
             status      = "Healthy",
             timestamp   = DateTime.UtcNow,
             database    = "Connected",
-            environment = app.Environment.EnvironmentName
+            environment = app.Environment.EnvironmentName,
+            authScheme  = "JWT"  //  Indicamos que usamos 100% JWT
         });
     }
     catch (Exception ex)
@@ -382,47 +391,13 @@ app.MapGet("/health", async (ApplicationDbContext db) =>
 // ==================== INICIO ====================
 
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+startupLogger.LogInformation("═══════════════════════════════════════════════════════════");
 startupLogger.LogInformation("🍰 Casa de las Tortas — Aplicación iniciada");
-startupLogger.LogInformation("Entorno: {Environment}", app.Environment.EnvironmentName);
-startupLogger.LogInformation("Urls: {Urls}",
+startupLogger.LogInformation("🔐 Autenticación: 100% JWT (sin cookies de auth)");
+startupLogger.LogInformation("📍 Entorno: {Environment}", app.Environment.EnvironmentName);
+startupLogger.LogInformation("🌐 URLs: {Urls}",
     builder.Configuration["ASPNETCORE_URLS"] ?? "http://localhost:5000");
+startupLogger.LogInformation("═══════════════════════════════════════════════════════════");
 
 app.Run();
 
-// ==================== CLASES DE OPCIONES ====================
-// Colocadas al final del archivo para que no interfieran con el builder
-
-/// <summary>
-/// Opciones de la plataforma de pagos.
-/// Se inyectan como IOptions&lt;PlataformaPagosOptions&gt;.
-/// Los valores provienen de appsettings.json sección "PlataformaPagos".
-/// Si la BD tiene una fila en ConfiguracionPlataforma, esos valores
-/// tienen prioridad (se resuelven en ConfiguracionRepository).
-/// </summary>
-public class PlataformaPagosOptions
-{
-    public string  AliasCbu            { get; set; } = "casadelastortas.pagos";
-    public string  Cbu                 { get; set; } = "";
-    public string  Banco               { get; set; } = "";
-    public string  TitularCuenta       { get; set; } = "";
-    public string  Cuit                { get; set; } = "";
-    public string  TipoCuenta          { get; set; } = "Caja de Ahorro";
-    public decimal PorcentajeComision  { get; set; } = 10m;
-    public int     DiasVerificacionPago{ get; set; } = 1;
-    public string  MensajeCheckout     { get; set; } = "";
-    public string  EmailSoporte        { get; set; } = "";
-    public string  TelefonoSoporte     { get; set; } = "";
-}
-
-/// <summary>
-/// Opciones para almacenamiento de archivos subidos.
-/// </summary>
-public class FileStorageOptions
-{
-    public string   RutaBase                { get; set; } = "uploads";
-    public string   RutaComprobantes        { get; set; } = "uploads/comprobantes";
-    public string   RutaImagenesTortas      { get; set; } = "uploads/tortas";
-    public string   RutaAvatares            { get; set; } = "uploads/avatares";
-    public long     TamanoMaximoBytes       { get; set; } = 5_242_880; // 5 MB
-    public string[] ExtensionesComprobante  { get; set; } = { ".jpg", ".jpeg", ".png", ".pdf", ".webp" };
-}

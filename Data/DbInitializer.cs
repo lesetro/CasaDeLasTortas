@@ -52,34 +52,47 @@ IMPORTANTE: El comprobante debe mostrar claramente:
                 // Admin
                 new Persona
                 {
-                    Nombre = "Admin Sistema",
+                    Nombre = "Admin",
+                    Apellido = "Sistema",
                     Email = "admin@casadetortas.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
                     Rol = "Admin",
+                    Dni = "30111222",
+                    Telefono = "2664000001",
+                    Direccion = "Av. Mitre 100, Villa Mercedes, San Luis",
+                    FechaNacimiento = new DateTime(1985, 6, 15),
                     Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-6),
                     Avatar = "https://ui-avatars.com/api/?name=Admin+Sistema&background=dc3545&color=fff"
                 },
-                // Vendedor 1 - Con datos de pago completos
+                // Vendedor 1
                 new Persona
                 {
-                    Nombre = "Carlos González",
+                    Nombre = "Carlos",
+                    Apellido = "González",
                     Email = "carlos@pasteleria.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Vendedor123!"),
                     Rol = "Vendedor",
+                    Dni = "25678901",
                     Telefono = "3541234567",
+                    Direccion = "Calle Rivadavia 450, Villa Mercedes, San Luis",
+                    FechaNacimiento = new DateTime(1980, 3, 22),
                     Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-4),
                     Avatar = "https://ui-avatars.com/api/?name=Carlos+Gonzalez&background=28a745&color=fff"
                 },
-                // Vendedor 2 - Con datos de pago completos
+                // Vendedor 2
                 new Persona
                 {
-                    Nombre = "María López",
+                    Nombre = "María",
+                    Apellido = "López",
                     Email = "maria@reposteria.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Vendedor123!"),
                     Rol = "Vendedor",
+                    Dni = "30456789",
                     Telefono = "3549876543",
+                    Direccion = "Av. España 789, Villa Mercedes, San Luis",
+                    FechaNacimiento = new DateTime(1990, 11, 8),
                     Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-3),
                     Avatar = "https://ui-avatars.com/api/?name=Maria+Lopez&background=17a2b8&color=fff"
@@ -87,11 +100,15 @@ IMPORTANTE: El comprobante debe mostrar claramente:
                 // Comprador 1
                 new Persona
                 {
-                    Nombre = "Juan Pérez",
+                    Nombre = "Juan",
+                    Apellido = "Pérez",
                     Email = "juan@cliente.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Comprador123!"),
                     Rol = "Comprador",
+                    Dni = "35112233",
                     Telefono = "3541112233",
+                    Direccion = "Av. San Martín 1234, Villa Mercedes, San Luis",
+                    FechaNacimiento = new DateTime(1995, 7, 14),
                     Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-2),
                     Avatar = "https://ui-avatars.com/api/?name=Juan+Perez&background=ffc107&color=000"
@@ -99,11 +116,15 @@ IMPORTANTE: El comprobante debe mostrar claramente:
                 // Comprador 2
                 new Persona
                 {
-                    Nombre = "Ana Martínez",
+                    Nombre = "Ana",
+                    Apellido = "Martínez",
                     Email = "ana@cliente.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("Comprador123!"),
                     Rol = "Comprador",
+                    Dni = "38445566",
                     Telefono = "3544445566",
+                    Direccion = "Calle Belgrano 567, Villa Mercedes, San Luis",
+                    FechaNacimiento = new DateTime(1998, 2, 28),
                     Activo = true,
                     FechaRegistro = DateTime.Now.AddMonths(-1),
                     Avatar = "https://ui-avatars.com/api/?name=Ana+Martinez&background=6f42c1&color=fff"
@@ -178,8 +199,10 @@ IMPORTANTE: El comprobante debe mostrar claramente:
                     Ciudad = "Villa Mercedes",
                     Provincia = "San Luis",
                     CodigoPostal = "5730",
+                    FechaNacimiento = new DateTime(1995, 7, 14),
                     TotalCompras = 5,
-                    Preferencias = "Chocolate, Sin TACC"
+                    Preferencias = "Chocolate, Sin TACC",
+                    Activo = true
                 },
                 new Comprador
                 {
@@ -189,8 +212,10 @@ IMPORTANTE: El comprobante debe mostrar claramente:
                     Ciudad = "Villa Mercedes",
                     Provincia = "San Luis",
                     CodigoPostal = "5730",
+                    FechaNacimiento = new DateTime(1998, 2, 28),
                     TotalCompras = 3,
-                    Preferencias = "Frutas, Vegano"
+                    Preferencias = "Frutas, Vegano",
+                    Activo = true
                 }
             };
 

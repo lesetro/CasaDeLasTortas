@@ -196,6 +196,52 @@ namespace CasaDeLasTortas.Models.DTOs
     }
 
     /// <summary>
+    /// DTO para crear disputa enviando el tipo como string (para compatibilidad con clientes JSON)
+    /// </summary>
+    public class CrearDisputaRequestDTO
+    {
+        [Required]
+        public int VentaId { get; set; }
+
+        /// <summary>
+        /// Nombre del enum TipoDisputa como string (ej: "ProductoNoRecibido") o número.
+        /// </summary>
+        [Required]
+        public string TipoStr { get; set; } = string.Empty;
+
+        public string? Titulo { get; set; }
+
+        [StringLength(1000)]
+        public string? Descripcion { get; set; }
+
+        public string? MensajeInicial { get; set; }
+
+        /// <summary>Prioridad como entero: 1=Baja … 5=Urgente</summary>
+        public int? Prioridad { get; set; }
+
+        public decimal? MontoInvolucrado { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para agregar un mensaje simple a una disputa (sin adjuntos)
+    /// </summary>
+    public class AgregarMensajeDTO
+    {
+        [Required]
+        [StringLength(2000)]
+        public string Contenido { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// DTO para cambiar el estado de una disputa
+    /// </summary>
+    public class CambiarEstadoDisputaDTO
+    {
+        [Required]
+        public string Estado { get; set; } = string.Empty;
+    }
+
+    /// <summary>
     /// DTO para estadísticas de disputas
     /// </summary>
     public class EstadisticasDisputasDTO

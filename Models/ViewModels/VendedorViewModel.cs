@@ -6,11 +6,7 @@ using CasaDeLasTortas.Models.Entities;
 
 namespace CasaDeLasTortas.Models.ViewModels
 {
-    // ══════════════════════════════════════════════════════════════════════
-    // VENDEDOR VIEW MODEL
-    // ✅ AGREGADA: Esta clase faltaba y causaba errores en otros ViewModels
-    // ══════════════════════════════════════════════════════════════════════
-
+   
     /// <summary>
     /// ViewModel básico para mostrar información de un vendedor
     /// Usado en listas, tarjetas, y referencias desde otros ViewModels

@@ -174,12 +174,9 @@
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
-                // Setear cookie para que Razor reconozca al usuario
-                await fetch('/Account/SetCookieSession', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: data.token })
-                });
+                // Guardar token en cookie para que JwtMiddleware lo lea
+                
+                document.cookie = 'authToken=' + data.token + '; path=/; SameSite=Strict; max-age=86400';
 
                 showSuccess('¡Inicio de sesión exitoso! Redirigiendo...');
 

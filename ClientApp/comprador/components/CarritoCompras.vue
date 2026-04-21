@@ -82,10 +82,10 @@
               <div class="card-body p-4 text-center">
                 <div class="fs-5 fw-bold text-success mb-1">Listo para pagar</div>
                 <div class="text-muted small mb-3">Hacé click para ver los datos de transferencia</div>
-                <a href="/Carrito/Checkout"
-                   class="btn btn-success btn-lg w-100 fw-bold shadow-sm mb-3">
+                <button @click="$emit('cambiar-vista', 'checkout')"
+                        class="btn btn-success btn-lg w-100 fw-bold shadow-sm mb-3">
                   <i class="fas fa-lock me-2"></i>Proceder al Pago
-                </a>
+                </button>
                 <button class="btn btn-outline-primary w-100 mb-2"
                         @click="$emit('cambiar-vista', 'catalogo')">
                   <i class="fas fa-plus me-2"></i>Seguir comprando

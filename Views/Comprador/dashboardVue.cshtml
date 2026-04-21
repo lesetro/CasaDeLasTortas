@@ -1,6 +1,7 @@
 @{
     ViewData["Title"] = "Dashboard Comprador";
     Layout = null;
+    var cookieToken = Context.Request.Cookies["authToken"] ?? "";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -29,9 +30,17 @@
     <script>
         toastr.options = { closeButton: true, progressBar: true, positionClass: "toast-top-right", timeOut: "5000" };
 
-        if (!localStorage.getItem('authToken')) {
-            window.location.href = '/Account/Login';
-        }
+        // Si el servidor reconoció el token por cookie pero localStorage está vacío, restaurarlo.
+        // Esto evita el bucle: DashboardVue → Login → DashboardVue cuando se limpia localStorage.
+        (function() {
+            var serverToken = '@cookieToken';
+            if (serverToken && !localStorage.getItem('authToken')) {
+                localStorage.setItem('authToken', serverToken);
+            }
+            if (!localStorage.getItem('authToken')) {
+                window.location.href = '/Account/Login';
+            }
+        })();
     </script>
 
     <!-- Bundle compilado por Vite - mismo patrón que vendedor.bundle.js -->

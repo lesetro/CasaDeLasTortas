@@ -36,11 +36,12 @@ namespace CasaDeLasTortas.Services
                 venta.FechaEntregaReal = DateTime.Now;
                 _unitOfWork.Ventas.Update(venta);
 
-                // Marcar liberaciones como listas
+                // Marcar liberaciones como listas (solo las que aún no fueron transferidas/confirmadas)
                 var liberaciones = await _unitOfWork.Liberaciones.GetByVentaIdAsync(ventaId);
                 foreach (var lib in liberaciones)
                 {
-                    await _unitOfWork.Liberaciones.MarcarListaParaLiberarAsync(lib.Id);
+                    if (lib.Estado != EstadoLiberacion.Transferido && lib.Estado != EstadoLiberacion.Confirmado)
+                        await _unitOfWork.Liberaciones.MarcarListaParaLiberarAsync(lib.Id);
                 }
 
                 await _unitOfWork.SaveChangesAsync();

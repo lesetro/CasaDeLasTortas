@@ -189,11 +189,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { fetchWithAuth, formatMoneda, formatHora, generarAvatarUrl } from '@shared/apiUtils.js'
+import { fetchWithAuth, clearAuth, formatMoneda, formatHora, generarAvatarUrl } from '@shared/apiUtils.js'
 import EstadisticasVendedor from './components/EstadisticasVendedor.vue'
 import MisTortas            from './components/MisTortas.vue'
 import MisPedidos           from './components/MisPedidos.vue'
-import MisLiberaciones      from './components/MisLiberaciones.vue'   // ← NUEVO
+import MisLiberaciones      from './components/MisLiberaciones.vue'   
 import PerfilVendedor       from './components/PerfilVendedor.vue'
 
 // ── Estado principal ──────────────────────────────────────────────
@@ -203,14 +203,14 @@ const emailUsuario      = ref('')
 const avatarUsuario     = ref(null)
 const nombreUsuario     = ref('')
 const pedidosPendientes = ref(0)
-const cobrosPendientes  = ref(0)   // ← NUEVO
+const cobrosPendientes  = ref(0)   
 const resumen           = ref({ tortasActivas: 0, ingresosMes: 0, pendienteCobro: 0 })
 const inicializando     = ref(true)
 
 const estadisticasRef = ref(null)
 const tortasRef       = ref(null)
 const pedidosRef      = ref(null)
-const liberacionesRef = ref(null)   // ← NUEVO
+const liberacionesRef = ref(null)   
 
 const avatarUrl = computed(() => {
   if (avatarUsuario.value) return avatarUsuario.value
@@ -222,7 +222,7 @@ const menuItems = [
   { vista: 'estadisticas', label: 'Dashboard',   icono: 'fas fa-chart-line' },
   { vista: 'tortas',       label: 'Mis Tortas',  icono: 'fas fa-birthday-cake' },
   { vista: 'pedidos',      label: 'Pedidos',     icono: 'fas fa-shopping-bag' },
-  { vista: 'cobros',       label: 'Mis Cobros',  icono: 'fas fa-hand-holding-usd' },  // ← NUEVO
+  { vista: 'cobros',       label: 'Mis Cobros',  icono: 'fas fa-hand-holding-usd' },  
   { vista: 'perfil',       label: 'Mi Perfil',   icono: 'fas fa-user' },
 ]
 
@@ -273,14 +273,15 @@ async function cargarResumen(vendedorId) {
       fetchWithAuth(`/api/LiberacionApi/vendedor/${vendedorId}?pagina=1&registrosPorPagina=100`).catch(() => ({ data: [] })),
     ])
     resumen.value.tortasActivas = stats.totalTortasActivas ?? 0
-    resumen.value.ingresosMes   = stats.ingresosMes        ?? 0
+    resumen.value.ingresosMes   = stats.ingresosBrutosMes  ?? stats.ingresosMes ?? 0
     pedidosPendientes.value     = stats.pedidosPendientes  ?? 0
 
     // Calcular cobros pendientes
     const listaLibs = libs.data ?? libs ?? []
-    const pendiente = listaLibs.filter(l => l.estado === 'Pendiente').reduce((s, l) => s + (l.montoLiberado ?? 0), 0)
+    const esPendiente = l => l.estado === 'Pendiente' || l.estado === 'ListoParaLiberar'
+    const pendiente = listaLibs.filter(esPendiente).reduce((s, l) => s + (l.montoNeto ?? 0), 0)
     resumen.value.pendienteCobro = pendiente
-    cobrosPendientes.value = listaLibs.filter(l => l.estado === 'Pendiente').length
+    cobrosPendientes.value = listaLibs.filter(esPendiente).length
   } catch {}
 }
 
@@ -294,6 +295,10 @@ async function conectarSignalR(token) {
       .configureLogging(signalR.LogLevel.Warning)
       .build()
 
+    hubConnection.on('OnConnected', () => {
+      // confirmación de conexión del servidor — no requiere acción
+    })
+
     hubConnection.on('NuevoPedido', (data) => {
       pedidosPendientes.value++
       agregarNotificacion(data.message || `Nuevo pedido #${data.numeroOrden}`)
@@ -304,7 +309,7 @@ async function conectarSignalR(token) {
       agregarNotificacion(data.mensaje || 'Pago confirmado por el admin')
     })
 
-    // ← NUEVO: escuchar liberación de fondos
+    //  escuchar liberación de fondos
     hubConnection.on('FondosLiberados', (data) => {
       cobrosPendientes.value = Math.max(0, cobrosPendientes.value - 1)
       agregarNotificacion(data.mensaje || `💸 Fondos liberados: ${formatMoneda(data.monto)}`)
@@ -355,15 +360,13 @@ function cambiarVista(vista) {
 function logout() {
   if (!confirm('¿Cerrar sesión?')) return
   hubConnection?.stop()
-  localStorage.removeItem('authToken')
-  localStorage.removeItem('user')
+  clearAuth()
   window.location.href = '/Account/Logout'
 }
 
 function redirigirLogin() {
   hubConnection?.stop()
-  localStorage.removeItem('authToken')
-  localStorage.removeItem('user')
+  clearAuth()
   window.location.href = '/Account/Login'
 }
 

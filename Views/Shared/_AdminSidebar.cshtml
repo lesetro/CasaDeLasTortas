@@ -130,6 +130,17 @@
                 </a>
             </li>
 
+            <li class="@Li("Admin","Reembolsos")">
+                <a asp-controller="Admin" asp-action="Reembolsos" class="@A("Admin","Reembolsos")">
+                    <i class="fas fa-undo fa-fw"></i>
+                    <span class="flex-grow-1">Reembolsos</span>
+                    @if (ViewBag.ReembolsosPendientes != null && (int)ViewBag.ReembolsosPendientes > 0)
+                    {
+                        <span class="badge bg-warning text-dark sidebar-badge">@ViewBag.ReembolsosPendientes</span>
+                    }
+                </a>
+            </li>
+
             <!-- USUARIOS Y PRODUCTOS -->
             <li class="sidebar-section-title">Usuarios y Productos</li>
 

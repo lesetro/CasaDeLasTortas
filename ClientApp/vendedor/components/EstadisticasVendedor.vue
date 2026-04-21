@@ -215,7 +215,7 @@
                 <div class="d-flex flex-column gap-3">
                   <div class="d-flex justify-content-between p-2 rounded" style="background:#f0fdf4;">
                     <span class="small text-muted">Total generado por tus ventas</span>
-                    <strong class="small">{{ formatMoneda(stats.ingresosTotales) }}</strong>
+                    <strong class="small">{{ formatMoneda(comisiones.totalVentas) }}</strong>
                   </div>
                   <div class="d-flex justify-content-between p-2 rounded" style="background:#fef2f2;">
                     <span class="small text-muted">Total en comisiones</span>
@@ -223,7 +223,7 @@
                   </div>
                   <div class="d-flex justify-content-between p-2 rounded" style="background:#eff6ff; border:2px solid #bfdbfe;">
                     <span class="small fw-semibold">Neto (lo que te llega)</span>
-                    <strong class="text-primary">{{ formatMoneda(stats.ingresosTotales - comisiones.totalComisiones) }}</strong>
+                    <strong class="text-primary">{{ formatMoneda(comisiones.totalVentas - comisiones.totalComisiones) }}</strong>
                   </div>
                 </div>
               </div>
@@ -245,7 +245,7 @@ const stats = ref({
   ventasMes: 0, ingresosTotales: 0, ingresosMes: 0, pedidosPendientes: 0,
 })
 const comisiones = ref({
-  cobrado: 0, pendiente: 0, totalComisiones: 0, netoMes: 0, porcentaje: 10,
+  cobrado: 0, pendiente: 0, totalComisiones: 0, netoMes: 0, porcentaje: 10, totalVentas: 0,
 })
 const topTortas = ref([])
 const actividad = ref([])
@@ -273,8 +273,8 @@ async function cargarEstadisticas() {
       totalTortasActivas: statsData.totalTortasActivas ?? 0,
       totalVentas:        statsData.totalVentas        ?? 0,
       ventasMes:          statsData.ventasMes          ?? 0,
-      ingresosTotales:    statsData.ingresosTotales    ?? 0,
-      ingresosMes:        statsData.ingresosMes        ?? 0,
+      ingresosTotales:    statsData.ingresosBrutos     ?? statsData.ingresosTotales    ?? 0,
+      ingresosMes:        statsData.ingresosBrutosMes  ?? statsData.ingresosMes        ?? 0,
       pedidosPendientes:  statsData.pedidosPendientes  ?? 0,
     }
     topTortas.value = Array.isArray(topData) ? topData : []
@@ -284,11 +284,13 @@ async function cargarEstadisticas() {
     const libs = libData.data ?? libData ?? []
     const porcentaje = libData.porcentajeComision ?? statsData.porcentajeComision ?? 10
     const ahora = new Date()
-    const cobrado          = libs.filter(l => l.estado === 'Liberado').reduce((s, l) => s + (l.montoLiberado ?? 0), 0)
-    const pendiente        = libs.filter(l => l.estado === 'Pendiente').reduce((s, l) => s + (l.montoLiberado ?? 0), 0)
-    const totalComisiones  = libs.filter(l => l.estado === 'Liberado').reduce((s, l) => s + (l.montoComision ?? 0), 0)
-    const netoMes          = libs.filter(l => l.estado === 'Liberado' && new Date(l.fechaLiberacion).getMonth() === ahora.getMonth()).reduce((s, l) => s + (l.montoLiberado ?? 0), 0)
-    comisiones.value = { cobrado, pendiente, totalComisiones, netoMes, porcentaje }
+    const esCobrado = l => l.estado === 'Transferido' || l.estado === 'Confirmado'
+    const cobrado         = libs.filter(esCobrado).reduce((s, l) => s + (l.montoNeto ?? 0), 0)
+    const pendiente       = libs.filter(l => l.estado === 'Pendiente' || l.estado === 'ListoParaLiberar').reduce((s, l) => s + (l.montoNeto ?? 0), 0)
+    const totalComisiones = libs.filter(esCobrado).reduce((s, l) => s + (l.comision ?? 0), 0)
+    const netoMes         = libs.filter(l => esCobrado(l) && new Date(l.fechaLiberacion).getMonth() === ahora.getMonth()).reduce((s, l) => s + (l.montoNeto ?? 0), 0)
+    const totalVentas     = libs.reduce((s, l) => s + (l.montoBruto ?? 0), 0)
+    comisiones.value = { cobrado, pendiente, totalComisiones, netoMes, porcentaje, totalVentas }
 
   } catch (err) {
     error.value = 'No se pudieron cargar las estadísticas.'

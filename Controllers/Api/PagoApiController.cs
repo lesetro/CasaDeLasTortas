@@ -87,7 +87,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Obtener datos de pago de la plataforma
+        ///  Obtener datos de pago de la plataforma
         /// </summary>
         [HttpGet("datos-plataforma")]
         public async Task<IActionResult> GetDatosPlataforma()
@@ -97,11 +97,11 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Subir comprobante de pago
+        /// Subir comprobante de pago
         /// POST /api/PagoApi/{pagoId}/comprobante
         /// </summary>
         [HttpPost("{pagoId}/comprobante")]
-        public async Task<IActionResult> SubirComprobante(int pagoId, [FromForm] SubirComprobanteDTO request)
+        public async Task<IActionResult> SubirComprobante(int pagoId, [FromForm] SubirComprobanteApiDTO request)
         {
             try
             {
@@ -143,7 +143,7 @@ namespace CasaDeLasTortas.Controllers.Api
 
                 // Procesar
                 var result = await _pagoService.SubirComprobanteAsync(
-                    pago.VentaId, compradorId.Value, archivoComprobante, 
+                    pago.VentaId, compradorId.Value, archivoComprobante,
                     request.MetodoPago, request.NumeroTransaccion);
 
                 if (!result.Success)
@@ -163,8 +163,88 @@ namespace CasaDeLasTortas.Controllers.Api
             }
         }
 
+
         /// <summary>
-        /// ✅ NUEVO: Obtener pagos pendientes de verificación (Admin)
+        /// Subir comprobante usando VentaId (alternativo)
+        /// POST /api/PagoApi/subir-comprobante
+        /// </summary>
+        [HttpPost("subir-comprobante")]
+        public async Task<IActionResult> SubirComprobanteByVenta([FromForm] SubirComprobantePorVentaDTO request)
+        {
+            try
+            {
+                var compradorId = await ObtenerCompradorIdActual();
+                if (compradorId == null)
+                    return Unauthorized(new { message = "Comprador no encontrado" });
+
+                var venta = await _unitOfWork.Ventas.GetByIdWithTodoAsync(request.VentaId);
+                if (venta == null)
+                    return NotFound(new { message = "Venta no encontrada" });
+
+                if (venta.CompradorId != compradorId)
+                    return Forbid();
+
+                var pago = venta.Pagos?
+                    .Where(p => p.Estado == EstadoPago.Pendiente || p.Estado == EstadoPago.EnRevision)
+                    .OrderByDescending(p => p.FechaPago)
+                    .FirstOrDefault();
+
+                if (pago == null)
+                {
+                    var comisionPorcentaje = await _unitOfWork.Configuracion.GetComisionPorcentajeAsync();
+                    var comision = venta.Total * (comisionPorcentaje / 100m);
+
+                    pago = new Pago
+                    {
+                        VentaId = request.VentaId,
+                        CompradorId = compradorId.Value,
+                        Monto = venta.Total,
+                        ComisionPlataforma = comision,
+                        MontoVendedores = venta.Total - comision,
+                        Estado = EstadoPago.Pendiente,
+                        MetodoPago = MetodoPago.Transferencia,
+                        FechaPago = DateTime.Now
+                    };
+
+                    await _unitOfWork.PagoRepository.AddAsync(pago);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                if (request.Comprobante == null || request.Comprobante.Length == 0)
+                    return BadRequest(new { message = "Debe enviar un archivo de comprobante" });
+
+                var archivoComprobante = await _fileService.SaveFileAsync(request.Comprobante, "comprobantes");
+
+                pago.ArchivoComprobante = archivoComprobante;
+                pago.FechaComprobante = DateTime.Now;
+                pago.NumeroTransaccion = request.NumeroTransaccion;
+                pago.MetodoPago = MetodoPago.Transferencia;
+                pago.Estado = EstadoPago.EnRevision;
+
+                _unitOfWork.PagoRepository.Update(pago);
+
+                venta.Estado = EstadoVenta.PagoEnRevision;
+                _unitOfWork.Ventas.Update(venta);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Comprobante enviado correctamente.",
+                    pagoId = pago.Id,
+                    urlComprobante = _fileService.GetFileUrl(archivoComprobante)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al subir comprobante para venta {VentaId}", request.VentaId);
+                return StatusCode(500, new { message = "Error al subir el comprobante" });
+            }
+        }
+
+        /// <summary>
+        ///  Obtener pagos pendientes de verificación (Admin)
         /// </summary>
         [HttpGet("pendientes-verificacion")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
@@ -199,7 +279,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Verificar pago (Admin aprueba o rechaza)
+        ///  Verificar pago (Admin aprueba o rechaza)
         /// </summary>
         [HttpPost("{pagoId}/verificar")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
@@ -212,7 +292,7 @@ namespace CasaDeLasTortas.Controllers.Api
                     return Unauthorized();
 
                 var result = await _pagoService.VerificarPagoAsync(
-                    pagoId, adminId.Value, request.Aprobado, 
+                    pagoId, adminId.Value, request.Aprobado,
                     request.Observaciones, request.MotivoRechazo);
 
                 if (!result.Success)
@@ -228,7 +308,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Obtener pagos rechazados
+        ///  Obtener pagos rechazados
         /// </summary>
         [HttpGet("rechazados")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
@@ -249,7 +329,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Obtener reembolsos pendientes
+        ///  Obtener reembolsos pendientes
         /// </summary>
         [HttpGet("reembolsos-pendientes")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
@@ -269,11 +349,11 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Procesar reembolso (Admin)
+        ///  Procesar reembolso (Admin)
         /// </summary>
         [HttpPost("{pagoId}/reembolso")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
-        public async Task<IActionResult> ProcesarReembolso(int pagoId, [FromForm] ProcesarReembolsoDTO request)
+        public async Task<IActionResult> ProcesarReembolso(int pagoId, [FromForm] ProcesarReembolsoApiDTO request)
         {
             try
             {
@@ -308,14 +388,14 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Estadísticas de pagos y comisiones (Admin)
+        ///  Estadísticas de pagos y comisiones (Admin)
         /// </summary>
         [HttpGet("estadisticas")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
         public async Task<IActionResult> GetEstadisticas()
         {
             var stats = await _pagoService.GetEstadisticasAsync();
-            
+
             // Agregar datos adicionales
             var comisionesDelMes = await _unitOfWork.PagoRepository.GetComisionesDelMesAsync();
             var montoEnRevision = await _unitOfWork.PagoRepository.GetMontoEnRevisionAsync();
@@ -493,64 +573,123 @@ namespace CasaDeLasTortas.Controllers.Api
 
         private async Task<int?> ObtenerCompradorIdActual()
         {
-            var userEmail = User.Identity?.Name;
-            if (string.IsNullOrEmpty(userEmail)) return null;
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
-            return persona?.Comprador?.Id;
+            var personaIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(personaIdClaim, out int personaId)) return null;
+            var comprador = await _unitOfWork.CompradorRepository.GetByPersonaIdAsync(personaId);
+            return comprador?.Id;
         }
 
         private async Task<int?> ObtenerVendedorIdActual()
         {
-            var userEmail = User.Identity?.Name;
-            if (string.IsNullOrEmpty(userEmail)) return null;
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
+            var personaIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(personaIdClaim, out int personaId)) return null;
+            var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(personaId);
             return persona?.Vendedor?.Id;
         }
 
         private async Task<int?> ObtenerPersonaIdActual()
         {
-            var userEmail = User.Identity?.Name;
-            if (string.IsNullOrEmpty(userEmail)) return null;
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
-            return persona?.Id;
+            var personaIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(personaIdClaim, out int personaId)) return null;
+            return personaId;
         }
-    }
 
-    // ==================== DTOs ====================
+        /// <summary>
+        /// subir comprobante usando VentaId (alternativo)
+        /// POST /api/PagoApi/venta/{ventaId}/comprobante
+        /// </summary>
+        [HttpPost("venta/{ventaId}/comprobante")]
+        public async Task<IActionResult> SubirComprobantePorVenta(int ventaId, [FromForm] SubirComprobanteApiDTO request)
+        {
+            try
+            {
+                var compradorId = await ObtenerCompradorIdActual();
+                if (compradorId == null)
+                    return Unauthorized(new { message = "Comprador no encontrado" });
 
-    public class SubirComprobanteDTO
-    {
-        public IFormFile? Archivo { get; set; }
-        public string? ArchivoBase64 { get; set; }
-        public string? NombreArchivo { get; set; }
-        
-        [Required]
-        public MetodoPago MetodoPago { get; set; }
-        
-        public string? NumeroTransaccion { get; set; }
-    }
+                // Verificar que la venta existe y pertenece al comprador
+                var venta = await _unitOfWork.Ventas.GetByIdWithTodoAsync(ventaId);
+                if (venta == null)
+                    return NotFound(new { message = "Venta no encontrada" });
 
-    public class VerificarPagoDTO
-    {
-        [Required]
-        public bool Aprobado { get; set; }
-        
-        public string? Observaciones { get; set; }
-        public string? MotivoRechazo { get; set; }
-    }
+                if (venta.CompradorId != compradorId)
+                    return Forbid();
 
-    public class ProcesarReembolsoDTO
-    {
-        [Required]
-        public IFormFile Archivo { get; set; } = null!;
-        
-        [Required]
-        public string NumeroTransaccion { get; set; } = string.Empty;
-    }
+                // Verificar que la venta está en un estado que permite subir comprobante
+                if (venta.Estado != EstadoVenta.Pendiente && venta.Estado != EstadoVenta.PagoEnRevision)
+                    return BadRequest(new { message = $"No se puede subir comprobante para una venta en estado '{venta.Estado}'" });
 
-    public class CambiarEstadoDetalleDTO
-    {
-        [Required]
-        public string Estado { get; set; } = string.Empty;
+                // Buscar pago existente por ventaId
+                var pagos = await _unitOfWork.PagoRepository.GetByVentaIdAsync(ventaId);
+                var pago = pagos.FirstOrDefault();
+
+                if (pago == null)
+                {
+                    // Si no existe pago, crear uno nuevo (ordenes antiguas sin pago creado)
+                    _logger.LogInformation("Creando pago faltante para Venta {VentaId} del Comprador {CompradorId}", ventaId, compradorId);
+
+                    var comisionPct = await _unitOfWork.Configuracion.GetComisionPorcentajeAsync();
+                    pago = new Pago
+                    {
+                        VentaId = ventaId,
+                        CompradorId = compradorId.Value,
+                        Monto = venta.Total,
+                        ComisionPlataforma = Math.Round(venta.Total * (comisionPct / 100m), 2),
+                        MontoVendedores = Math.Round(venta.Total * (1 - comisionPct / 100m), 2),
+                        FechaPago = DateTime.Now,
+                        Estado = EstadoPago.Pendiente
+                    };
+                    await _unitOfWork.PagoRepository.AddAsync(pago);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                else
+                {
+                    // Validar que el pago existente pueda recibir comprobante
+                    var maxIntentos = await _unitOfWork.Configuracion.GetMaxIntentosRechazadosAsync();
+                    if (pago.IntentosRechazados >= maxIntentos)
+                        return BadRequest(new { message = $"Se superó el máximo de {maxIntentos} intentos. Contacte soporte." });
+
+                    if (pago.Estado != EstadoPago.Pendiente && pago.Estado != EstadoPago.Rechazado)
+                        return BadRequest(new { message = "El pago no acepta comprobante en su estado actual" });
+                }
+
+                // Guardar el archivo
+                string archivoComprobante;
+                if (request.Archivo != null)
+                {
+                    archivoComprobante = await _fileService.SaveFileAsync(request.Archivo, "comprobantes");
+                }
+                else if (!string.IsNullOrEmpty(request.ArchivoBase64))
+                {
+                    archivoComprobante = await _fileService.SaveBase64FileAsync(
+                        request.ArchivoBase64, "comprobantes", request.NombreArchivo ?? "comprobante.jpg");
+                }
+                else
+                {
+                    return BadRequest(new { message = "Debe enviar un archivo o imagen base64" });
+                }
+
+                // Delegar al servicio de pagos
+                var result = await _pagoService.SubirComprobanteAsync(
+                    ventaId, compradorId.Value, archivoComprobante,
+                    request.MetodoPago, request.NumeroTransaccion);
+
+                if (!result.Success)
+                    return BadRequest(new { message = result.Message });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Message,
+                    pagoId = pago.Id,
+                    urlComprobante = _fileService.GetFileUrl(archivoComprobante)
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al subir comprobante para venta {VentaId}", ventaId);
+                return StatusCode(500, new { message = "Error al subir el comprobante" });
+            }
+        }
     }
 }

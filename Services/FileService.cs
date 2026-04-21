@@ -11,7 +11,7 @@ namespace CasaDeLasTortas.Services
         bool FileExists(string filePath);
         Task<string> UploadFileAsync(IFormFile file, string folder);
         
-        // ✅ NUEVO: Método para guardar archivos desde Base64 (móvil/cámara)
+        //  Método para guardar archivos desde Base64 (móvil/cámara)
         Task<string> SaveBase64FileAsync(string base64Data, string folder, string fileName);
     }
 
@@ -103,7 +103,7 @@ namespace CasaDeLasTortas.Services
         }
 
         /// <summary>
-        /// ✅ NUEVO: Guarda un archivo desde una cadena Base64
+        ///  Guarda un archivo desde una cadena Base64
         /// Útil para uploads desde móvil/cámara
         /// </summary>
         public async Task<string> SaveBase64FileAsync(string base64Data, string folder, string fileName)

@@ -7,7 +7,6 @@ namespace CasaDeLasTortas.Models.ViewModels
         public int TamanioPagina { get; set; }
         public int TotalItems { get; set; }
         
-        // ✅ PROPIEDAD QUE FALTABA
         public string? Busqueda { get; set; }
         
         public bool TienePaginaAnterior => PaginaActual > 1;
@@ -16,7 +15,6 @@ namespace CasaDeLasTortas.Models.ViewModels
         public int PrimerItem => ((PaginaActual - 1) * TamanioPagina) + 1;
         public int UltimoItem => Math.Min(PaginaActual * TamanioPagina, TotalItems);
         
-        // ✅ PROPIEDADES ADICIONALES QUE SE USAN EN _PaginacionPartial.cshtml
         public int ItemsDesde => PrimerItem;
         public int ItemsHasta => UltimoItem;
         
@@ -38,11 +36,13 @@ namespace CasaDeLasTortas.Models.ViewModels
             }
         }
 
+        // Constructor vacio: crea paginacion con valores default
         public PaginacionViewModel()
         {
             TamanioPagina = 10; // Valor por defecto
         }
-
+        
+        // Constructor completo: recibe los datos y calcula todo
         public PaginacionViewModel(int totalItems, int paginaActual, int tamanioPagina)
         {
             TotalItems = totalItems;

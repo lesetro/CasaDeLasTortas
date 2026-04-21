@@ -1,0 +1,187 @@
+@{
+    ViewData["Title"] = "Reembolsos Pendientes - Admin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var reembolsos = ViewBag.Reembolsos as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+@section Styles {
+<style>
+    body { background-color: #f1f5f9; }
+    .admin-main { margin-left: 260px; padding: 2rem; }
+    .ref-table th { font-size:.75rem; text-transform:uppercase; letter-spacing:.07em; color:#94a3b8; font-weight:600; border:none; }
+    .ref-table td { vertical-align:middle; border-color:#f1f5f9; }
+    .ref-table tr:last-child td { border-bottom:none; }
+    .ref-table tbody tr:hover { background:#f8fafc; }
+    @@media (max-width:991px){ .admin-main{ margin-left:0; padding:1rem; } }
+</style>
+}
+
+<partial name="_AdminSidebar" />
+
+<div class="admin-main">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-0" style="font-size:1.6rem;">
+                <i class="fas fa-undo text-warning me-2"></i>Reembolsos Pendientes
+            </h1>
+            <p class="text-muted mb-0 small">Disputas resueltas a favor del comprador que requieren devolución de dinero</p>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Dashboard
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger border-0 rounded-3 shadow-sm mb-4 alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 rounded-3 shadow-sm">
+        @if (reembolsos.Any())
+        {
+            <div class="table-responsive">
+                <table class="table ref-table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Orden</th>
+                            <th>Comprador</th>
+                            <th>Contacto</th>
+                            <th class="text-end">Monto</th>
+                            <th class="text-center">Fecha pago</th>
+                            <th>Motivo</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in reembolsos)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-semibold small">#@r.NumeroOrden</div>
+                                    <div class="text-muted" style="font-size:.72rem;">Pago ID: @r.PagoId</div>
+                                </td>
+                                <td class="fw-semibold small">@r.NombreComprador</td>
+                                <td>
+                                    <div class="small text-muted">@r.EmailComprador</div>
+                                    <div class="small text-muted">@r.TelefonoComprador</div>
+                                </td>
+                                <td class="text-end fw-bold text-danger">$@r.Monto.ToString("N0")</td>
+                                <td class="text-center text-muted small">@r.FechaPago?.ToString("dd/MM/yy")</td>
+                                <td class="small text-muted" style="max-width:180px;">
+                                    @(r.MotivoReembolso?.Length > 80 ? r.MotivoReembolso.Substring(0, 80) + "…" : r.MotivoReembolso)
+                                </td>
+                                <td class="text-center">
+                                    <button type="button"
+                                            class="btn btn-sm btn-warning"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalReembolso"
+                                            data-pago-id="@r.PagoId"
+                                            data-orden="@r.NumeroOrden"
+                                            data-comprador="@r.NombreComprador"
+                                            data-email="@r.EmailComprador"
+                                            data-telefono="@r.TelefonoComprador"
+                                            data-monto="@r.Monto.ToString("N0")">
+                                        <i class="fas fa-upload me-1"></i>Registrar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-3x text-success mb-3 d-block"></i>
+                <h6 class="fw-semibold text-muted">Sin reembolsos pendientes</h6>
+                <p class="text-muted small">No hay devoluciones pendientes de registrar</p>
+            </div>
+        }
+    </div>
+
+</div>
+
+<!-- Modal registrar reembolso -->
+<div class="modal fade" id="modalReembolso" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">
+                    <i class="fas fa-undo text-warning me-2"></i>Registrar Reembolso — Orden <span id="rOrden"></span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Datos del comprador -->
+                <div class="p-3 rounded-3 mb-3" style="background:#fff3cd; border:1px solid #ffc107;">
+                    <div class="text-muted fw-semibold mb-1" style="font-size:.7rem;">CONTACTAR AL COMPRADOR PARA OBTENER SU CBU/ALIAS</div>
+                    <div class="small fw-semibold" id="rComprador"></div>
+                    <div class="small text-muted" id="rEmail"></div>
+                    <div class="small text-muted" id="rTelefono"></div>
+                    <div class="mt-2 fw-bold text-danger">Monto a devolver: $<span id="rMonto"></span></div>
+                </div>
+
+                <form asp-action="ProcesarReembolso" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="pagoId" id="rPagoId" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">
+                            Número de transacción <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" name="numeroTransaccion" class="form-control form-control-sm"
+                               placeholder="Ej: MP-2025-001234 o referencia bancaria" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">
+                            Comprobante de transferencia <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" name="comprobanteReembolso" class="form-control form-control-sm"
+                               accept="image/*,.pdf" required />
+                        <div class="text-muted mt-1" style="font-size:.72rem;">
+                            Subí la captura o PDF de la transferencia realizada al comprador.
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-warning fw-semibold flex-fill">
+                            <i class="fas fa-check me-1"></i>Confirmar reembolso
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('modalReembolso').addEventListener('show.bs.modal', e => {
+        const btn = e.relatedTarget;
+        document.getElementById('rPagoId').value      = btn.dataset.pagoId;
+        document.getElementById('rOrden').textContent = btn.dataset.orden;
+        document.getElementById('rComprador').textContent = btn.dataset.comprador;
+        document.getElementById('rEmail').textContent    = btn.dataset.email;
+        document.getElementById('rTelefono').textContent = btn.dataset.telefono;
+        document.getElementById('rMonto').textContent    = btn.dataset.monto;
+    });
+</script>
+}

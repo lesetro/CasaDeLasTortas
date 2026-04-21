@@ -80,8 +80,28 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUGVyZmlsUHVibGljby5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Admin/ProcesarLiberacion.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUHJvY2VzYXJMaWJlcmFjaW9uLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Admin/Reembolsos.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUmVlbWJvbHNvcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Admin/Reportes.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cUmVwb3J0ZXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Admin/Usuarios.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cVXN1YXJpb3MuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Admin/Ventas.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cVmVudGFzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Admin/VerificarPago.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cVmVyaWZpY2FyUGFnby5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Carrito/Checkout.cshtml]
@@ -208,6 +228,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Shared/Logout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXExvZ291dC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Shared/_AdminSidebar.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BZG1pblNpZGViYXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -258,6 +282,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Venta/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVudGFcRGV0YWlscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Venta/Factura.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVudGFcRmFjdHVyYS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Personal/source/repos/Tortas_Troncoso_leandro/CasaDeLasTortas/Views/Venta/MisCompras.cshtml]

@@ -38,7 +38,7 @@ namespace CasaDeLasTortas.Interfaces
         Task<IEnumerable<Comprador>> GetTopCompradores(int cantidad = 10);
         Task<IEnumerable<Comprador>> GetCompradorReciente(int dias = 30);
 
-        // ✅ MÉTODO AGREGADO
+        
         Task<bool> ExistsAsync(Expression<Func<Comprador, bool>> predicate);
     }
 }

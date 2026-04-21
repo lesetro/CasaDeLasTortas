@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using CasaDeLasTortas.Models.Entities;
+using Microsoft.AspNetCore.Http;
 
 namespace CasaDeLasTortas.Models.DTOs
 {
@@ -148,6 +149,19 @@ namespace CasaDeLasTortas.Models.DTOs
         
         // Tiempos promedio
         public double DiasPromedioLiberacion { get; set; }
+    }
+
+    /// <summary>
+    /// DTO para procesar transferencia de liberación con comprobante adjunto (multipart/form-data)
+    /// </summary>
+    public class ProcesarTransferenciaDTO
+    {
+        [Required]
+        public IFormFile Archivo { get; set; } = null!;
+
+        [Required]
+        [StringLength(100)]
+        public string NumeroOperacion { get; set; } = string.Empty;
     }
 
     /// <summary>

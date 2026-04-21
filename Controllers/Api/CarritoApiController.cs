@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models;
+using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -251,11 +252,4 @@ namespace CasaDeLasTortas.Controllers.Api
         }
     }
 
-    // ─────────────────────────────────────────────
-    // Request DTOs (clases simples para el body)
-    // ─────────────────────────────────────────────
-    public record AgregarItemRequest(int TortaId, int Cantidad, string? Notas = null);
-    public record ActualizarItemRequest(int TortaId, int Cantidad);
-    public record QuitarItemRequest(int TortaId);
-    public record ActualizarNotasRequest(int TortaId, string? Notas);
 }

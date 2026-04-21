@@ -190,7 +190,7 @@ async function cargarCatalogo() {
   }
 }
 
-// 🔥 FUNCIÓN CORREGIDA: Maneja tanto mayúsculas como minúsculas
+//  Maneja tanto mayúsculas como minúsculas
 function mapTorta(t) {
   // Obtener imagen principal - manejar diferentes casos
   let imagenPrincipal = null

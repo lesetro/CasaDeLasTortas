@@ -6,10 +6,10 @@ using CasaDeLasTortas.Models.ViewModels;
 
 namespace CasaDeLasTortas.Controllers
 {
-    
+
     // VENTA CONTROLLER
-  
-    
+
+
     [Authorize]
     public class VentaController : Controller
     {
@@ -35,7 +35,7 @@ namespace CasaDeLasTortas.Controllers
                 }
 
                 var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(compradorId.Value);
-                
+
                 // Ordenar por fecha descendente
                 ventas = ventas.OrderByDescending(v => v.FechaVenta);
 
@@ -84,7 +84,7 @@ namespace CasaDeLasTortas.Controllers
                 }
 
                 var detalles = await _unitOfWork.DetallesVenta.GetByVendedorIdWithVentaAsync(vendedorId.Value);
-                
+
                 // Filtrar por estado si se especifica
                 if (!string.IsNullOrEmpty(filtroEstado) && Enum.TryParse<EstadoDetalleVenta>(filtroEstado, out var estado))
                 {
@@ -162,10 +162,9 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction("AccessDenied", "Account");
                 }
 
-                // ✅ CORREGIDO: Usar PagoPrincipal (propiedad calculada en Venta.cs)
                 var pagoPrincipal = venta.PagoPrincipal;
 
-                // ✅ CORREGIDO: Usar VentaDetalleViewModel
+
                 var viewModel = new VentaDetalleViewModel
                 {
                     Id = venta.Id,
@@ -185,25 +184,25 @@ namespace CasaDeLasTortas.Controllers
                     RequiereFactura = venta.RequiereFactura,
                     CUITCliente = venta.CUITCliente,
                     RazonSocial = venta.RazonSocial,
-                    
+
                     // Datos del comprador
                     CompradorId = venta.CompradorId,
                     NombreComprador = venta.Comprador?.Persona?.Nombre ?? "Cliente",
                     EmailComprador = venta.Comprador?.Persona?.Email ?? string.Empty,
                     TelefonoComprador = venta.Comprador?.Telefono ?? string.Empty,
-                    
+
                     // Campos de comisiones
                     PorcentajeComision = venta.PorcentajeComision,
                     ComisionPlataforma = venta.ComisionPlataforma,
                     MontoVendedores = venta.MontoVendedores,
                     FondosLiberados = venta.FondosLiberados,
-                    
-                    // ✅ CORREGIDO: Usar PagoPrincipal en lugar de Pago
+
+                    //  Usar PagoPrincipal en lugar de Pago
                     PagoId = pagoPrincipal?.Id,
                     EstadoPago = pagoPrincipal?.Estado ?? EstadoPago.Pendiente,
                     FechaPago = pagoPrincipal?.FechaPago,
                     MontoPagado = pagoPrincipal?.Monto ?? 0,
-                    
+
                     // Detalles de productos
                     Detalles = venta.Detalles.Select(d => new DetalleVentaViewModel
                     {
@@ -222,7 +221,7 @@ namespace CasaDeLasTortas.Controllers
                         FechaRealPreparacion = d.FechaRealPreparacion,
                         ImagenTorta = d.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
                     }).ToList(),
-                    
+
                     // Lista de todos los pagos
                     Pagos = venta.Pagos.Select(p => new PagoResumenViewModel
                     {
@@ -336,7 +335,7 @@ namespace CasaDeLasTortas.Controllers
                         {
                             detalleEnVenta.Estado = nuevoEstado;
                         }
-                        
+
                         // Verificar si todos están entregados
                         if (venta.Detalles.All(d => d.Estado == EstadoDetalleVenta.Entregado))
                         {
@@ -358,10 +357,10 @@ namespace CasaDeLasTortas.Controllers
                 return Json(new { success = false, message = "Error al actualizar el estado" });
             }
         }
-
-        // GET: Venta/ImprimirFactura/5
+        // GET: Venta/Factura/5
+        // Llamado desde el Vue: window.open('/Venta/Factura/${ventaId}', '_blank')
         [Authorize]
-        public async Task<IActionResult> ImprimirFactura(int id)
+        public async Task<IActionResult> Factura(int id)
         {
             try
             {
@@ -373,19 +372,154 @@ namespace CasaDeLasTortas.Controllers
                 }
 
                 if (!await TienePermisoVerVenta(venta))
-                {
                     return RedirectToAction("AccessDenied", "Account");
-                }
 
-                // Retornar vista de factura
-                return View("Factura", venta);
+                var pagoPrincipal = venta.PagoPrincipal;
+
+                var viewModel = new VentaDetalleViewModel
+                {
+                    Id = venta.Id,
+                    NumeroOrden = venta.NumeroOrden,
+                    FechaVenta = venta.FechaVenta,
+                    Estado = venta.Estado,
+                    Subtotal = venta.Subtotal,
+                    DescuentoTotal = venta.DescuentoTotal,
+                    Total = venta.Total,
+                    DireccionEntrega = venta.DireccionEntrega,
+                    Ciudad = venta.Ciudad,
+                    Provincia = venta.Provincia,
+                    CodigoPostal = venta.CodigoPostal,
+                    NotasCliente = venta.NotasCliente,
+                    FechaEntregaEstimada = venta.FechaEntregaEstimada,
+                    FechaEntregaReal = venta.FechaEntregaReal,
+                    RequiereFactura = venta.RequiereFactura,
+                    CUITCliente = venta.CUITCliente,
+                    RazonSocial = venta.RazonSocial,
+                    CompradorId = venta.CompradorId,
+                    NombreComprador = venta.Comprador?.Persona?.Nombre ?? "Cliente",
+                    EmailComprador = venta.Comprador?.Persona?.Email ?? "",
+                    TelefonoComprador = venta.Comprador?.Telefono ?? "",
+                    PorcentajeComision = venta.PorcentajeComision,
+                    ComisionPlataforma = venta.ComisionPlataforma,
+                    MontoVendedores = venta.MontoVendedores,
+                    FondosLiberados = venta.FondosLiberados,
+                    PagoId = pagoPrincipal?.Id,
+                    EstadoPago = pagoPrincipal?.Estado ?? EstadoPago.Pendiente,
+                    FechaPago = pagoPrincipal?.FechaPago,
+                    MontoPagado = pagoPrincipal?.Monto ?? 0,
+                    Detalles = venta.Detalles.Select(d => new DetalleVentaViewModel
+                    {
+                        Id = d.Id,
+                        TortaId = d.TortaId,
+                        NombreTorta = d.Torta?.Nombre ?? "Producto",
+                        VendedorId = d.VendedorId,
+                        NombreVendedor = d.Vendedor?.NombreComercial ?? "Vendedor",
+                        Cantidad = d.Cantidad,
+                        PrecioUnitario = d.PrecioUnitario,
+                        Descuento = d.Descuento,
+                        Subtotal = d.Subtotal,
+                        Estado = d.Estado,
+                        NotasPersonalizacion = d.NotasPersonalizacion,
+                        ImagenTorta = d.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
+                    }).ToList(),
+                    Pagos = venta.Pagos.Select(p => new PagoResumenViewModel
+                    {
+                        Id = p.Id,
+                        Monto = p.Monto,
+                        FechaPago = p.FechaPago,
+                        Estado = p.Estado,
+                        MetodoPago = p.MetodoPago,
+                        NumeroTransaccion = p.NumeroTransaccion,
+                        ArchivoComprobante = p.ArchivoComprobante
+                    }).ToList()
+                };
+
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al imprimir factura de venta {VentaId}", id);
+                _logger.LogError(ex, "Error al generar factura de venta {VentaId}", id);
                 TempData["Error"] = "Error al generar la factura";
-                return RedirectToAction(nameof(Details), new { id });
+                return RedirectToAction(nameof(MisCompras));
             }
+        }
+
+
+        // GET: Venta/ImprimirFactura/5
+        [Authorize]
+        public async Task<IActionResult> ImprimirFactura(int id)
+        {
+            var venta = await _unitOfWork.Ventas.GetByIdWithTodoAsync(id);
+            if (venta == null)
+            {
+                TempData["Error"] = "Venta no encontrada";
+                return RedirectToAction(nameof(MisCompras));
+            }
+
+            if (!await TienePermisoVerVenta(venta))
+                return RedirectToAction("AccessDenied", "Account");
+
+            var pagoPrincipal = venta.PagoPrincipal;
+
+            var viewModel = new VentaDetalleViewModel
+            {
+                Id = venta.Id,
+                NumeroOrden = venta.NumeroOrden,
+                FechaVenta = venta.FechaVenta,
+                Estado = venta.Estado,
+                Subtotal = venta.Subtotal,
+                DescuentoTotal = venta.DescuentoTotal,
+                Total = venta.Total,
+                DireccionEntrega = venta.DireccionEntrega,
+                Ciudad = venta.Ciudad,
+                Provincia = venta.Provincia,
+                CodigoPostal = venta.CodigoPostal,
+                NotasCliente = venta.NotasCliente,
+                FechaEntregaEstimada = venta.FechaEntregaEstimada,
+                FechaEntregaReal = venta.FechaEntregaReal,
+                RequiereFactura = venta.RequiereFactura,
+                CUITCliente = venta.CUITCliente,
+                RazonSocial = venta.RazonSocial,
+                CompradorId = venta.CompradorId,
+                NombreComprador = venta.Comprador?.Persona?.Nombre ?? "Cliente",
+                EmailComprador = venta.Comprador?.Persona?.Email ?? "",
+                TelefonoComprador = venta.Comprador?.Telefono ?? "",
+                PorcentajeComision = venta.PorcentajeComision,
+                ComisionPlataforma = venta.ComisionPlataforma,
+                MontoVendedores = venta.MontoVendedores,
+                FondosLiberados = venta.FondosLiberados,
+                PagoId = pagoPrincipal?.Id,
+                EstadoPago = pagoPrincipal?.Estado ?? EstadoPago.Pendiente,
+                FechaPago = pagoPrincipal?.FechaPago,
+                MontoPagado = pagoPrincipal?.Monto ?? 0,
+                Detalles = venta.Detalles.Select(d => new DetalleVentaViewModel
+                {
+                    Id = d.Id,
+                    TortaId = d.TortaId,
+                    NombreTorta = d.Torta?.Nombre ?? "Producto",
+                    VendedorId = d.VendedorId,
+                    NombreVendedor = d.Vendedor?.NombreComercial ?? "Vendedor",
+                    Cantidad = d.Cantidad,
+                    PrecioUnitario = d.PrecioUnitario,
+                    Descuento = d.Descuento,
+                    Subtotal = d.Subtotal,
+                    Estado = d.Estado,
+                    NotasPersonalizacion = d.NotasPersonalizacion,
+                    ImagenTorta = d.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
+                }).ToList(),
+                Pagos = venta.Pagos.Select(p => new PagoResumenViewModel
+                {
+                    Id = p.Id,
+                    Monto = p.Monto,
+                    FechaPago = p.FechaPago,
+                    Estado = p.Estado,
+                    MetodoPago = p.MetodoPago,
+                    NumeroTransaccion = p.NumeroTransaccion,
+                    ArchivoComprobante = p.ArchivoComprobante
+                }).ToList()
+            };
+
+            return View("Factura", viewModel);
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -397,11 +531,12 @@ namespace CasaDeLasTortas.Controllers
             if (User.Identity?.IsAuthenticated != true)
                 return null;
 
-            var userEmail = User.Identity.Name;
-            if (string.IsNullOrEmpty(userEmail))
+            var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("PersonaId")?.Value;
+            if (!int.TryParse(claim, out var personaId))
                 return null;
 
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
+            var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(personaId);
             return persona?.Comprador?.Id;
         }
 
@@ -410,11 +545,12 @@ namespace CasaDeLasTortas.Controllers
             if (User.Identity?.IsAuthenticated != true)
                 return null;
 
-            var userEmail = User.Identity.Name;
-            if (string.IsNullOrEmpty(userEmail))
+            var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("PersonaId")?.Value;
+            if (!int.TryParse(claim, out var personaId))
                 return null;
 
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
+            var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(personaId);
             return persona?.Vendedor?.Id;
         }
 

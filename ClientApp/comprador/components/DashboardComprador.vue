@@ -258,7 +258,7 @@ const stats = ref({
 // ── Contadores de alertas ─────────────────────────────────────────
 const pagosEnRevision = computed(() =>
   pedidosRecientes.value.filter(p =>
-    p.pagos?.some(pg => pg.estado === 'Pendiente')
+    p.pagos?.some(pg => pg.estado === 'EnRevision')
   ).length
 )
 const ordenesSinPagar = computed(() =>

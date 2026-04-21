@@ -13,6 +13,7 @@ namespace CasaDeLasTortas.Interfaces
         
         // Con relaciones
         Task<Disputa?> GetByIdWithMensajesAsync(int id);
+        Task<IEnumerable<Disputa>> GetAllWithDetallesAsync();
         Task<Disputa?> GetByNumeroDisputaAsync(string numeroDisputa);
         Task<IEnumerable<Disputa>> GetByVentaIdAsync(int ventaId);
         Task<IEnumerable<Disputa>> GetByIniciadorIdAsync(int personaId);

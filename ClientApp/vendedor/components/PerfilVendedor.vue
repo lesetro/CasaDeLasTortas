@@ -234,12 +234,8 @@
                     <div>{{ vendedor.titularCuenta || '—' }}</div>
                   </div>
                   <div class="col-md-6">
-                    <div class="text-muted small fw-semibold mb-1">CUIT / DNI</div>
-                    <div>{{ vendedor.cuit || '—' }}</div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="text-muted small fw-semibold mb-1">Tipo de cuenta</div>
-                    <div>{{ vendedor.tipoCuenta || '—' }}</div>
+                    <div class="text-muted small fw-semibold mb-1">DNI (del registro)</div>
+                    <div>{{ vendedor.dni || '—' }}</div>
                   </div>
                 </div>
                 <div v-else class="text-center py-4 text-muted">
@@ -281,17 +277,9 @@
                            placeholder="Tu nombre completo o razón social" />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label fw-semibold small">CUIT / DNI</label>
-                    <input type="text" class="form-control" v-model="form.cuit"
-                           placeholder="XX-XXXXXXXX-X" />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Tipo de cuenta</label>
-                    <select class="form-select" v-model="form.tipoCuenta">
-                      <option value="Caja de Ahorro">Caja de Ahorro</option>
-                      <option value="Cuenta Corriente">Cuenta Corriente</option>
-                      <option value="Cuenta Virtual">Cuenta Virtual (CVU)</option>
-                    </select>
+                    <label class="form-label fw-semibold small">DNI (del registro)</label>
+                    <input type="text" class="form-control bg-light" :value="vendedor.dni || '—'" readonly />
+                    <div class="form-text">Este dato proviene del registro y no se puede modificar aquí.</div>
                   </div>
                 </div>
               </template>
@@ -320,7 +308,7 @@ const comisionPlataforma = ref(10)
 const form = ref({
   nombreComercial: '', especialidad: '', descripcion: '', horario: '', telefono: '',
   // datos bancarios
-  aliasCbu: '', cbu: '', banco: '', titularCuenta: '', cuit: '', tipoCuenta: 'Caja de Ahorro',
+  aliasCbu: '', cbu: '', banco: '', titularCuenta: '', tipoCuenta: 'Caja de Ahorro',
 })
 
 const avatarMostrar = computed(() => {
@@ -360,6 +348,7 @@ async function cargarPerfil() {
       titularCuenta:   vendedorData.titularCuenta   || '',
       cuit:            vendedorData.cuit            || '',
       tipoCuenta:      vendedorData.tipoCuenta      || '',
+      dni:             vendedorData.dni             || u.dni || '',
     }
 
     // Cargar comisión desde config
@@ -383,12 +372,11 @@ function activarEdicion() {
     descripcion:     vendedor.value.descripcion     || '',
     horario:         vendedor.value.horario         || '',
     telefono:        vendedor.value.telefono        || '',
-    aliasCbu:        vendedor.value.aliasCbu        || '',
-    cbu:             vendedor.value.cbu             || '',
-    banco:           vendedor.value.banco           || '',
-    titularCuenta:   vendedor.value.titularCuenta   || '',
-    cuit:            vendedor.value.cuit            || '',
-    tipoCuenta:      vendedor.value.tipoCuenta      || 'Caja de Ahorro',
+    aliasCbu:      vendedor.value.aliasCbu    || '',
+    cbu:           vendedor.value.cbu         || '',
+    banco:         vendedor.value.banco       || '',
+    titularCuenta: vendedor.value.titularCuenta || vendedor.value.nombre || '',
+    tipoCuenta:    vendedor.value.tipoCuenta  || 'Caja de Ahorro',
   }
   errorGuardado.value = null
   editando.value      = true
@@ -424,12 +412,10 @@ async function guardarPerfil() {
         activo:          true,
         fechaCreacion:   new Date().toISOString(),
         // datos bancarios
-        aliasCbu:        form.value.aliasCbu.trim()        || null,
-        cbu:             form.value.cbu.trim()             || null,
-        banco:           form.value.banco.trim()           || null,
-        titularCuenta:   form.value.titularCuenta.trim()   || null,
-        cuit:            form.value.cuit.trim()            || null,
-        tipoCuenta:      form.value.tipoCuenta             || null,
+        aliasCbu:      form.value.aliasCbu.trim()      || null,
+        cbu:           form.value.cbu.trim()           || null,
+        bancoCuenta:   form.value.banco.trim()         || null,
+        titularCuenta: form.value.titularCuenta.trim() || null,
       }),
     })
 

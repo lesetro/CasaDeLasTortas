@@ -110,7 +110,7 @@ namespace CasaDeLasTortas.Models.Entities
         [Column(TypeName = "decimal(12, 2)")]
         public decimal Total { get; set; }
 
-        // ==================== COMISIONES Y DISTRIBUCIÓN (NUEVO) ====================
+        // ==================== COMISIONES Y DISTRIBUCIÓN  ====================
 
         /// <summary>
         /// Porcentaje de comisión aplicado (ej: 10.00 = 10%)

@@ -36,7 +36,16 @@ namespace CasaDeLasTortas.Controllers.Api
         public async Task<IActionResult> GetDatosPago()
         {
             var datos = await _pagoService.GetDatosPagoPlataformaAsync();
-            return Ok(datos);
+            // Nombres en camelCase que espera el Vue (alias/cbu/banco/titular)
+            return Ok(new
+            {
+                alias        = datos.AliasCBU,
+                cbu          = datos.CBU,
+                banco        = datos.Banco,
+                titular      = datos.TitularCuenta,
+                imagenQR     = datos.ImagenQR,
+                instrucciones = datos.InstruccionesPago
+            });
         }
 
         /// <summary>

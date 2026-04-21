@@ -32,7 +32,7 @@ namespace CasaDeLasTortas.Interfaces
         Task<IEnumerable<Vendedor>> GetVerificadosAsync();
         Task<IEnumerable<Vendedor>> SearchAsync(string termino);
         
-        // ✅ NUEVOS: Filtros de datos de pago
+        //  Filtros de datos de pago
         Task<IEnumerable<Vendedor>> GetConDatosPagoCompletosAsync();
         Task<IEnumerable<Vendedor>> GetSinDatosPagoAsync();
         Task<IEnumerable<Vendedor>> GetConPendientesCobroAsync();
@@ -44,7 +44,7 @@ namespace CasaDeLasTortas.Interfaces
         Task<int> GetTotalVentasAsync(int idVendedor);
         Task<int> GetCountAsync();
         
-        // ✅ NUEVOS: Estadísticas financieras
+        // Estadísticas financieras
         Task<decimal> GetTotalCobradoAsync(int vendedorId);
         Task<decimal> GetTotalComisionesAsync(int vendedorId);
         Task<decimal> GetPendienteCobroAsync(int vendedorId);
@@ -60,7 +60,7 @@ namespace CasaDeLasTortas.Interfaces
         Task<bool> TieneDatosPagoCompletosAsync(int vendedorId);
         Task<bool> PuedePublicarTortasAsync(int vendedorId);
         
-        // ✅ NUEVOS: Operaciones de datos de pago
+        // Operaciones de datos de pago
         Task ActualizarDatosPagoAsync(int vendedorId, string aliasCBU, string cbu, string banco, 
                                        string titularCuenta, string? cuit = null, string? imagenQR = null);
         Task AgregarPendienteCobroAsync(int vendedorId, decimal monto);

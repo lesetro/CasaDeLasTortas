@@ -1,4 +1,5 @@
 @model CasaDeLasTortas.Models.ViewModels.AdminPagosViewModel
+@using CasaDeLasTortas.Models.Entities
 @{
     ViewData["Title"] = "Verificar Pagos - Admin";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -201,31 +202,38 @@
 
                                 <!-- Acciones -->
                                 <td class="text-center">
-                                    <div class="d-flex gap-1 justify-content-center">
-                                        <!-- Aprobar -->
-                                        <form asp-action="VerificarPago" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id"      value="@pago.Id" />
-                                            <input type="hidden" name="aprobar" value="true" />
-                                            <button type="submit"
-                                                    class="btn btn-sm btn-success"
-                                                    title="Aprobar pago"
-                                                    onclick="return confirm('¿Confirmar que el dinero llegó a la cuenta de la plataforma?')">
-                                                <i class="fas fa-check me-1"></i>Aprobar
-                                            </button>
-                                        </form>
-                                        <!-- Rechazar -->
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger"
-                                                title="Rechazar pago"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalRechazar"
-                                                data-pago-id="@pago.Id"
-                                                data-comprador="@pago.NombreComprador"
-                                                data-monto="$@pago.Monto.ToString("N0")">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
+                                    @if (pago.Estado == EstadoPago.EnRevision || pago.Estado == EstadoPago.Pendiente)
+                                    {
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <a asp-action="VerificarPago" asp-route-id="@pago.Id"
+                                               class="btn btn-sm btn-warning fw-semibold"
+                                               title="Revisar y aplicar decisión">
+                                                <i class="fas fa-gavel me-1"></i>Aplicar
+                                            </a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        var estadoBadge = pago.Estado switch {
+                                            EstadoPago.Verificado  => ("bg-success", "Verificado"),
+                                            EstadoPago.Completado  => ("bg-success", "Completado"),
+                                            EstadoPago.Rechazado   => ("bg-danger",  "Rechazado"),
+                                            EstadoPago.Cancelado   => ("bg-secondary","Cancelado"),
+                                            EstadoPago.ReembolsoPendiente => ("bg-warning text-dark", "Reembolso pend."),
+                                            EstadoPago.Reembolsado => ("bg-info",    "Reembolsado"),
+                                            _ => ("bg-secondary", pago.Estado.ToString())
+                                        };
+                                        <div class="d-flex flex-column align-items-center gap-1">
+                                            <span class="badge @estadoBadge.Item1 rounded-pill px-2" style="font-size:.68rem;">
+                                                @estadoBadge.Item2
+                                            </span>
+                                            <a asp-action="VerificarPago" asp-route-id="@pago.Id"
+                                               class="btn btn-sm btn-outline-secondary"
+                                               title="Ver detalle">
+                                                <i class="fas fa-eye me-1"></i>Ver detalle
+                                            </a>
+                                        </div>
+                                    }
                                 </td>
                             </tr>
                         }

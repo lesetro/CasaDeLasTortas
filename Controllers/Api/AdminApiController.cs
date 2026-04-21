@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using CasaDeLasTortas.Interfaces;
+using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using CasaDeLasTortas.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -52,7 +53,7 @@ namespace CasaDeLasTortas.Controllers.Api
                 var pagosMes = pagos.Where(p => p.FechaPago >= inicioMes && 
                     (p.Estado == EstadoPago.Completado || p.Estado == EstadoPago.Verificado));
 
-                // ✅ NUEVO: Estadísticas de pagos pendientes
+                // Estadísticas de pagos pendientes
                 var pagosEnRevision = await _unitOfWork.PagoRepository.CountEnRevisionAsync();
                 var liberacionesPendientes = await _unitOfWork.Liberaciones.CountByEstadoAsync(EstadoLiberacion.ListoParaLiberar);
                 var disputasAbiertas = await _unitOfWork.Disputas.CountAbiertasAsync();
@@ -92,7 +93,7 @@ namespace CasaDeLasTortas.Controllers.Api
                         pagosPendientes = pagos.Count(p => p.Estado == EstadoPago.Pendiente)
                     },
 
-                    // ✅ NUEVO: Panel de acciones pendientes
+                    // : Panel de acciones pendientes
                     accionesPendientes = new
                     {
                         pagosEnRevision,
@@ -178,7 +179,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         // ══════════════════════════════════════════════
-        // ✅ NUEVO: RESUMEN FINANCIERO
+        // : RESUMEN FINANCIERO
         // ══════════════════════════════════════════════
 
         [HttpGet("resumen-financiero")]
@@ -286,7 +287,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         // ══════════════════════════════════════════════
-        // VENDEDORES (MODIFICADO)
+        // VENDEDORES 
         // ══════════════════════════════════════════════
 
         [HttpGet("vendedores")]
@@ -301,7 +302,7 @@ namespace CasaDeLasTortas.Controllers.Api
                 if (verificado.HasValue)
                     vendedores = vendedores.Where(v => v.Verificado == verificado.Value);
 
-                // ✅ NUEVO: Filtro por datos de pago
+                // : Filtro por datos de pago
                 if (datosPagoCompletos.HasValue)
                     vendedores = vendedores.Where(v => v.DatosPagoCompletos == datosPagoCompletos.Value);
 
@@ -316,7 +317,7 @@ namespace CasaDeLasTortas.Controllers.Api
                     fechaCreacion = v.FechaCreacion,
                     nombre = v.Persona?.Nombre,
                     email = v.Persona?.Email,
-                    // ✅ NUEVO
+                    // 
                     datosPagoCompletos = v.DatosPagoCompletos,
                     aliasCBU = v.AliasCBU,
                     banco = v.Banco,
@@ -359,7 +360,7 @@ namespace CasaDeLasTortas.Controllers.Api
             }
         }
 
-        // ✅ NUEVO: Ver datos de pago de un vendedor
+        //  Ver datos de pago de un vendedor
         [HttpGet("vendedores/{id}/datos-pago")]
         public async Task<IActionResult> GetDatosPagoVendedor(int id)
         {
@@ -387,7 +388,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         // ══════════════════════════════════════════════
-        // VENTAS (sin cambios significativos)
+        // VENTAS 
         // ══════════════════════════════════════════════
 
         [HttpGet("ventas")]
@@ -474,7 +475,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         // ══════════════════════════════════════════════
-        // REPORTES (MODIFICADO)
+        // REPORTES 
         // ══════════════════════════════════════════════
 
         [HttpGet("reportes")]
@@ -556,9 +557,4 @@ namespace CasaDeLasTortas.Controllers.Api
         }
     }
 
-    // ─────────────────────────────────────────────
-    // Request DTOs
-    // ─────────────────────────────────────────────
-    public record ActualizarPagoRequest(string Estado);
-    public record ActualizarVentaRequest(string Estado, string? Notas = null);
 }

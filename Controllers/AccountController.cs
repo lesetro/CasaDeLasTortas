@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using CasaDeLasTortas.Services;
+using CasaDeLasTortas.Models.DTOs.Auth;
 
 namespace CasaDeLasTortas.Controllers
 {
+   
     public class AccountController : Controller
     {
         private readonly ILogger<AccountController> _logger;
@@ -17,37 +17,29 @@ namespace CasaDeLasTortas.Controllers
             _jwtService = jwtService;
         }
 
+        // ═══════════════════════════════════════════════════════════════
         // GET: /Account/Login
+        // Muestra la página de login.
+        //  User.Identity ahora viene del JwtMiddleware
+        // ═══════════════════════════════════════════════════════════════
         [HttpGet]
-        public async Task<IActionResult> Login(string? returnUrl = null)
+        public IActionResult Login(string? returnUrl = null)
         {
             _logger.LogInformation("📍 Accediendo a página de Login");
 
+            //  Si ya está autenticado (JWT válido procesado por JwtMiddleware), redirigir
             if (User.Identity?.IsAuthenticated ?? false)
             {
-                var referer = Request.Headers["Referer"].ToString();
-                var estaViniendoDelDashboard =
-                    referer.Contains("DashboardVue", StringComparison.OrdinalIgnoreCase) ||
-                    referer.Contains("Comprador", StringComparison.OrdinalIgnoreCase) ||
-                    referer.Contains("Vendedor", StringComparison.OrdinalIgnoreCase);
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                _logger.LogInformation("Usuario ya autenticado con rol: {Role}, redirigiendo", userRole);
 
-                if (!estaViniendoDelDashboard)
+                return userRole switch
                 {
-                    var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-                    _logger.LogInformation("Usuario autenticado con rol: {Role}, redirigiendo", userRole);
-
-                    return userRole switch
-                    {
-                        "Vendedor" => RedirectToAction("DashboardVue", "Vendedor"),
-                        "Comprador" => RedirectToAction("DashboardVue", "Comprador"),
-                        "Admin" => RedirectToAction("Index", "Admin"),
-                        _ => RedirectToAction("Index", "Home")
-                    };
-                }
-
-                _logger.LogWarning("Loop detectado, limpiando cookie y redirigiendo limpio");
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return Redirect("/Account/Login" + (returnUrl != null ? $"?returnUrl={Uri.EscapeDataString(returnUrl)}" : ""));
+                    "Vendedor"  => RedirectToAction("DashboardVue", "Vendedor"),
+                    "Comprador" => RedirectToAction("DashboardVue", "Comprador"),
+                    "Admin"     => RedirectToAction("Index", "Admin"),
+                    _           => RedirectToAction("Index", "Home")
+                };
             }
 
             ViewData["ReturnUrl"] = returnUrl;
@@ -55,72 +47,9 @@ namespace CasaDeLasTortas.Controllers
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // 🔥 ENDPOINT CRÍTICO: SetCookieSession
-        // Establece la cookie de autenticación a partir del token JWT
-        // ═══════════════════════════════════════════════════════════════
-        [HttpPost]
-        public async Task<IActionResult> SetCookieSession([FromBody] SetCookieRequest? request)
-        {
-            try
-            {
-                _logger.LogInformation("🔐 SetCookieSession llamado");
-
-                if (request == null || string.IsNullOrEmpty(request.Token))
-                {
-                    _logger.LogWarning("SetCookieSession: Token vacío o nulo");
-                    return BadRequest(new { success = false, message = "Token requerido" });
-                }
-
-                // Validar el token JWT
-                var principal = _jwtService.ValidateToken(request.Token);
-
-                if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
-                {
-                    _logger.LogWarning("SetCookieSession: Token inválido");
-                    return Unauthorized(new { success = false, message = "Token inválido" });
-                }
-
-                // Crear claims para la cookie
-                var claims = new List<Claim>();
-                foreach (var claim in principal.Claims)
-                {
-                    // Evitar duplicados
-                    if (!claims.Any(c => c.Type == claim.Type && c.Value == claim.Value))
-                    {
-                        claims.Add(new Claim(claim.Type, claim.Value));
-                    }
-                }
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var authProperties = new AuthenticationProperties
-                {
-                    IsPersistent = true,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24),
-                    AllowRefresh = true
-                };
-
-                // Establecer la cookie de autenticación
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(claimsIdentity),
-                    authProperties
-                );
-
-                var userName = principal.FindFirst(ClaimTypes.Name)?.Value ?? "desconocido";
-                var userRole = principal.FindFirst(ClaimTypes.Role)?.Value ?? "sin rol";
-
-                _logger.LogInformation("✅ Cookie de sesión establecida para: {Name} (Rol: {Role})", userName, userRole);
-
-                return Ok(new { success = true, message = "Sesión establecida correctamente" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Error al establecer cookie de sesión");
-                return StatusCode(500, new { success = false, message = "Error interno del servidor" });
-            }
-        }
-
         // GET: /Account/Register
+        // Muestra la página de registro.
+        // ═══════════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult Register()
         {
@@ -132,7 +61,9 @@ namespace CasaDeLasTortas.Controllers
             return View();
         }
 
+        // ═══════════════════════════════════════════════════════════════
         // GET: /Account/ForgotPassword
+        // ═══════════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult ForgotPassword()
         {
@@ -140,25 +71,37 @@ namespace CasaDeLasTortas.Controllers
             return View();
         }
 
+        // ═══════════════════════════════════════════════════════════════
         // GET: /Account/Logout
+        // Ya no hace SignOutAsync
+        // Retorna una vista que limpia localStorage y redirige al login
+        // ═══════════════════════════════════════════════════════════════
         [HttpGet]
-        public async Task<IActionResult> Logout()
+        public IActionResult Logout()
         {
-            _logger.LogInformation("🚪 Cerrando sesión");
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login");
+            _logger.LogInformation("🚪 Logout solicitado");
+            
+            // La vista Logout.cshtml se encarga de:
+            // 1. Limpiar localStorage (authToken, user)
+            // 2. Redirigir a /Account/Login
+            return View();
         }
 
-        // POST: /Account/Logout (para forms con antiforgery)
+        // ═══════════════════════════════════════════════════════════════
+        // POST: /Account/Logout
+        // Para compatibilidad con formularios que usan POST
+        // ═══════════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> LogoutPost()
+        public IActionResult LogoutPost()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login");
+            _logger.LogInformation("🚪 LogoutPost llamado");
+            return RedirectToAction("Logout");
         }
 
+        // ═══════════════════════════════════════════════════════════════
         // GET: /Account/AccessDenied
+        // ═══════════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult AccessDenied()
         {
@@ -166,7 +109,9 @@ namespace CasaDeLasTortas.Controllers
             return View();
         }
 
+        // ═══════════════════════════════════════════════════════════════
         // GET: /Account/Profile
+        // ═══════════════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult Profile()
         {
@@ -175,11 +120,67 @@ namespace CasaDeLasTortas.Controllers
 
             return View();
         }
+
+        // ═══════════════════════════════════════════════════════════════
+        // POST: /Account/ValidateToken
+        //  Endpoint para verificar si un JWT sigue válido
+        // Útil para que el frontend verifique antes de hacer peticiones
+        // ═══════════════════════════════════════════════════════════════
+        [HttpPost]
+        public IActionResult ValidateToken([FromBody] ValidateTokenRequest? request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.Token))
+            {
+                return BadRequest(new { valid = false, message = "Token requerido" });
+            }
+
+            try
+            {
+                var principal = _jwtService.ValidateToken(request.Token);
+                
+                if (principal != null && principal.Identity?.IsAuthenticated == true)
+                {
+                    var userId   = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    var userName = principal.FindFirst(ClaimTypes.Name)?.Value;
+                    var userRole = principal.FindFirst(ClaimTypes.Role)?.Value;
+
+                    _logger.LogInformation("✅ Token válido para usuario: {Name}", userName);
+
+                    return Ok(new 
+                    { 
+                        valid = true,
+                        user = new
+                        {
+                            id     = userId,
+                            nombre = userName,
+                            rol    = userRole
+                        }
+                    });
+                }
+
+                return Ok(new { valid = false, message = "Token inválido o expirado" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error validando token");
+                return Ok(new { valid = false, message = "Token inválido" });
+            }
+        }
+
+       
     }
 
-    // DTO para el request de SetCookieSession
-    public class SetCookieRequest
+    // ═══════════════════════════════════════════════════════════════
+    // DTOs
+    // ═══════════════════════════════════════════════════════════════
+    
+    /// <summary>
+    /// Request para validar un token JWT
+    /// </summary>
+    public class ValidateTokenRequest
     {
         public string Token { get; set; } = string.Empty;
     }
+
+    
 }

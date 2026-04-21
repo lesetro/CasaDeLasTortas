@@ -39,6 +39,17 @@ namespace CasaDeLasTortas.Repositories
             await Task.CompletedTask;
         }
 
+        public async Task<IEnumerable<Disputa>> GetAllWithDetallesAsync()
+            => await _context.Disputas
+                .Include(d => d.Iniciador)
+                .Include(d => d.AdminAsignado)
+                .Include(d => d.Venta).ThenInclude(v => v.Comprador).ThenInclude(c => c.Persona)
+                .Include(d => d.Venta).ThenInclude(v => v.Detalles).ThenInclude(det => det.Torta)
+                .Include(d => d.Venta).ThenInclude(v => v.Detalles).ThenInclude(det => det.Vendedor)
+                .Include(d => d.Venta).ThenInclude(v => v.Pagos)
+                .OrderByDescending(d => d.FechaCreacion)
+                .ToListAsync();
+
         public async Task<Disputa?> GetByIdWithMensajesAsync(int id)
             => await _context.Disputas
                 .Include(d => d.Venta).ThenInclude(v => v.Comprador).ThenInclude(c => c.Persona)
@@ -80,7 +91,10 @@ namespace CasaDeLasTortas.Repositories
             => await _context.Disputas
                 .Include(d => d.Venta)
                 .Include(d => d.Iniciador)
-                .Where(d => d.EstaAbierta)
+                .Where(d => d.Estado == EstadoDisputa.Abierta ||
+                            d.Estado == EstadoDisputa.EnInvestigacion ||
+                            d.Estado == EstadoDisputa.EsperandoVendedor ||
+                            d.Estado == EstadoDisputa.EsperandoComprador)
                 .OrderByDescending(d => d.Prioridad)
                 .ThenBy(d => d.FechaCreacion)
                 .ToListAsync();
@@ -89,7 +103,11 @@ namespace CasaDeLasTortas.Repositories
             => await _context.Disputas
                 .Include(d => d.Venta)
                 .Include(d => d.Iniciador)
-                .Where(d => d.EstaAbierta && d.AdminAsignadoId == null)
+                .Where(d => (d.Estado == EstadoDisputa.Abierta ||
+                                d.Estado == EstadoDisputa.EnInvestigacion ||
+                                d.Estado == EstadoDisputa.EsperandoVendedor ||
+                                d.Estado == EstadoDisputa.EsperandoComprador)
+                                && d.AdminAsignadoId == null)
                 .OrderByDescending(d => d.Prioridad)
                 .ToListAsync();
 
@@ -97,7 +115,11 @@ namespace CasaDeLasTortas.Repositories
             => await _context.Disputas.CountAsync();
 
         public async Task<int> CountAbiertasAsync()
-            => await _context.Disputas.CountAsync(d => d.EstaAbierta);
+            => await _context.Disputas.CountAsync(d =>
+                    d.Estado == EstadoDisputa.Abierta ||
+                    d.Estado == EstadoDisputa.EnInvestigacion ||
+                    d.Estado == EstadoDisputa.EsperandoVendedor ||
+                    d.Estado == EstadoDisputa.EsperandoComprador);
 
         public async Task<decimal> GetMontoTotalInvolucradoAsync()
             => await _context.Disputas
@@ -109,7 +131,11 @@ namespace CasaDeLasTortas.Repositories
 
         public async Task<bool> ExisteDisputaAbiertaParaVentaAsync(int ventaId)
             => await _context.Disputas
-                .AnyAsync(d => d.VentaId == ventaId && d.EstaAbierta);
+                .AnyAsync(d => d.VentaId == ventaId && (
+                            d.Estado == EstadoDisputa.Abierta ||
+                            d.Estado == EstadoDisputa.EnInvestigacion ||
+                            d.Estado == EstadoDisputa.EsperandoVendedor ||
+                            d.Estado == EstadoDisputa.EsperandoComprador));
 
         public async Task<IEnumerable<MensajeDisputa>> GetMensajesByDisputaIdAsync(int disputaId)
             => await _context.MensajesDisputa

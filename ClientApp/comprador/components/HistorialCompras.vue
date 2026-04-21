@@ -15,7 +15,7 @@
             <option value="Pendiente">⏳ Pendiente de pago</option>
             <option value="Pagada">💳 Pago verificado</option>
             <option value="EnPreparacion">🍰 En preparación</option>
-            <option value="ListaParaEnvio">✅ Lista para retirar</option>
+            <option value="ListaParaRetiro">✅ Lista para retirar</option>
             <option value="Entregada">📦 Entregada</option>
             <option value="Cancelada">❌ Cancelada</option>
           </select>
@@ -239,8 +239,10 @@ function getBadgePago(estado) {
 function getLabelPago(estado) {
   return {
     Completado: 'Aprobado ✓',
-    Pendiente:  'En revisión ⏳',
-    Cancelado:  'Rechazado ✗',
+    Verificado: 'Verificado ✓',
+    EnRevision: 'En revisión ⏳',  
+    Pendiente: 'Sin pago',
+    Rechazado: 'Rechazado ✗',
   }[estado] ?? estado
 }
 

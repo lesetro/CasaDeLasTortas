@@ -34,7 +34,7 @@ namespace CasaDeLasTortas.Interfaces
         Task<IEnumerable<Pago>> GetByFechaRangoAsync(DateTime desde, DateTime hasta);
         Task<IEnumerable<Pago>> SearchAsync(string termino);
         
-        // ✅ NUEVOS: Filtros para Admin
+        // Filtros para Admin
         Task<IEnumerable<Pago>> GetPendientesVerificacionAsync();
         Task<IEnumerable<Pago>> GetEnRevisionAsync();
         Task<IEnumerable<Pago>> GetRechazadosAsync();
@@ -47,7 +47,7 @@ namespace CasaDeLasTortas.Interfaces
         Task<decimal> GetIngresosByCompradorAsync(int compradorId);
         Task<decimal> GetIngresosByFechaAsync(DateTime desde, DateTime hasta);
         
-        // ✅ NUEVOS: Estadísticas de comisiones
+        //  Estadísticas de comisiones
         Task<decimal> GetTotalComisionesAsync();
         Task<decimal> GetComisionesDelMesAsync();
         Task<decimal> GetMontoEnRevisionAsync();

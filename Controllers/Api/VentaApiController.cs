@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using CasaDeLasTortas.Interfaces;
+using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -176,12 +177,12 @@ namespace CasaDeLasTortas.Controllers.Api
 
                 return CreatedAtAction(nameof(GetById), new { id = venta.Id }, new
                 {
-                    success     = true,
-                    message     = "Venta creada exitosamente",
-                    ventaId     = venta.Id,
+                    success = true,
+                    message = "Venta creada exitosamente",
+                    ventaId = venta.Id,
                     numeroOrden = venta.NumeroOrden,
-                    total       = venta.Total,
-                    estado      = venta.Estado.ToString()
+                    total = venta.Total,
+                    estado = venta.Estado.ToString()
                 });
             }
             catch (InvalidOperationException ex)
@@ -233,13 +234,68 @@ namespace CasaDeLasTortas.Controllers.Api
                 {
                     success = true,
                     message = "Venta cancelada exitosamente",
-                    estado  = venta.Estado.ToString()
+                    estado = venta.Estado.ToString()
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error cancelando venta {Id}", id);
                 return StatusCode(500, new { message = "Error al cancelar la venta" });
+            }
+        }
+        [HttpPost("{id}/confirmar-recepcion")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Comprador")]
+        public async Task<IActionResult> ConfirmarRecepcion(int id)
+        {
+            try
+            {
+                var compradorId = await ObtenerCompradorId();
+                if (compradorId == null)
+                    return Unauthorized(new { message = "No se encontró el perfil de comprador" });
+
+                var venta = await _unitOfWork.Ventas.GetByIdAsync(id);
+                if (venta == null)
+                    return NotFound(new { message = "Venta no encontrada" });
+
+                if (venta.CompradorId != compradorId)
+                    return Forbid();
+
+                if (venta.Estado != EstadoVenta.Entregada)
+                    return BadRequest(new { message = "La venta aún no está marcada como entregada" });
+
+                // Obtener liberaciones y actualizarlas DIRECTAMENTE
+                var liberaciones = await _unitOfWork.Liberaciones.GetByVentaIdAsync(id);
+                var actualizadas = 0;
+
+                foreach (var lib in liberaciones)
+                {
+                    if (lib.Estado == EstadoLiberacion.Pendiente)
+                    {
+                        // Modificar directamente la entidad que ya tenemos
+                        lib.Estado = EstadoLiberacion.ListoParaLiberar;
+                        lib.FechaListoParaLiberar = DateTime.Now;
+                        _unitOfWork.Liberaciones.Update(lib);  // Marcar como modificada
+                        actualizadas++;
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Comprador {CompradorId} confirmó recepción de venta {VentaId}. {Count} liberaciones actualizadas.",
+                    compradorId, id, actualizadas);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Recepción confirmada. {actualizadas} liberación(es) lista(s) para procesar.",
+                    liberacionesActualizadas = actualizadas
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirmando recepción de venta {Id}", id);
+                return StatusCode(500, new { message = "Error al confirmar la recepción" });
             }
         }
 
@@ -259,14 +315,14 @@ namespace CasaDeLasTortas.Controllers.Api
 
         private object MapVentaResumen(Venta v) => new
         {
-            id            = v.Id,
-            numeroOrden   = v.NumeroOrden,
-            fechaVenta    = v.FechaVenta,
-            estado        = v.Estado.ToString(),
-            subtotal      = v.Subtotal,
+            id = v.Id,
+            numeroOrden = v.NumeroOrden,
+            fechaVenta = v.FechaVenta,
+            estado = v.Estado.ToString(),
+            subtotal = v.Subtotal,
             descuentoTotal = v.DescuentoTotal,
-            total         = v.Total,
-            totalItems    = v.Detalles?.Sum(d => d.Cantidad) ?? 0,
+            total = v.Total,
+            totalItems = v.Detalles?.Sum(d => d.Cantidad) ?? 0,
             primerProducto = v.Detalles?.FirstOrDefault()?.Torta?.Nombre,
             imagenPrincipal = v.Detalles?.FirstOrDefault()?.Torta?.Imagenes?
                                .FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
@@ -274,48 +330,43 @@ namespace CasaDeLasTortas.Controllers.Api
 
         private object MapVentaDetalle(Venta v) => new
         {
-            id                   = v.Id,
-            numeroOrden          = v.NumeroOrden,
-            fechaVenta           = v.FechaVenta,
-            estado               = v.Estado.ToString(),
-            subtotal             = v.Subtotal,
-            descuentoTotal       = v.DescuentoTotal,
-            total                = v.Total,
-            direccionEntrega     = v.DireccionEntrega,
-            ciudad               = v.Ciudad,
-            provincia            = v.Provincia,
-            codigoPostal         = v.CodigoPostal,
-            notasCliente         = v.NotasCliente,
+            id = v.Id,
+            numeroOrden = v.NumeroOrden,
+            fechaVenta = v.FechaVenta,
+            estado = v.Estado.ToString(),
+            subtotal = v.Subtotal,
+            descuentoTotal = v.DescuentoTotal,
+            total = v.Total,
+            direccionEntrega = v.DireccionEntrega,
+            ciudad = v.Ciudad,
+            provincia = v.Provincia,
+            codigoPostal = v.CodigoPostal,
+            notasCliente = v.NotasCliente,
             fechaEntregaEstimada = v.FechaEntregaEstimada,
-            fechaEntregaReal     = v.FechaEntregaReal,
+            fechaEntregaReal = v.FechaEntregaReal,
             detalles = v.Detalles?.Select(d => new
             {
-                id                   = d.Id,
-                tortaId              = d.TortaId,
-                nombreTorta          = d.Torta?.Nombre,
-                imagenTorta          = d.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen,
-                nombreVendedor       = d.Vendedor?.NombreComercial,
-                cantidad             = d.Cantidad,
-                precioUnitario       = d.PrecioUnitario,
-                descuento            = d.Descuento,
-                subtotal             = d.Subtotal,
-                estado               = d.Estado.ToString(),
+                id = d.Id,
+                tortaId = d.TortaId,
+                nombreTorta = d.Torta?.Nombre,
+                imagenTorta = d.Torta?.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen,
+                nombreVendedor = d.Vendedor?.NombreComercial,
+                cantidad = d.Cantidad,
+                precioUnitario = d.PrecioUnitario,
+                descuento = d.Descuento,
+                subtotal = d.Subtotal,
+                estado = d.Estado.ToString(),
                 notasPersonalizacion = d.NotasPersonalizacion
             }),
             pagos = v.Pagos?.Select(p => new
             {
-                id         = p.Id,
-                monto      = p.Monto,
-                estado     = p.Estado.ToString(),
+                id = p.Id,
+                monto = p.Monto,
+                estado = p.Estado.ToString(),
                 metodoPago = p.MetodoPago?.ToString(),
-                fechaPago  = p.FechaPago
+                fechaPago = p.FechaPago
             })
         };
     }
 
-    // ─────────────────────────────────────────────
-    // Request DTOs
-    // ─────────────────────────────────────────────
-    public record CrearVentaRequest(string DireccionEntrega, string? Notas = null);
-    public record CancelarVentaRequest(string? Motivo = null);
 }

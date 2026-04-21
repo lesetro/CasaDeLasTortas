@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using CasaDeLasTortas.Interfaces;
+using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace CasaDeLasTortas.Controllers.Api
 {
@@ -96,10 +98,11 @@ namespace CasaDeLasTortas.Controllers.Api
         /// Crear nueva disputa (Comprador o Vendedor)
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> CrearDisputa([FromBody] CrearDisputaDTO request)
+        public async Task<IActionResult> CrearDisputa([FromBody] CrearDisputaRequestDTO request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            // Parsear el tipo (acepta nombre string o número)
+            if (!Enum.TryParse<TipoDisputa>(request.TipoStr, ignoreCase: true, out var tipoDisputa))
+                return BadRequest(new { message = $"Tipo de disputa inválido: '{request.TipoStr}'. Valores válidos: {string.Join(", ", Enum.GetNames<TipoDisputa>())}" });
 
             try
             {
@@ -118,14 +121,27 @@ namespace CasaDeLasTortas.Controllers.Api
 
                 var numeroDisputa = await _unitOfWork.Disputas.GenerarNumeroDisputaAsync();
 
+                // Título automático a partir del tipo si no se envía uno
+                var titulo = request.Titulo ?? tipoDisputa switch
+                {
+                    TipoDisputa.ProductoNoRecibido => "Producto no recibido",
+                    TipoDisputa.ProductoDaniado    => "Producto dañado",
+                    TipoDisputa.ProductoDiferente  => "Producto diferente al pedido",
+                    TipoDisputa.PagoNoReconocido   => "Pago no reconocido",
+                    TipoDisputa.SolicitudReembolso => "Solicitud de reembolso",
+                    TipoDisputa.ProblemaVendedor   => "Problema con el vendedor",
+                    _                              => "Reclamo"
+                };
+
                 var disputa = new Disputa
                 {
                     NumeroDisputa = numeroDisputa,
                     VentaId = request.VentaId,
                     IniciadorId = personaId.Value,
-                    Tipo = request.Tipo,
-                    Descripcion = request.Descripcion,
-                    Prioridad = (int)(request.Prioridad ?? PrioridadDisputa.Media),
+                    Tipo = tipoDisputa,
+                    Titulo = titulo,
+                    Descripcion = string.IsNullOrWhiteSpace(request.Descripcion) ? titulo : request.Descripcion,
+                    Prioridad = request.Prioridad ?? 3,
                     MontoInvolucrado = request.MontoInvolucrado ?? venta.Total,
                     Estado = EstadoDisputa.Abierta,
                     FechaCreacion = DateTime.Now,
@@ -167,6 +183,31 @@ namespace CasaDeLasTortas.Controllers.Api
                 _logger.LogError(ex, "Error al crear disputa");
                 return StatusCode(500, new { message = "Error al crear la disputa" });
             }
+        }
+
+        /// <summary>
+        /// Obtener mensajes de una disputa
+        /// </summary>
+        [HttpGet("{id}/mensajes")]
+        public async Task<IActionResult> GetMensajes(int id)
+        {
+            var disputa = await _unitOfWork.Disputas.GetByIdWithMensajesAsync(id);
+            if (disputa == null)
+                return NotFound(new { message = "Disputa no encontrada" });
+
+            var mensajes = disputa.Mensajes?
+                .OrderBy(m => m.Fecha)
+                .Select(m => new
+                {
+                    id = m.Id,
+                    autorId = m.AutorId,
+                    autorNombre = m.Autor?.Nombre,
+                    contenido = m.Contenido,
+                    fecha = m.Fecha,
+                    esInterno = m.EsInterno
+                });
+
+            return Ok(mensajes);
         }
 
         /// <summary>
@@ -402,58 +443,11 @@ namespace CasaDeLasTortas.Controllers.Api
             }).ToList()
         };
 
-        private async Task<int?> ObtenerPersonaIdActual()
+        private Task<int?> ObtenerPersonaIdActual()
         {
-            var userEmail = User.Identity?.Name;
-            if (string.IsNullOrEmpty(userEmail)) return null;
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
-            return persona?.Id;
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("PersonaId")?.Value;
+            return Task.FromResult(int.TryParse(claim, out var id) ? id : (int?)null);
         }
-    }
-
-    // ==================== DTOs ====================
-
-    public class CrearDisputaDTO
-    {
-        [Required]
-        public int VentaId { get; set; }
-
-        [Required]
-        public TipoDisputa Tipo { get; set; }
-
-        [Required]
-        [StringLength(1000)]
-        public string Descripcion { get; set; } = string.Empty;
-
-        public string? MensajeInicial { get; set; }
-
-        public PrioridadDisputa? Prioridad { get; set; }
-
-        public decimal? MontoInvolucrado { get; set; }
-    }
-
-    public class AgregarMensajeDTO
-    {
-        [Required]
-        [StringLength(2000)]
-        public string Contenido { get; set; } = string.Empty;
-    }
-
-    public class CambiarEstadoDisputaDTO
-    {
-        [Required]
-        public string Estado { get; set; } = string.Empty;
-    }
-
-    public class ResolverDisputaDTO
-    {
-        [Required]
-        public ResolucionDisputa Resolucion { get; set; }
-
-        [Required]
-        [StringLength(1000)]
-        public string DetalleResolucion { get; set; } = string.Empty;
-
-        public decimal? MontoResolucion { get; set; }
     }
 }

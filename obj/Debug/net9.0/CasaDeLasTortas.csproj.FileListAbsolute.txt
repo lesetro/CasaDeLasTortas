@@ -169,7 +169,6 @@ C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\scopedcss\projectbundle\CasaDeLasTortas.bundle.scp.css
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\g5wb2bjst0-9xt2t87grr.gz
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\4wlz2s4b2c-61n19gt1b8.gz
-C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\xambp222l7-09sxozkzl6.gz
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\49fpuxvs3j-bqjiyaj88i.gz
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\vn8w0ih6oc-c2jlpeoesf.gz
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\tgvnbdk80w-erw9l3u2r3.gz
@@ -242,8 +241,9 @@ C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\CasaDeLasTortas.pdb
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\CasaDeLasTortas.genruntimeconfig.cache
 C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\ref\CasaDeLasTortas.dll
-C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\0y8em04f3q-wqg2obihn8.gz
-C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\iw3ny32hy0-zdggrrn6si.gz
-C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\vc8wwkwrpj-c0qikgmxix.gz
-C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\c6td3wnb8v-mgfjjbooyb.gz
-C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLasTortas\obj\Debug\net9.0\compressed\cjdygcse3c-x8bu7xc6es.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLAsTortas\obj\Debug\net9.0\compressed\0y8em04f3q-bwh7h3sj9p.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLAsTortas\obj\Debug\net9.0\compressed\iw3ny32hy0-dznz5lazcb.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLAsTortas\obj\Debug\net9.0\compressed\xambp222l7-09sxozkzl6.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLAsTortas\obj\Debug\net9.0\compressed\vc8wwkwrpj-mzyrd9h8ul.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLAsTortas\obj\Debug\net9.0\compressed\c6td3wnb8v-7alou84eu7.gz
+C:\Users\Personal\source\repos\Tortas_Troncoso_leandro\CasaDeLAsTortas\obj\Debug\net9.0\compressed\cjdygcse3c-amda3uoibu.gz

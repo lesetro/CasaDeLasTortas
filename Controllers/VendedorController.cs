@@ -8,7 +8,7 @@ namespace CasaDeLasTortas.Controllers
 {
     /// <summary>
     /// Controller MVC para Vendedores
-    /// ✅ MODIFICADO: Incluye gestión de perfil y datos bancarios
+    /// Incluye gestión de perfil y datos bancarios
     /// </summary>
     public class VendedorController : Controller
     {
@@ -50,7 +50,7 @@ namespace CasaDeLasTortas.Controllers
         }
 
         // ══════════════════════════════════════════════
-        // ✅ NUEVO: PERFIL Y DATOS BANCARIOS (MVC)
+        //  PERFIL Y DATOS BANCARIOS (MVC)
         // ══════════════════════════════════════════════
 
         /// <summary>
@@ -268,11 +268,12 @@ namespace CasaDeLasTortas.Controllers
 
         private async Task<Vendedor?> ObtenerVendedorActual()
         {
-            var email = User.Identity?.Name;
-            if (string.IsNullOrEmpty(email))
+            var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("PersonaId")?.Value;
+            if (!int.TryParse(claim, out var personaId))
                 return null;
 
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(email);
+            var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(personaId);
             if (persona?.Vendedor == null)
                 return null;
 

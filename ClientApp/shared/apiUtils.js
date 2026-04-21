@@ -9,8 +9,35 @@
 //  FETCH CON AUTENTICACIÓN JWT
 // ══════════════════════════════════════════════════════════════════
 
+function _getTokenFromCookie() {
+  const match = document.cookie.match(/(?:^|;\s*)authToken=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function _clearAuthCookie() {
+  document.cookie = 'authToken=; path=/; max-age=0; SameSite=Strict'
+}
+
+/**
+ * Limpia completamente la sesión: localStorage + cookie.
+ * Usar en logout y al detectar sesión expirada.
+ */
+export function clearAuth() {
+  localStorage.removeItem('authToken')
+  localStorage.removeItem('user')
+  _clearAuthCookie()
+}
+
 export async function fetchWithAuth(url, options = {}) {
-  const token = localStorage.getItem('authToken')
+  let token = localStorage.getItem('authToken')
+
+  // Si localStorage está vacío pero la cookie existe (ej: se limpió el storage),
+  // restaurar el token desde la cookie para no interrumpir la sesión.
+  if (!token) {
+    token = _getTokenFromCookie()
+    if (token) localStorage.setItem('authToken', token)
+  }
+
   if (!token) throw new Error('No hay token de autenticación')
 
   // Si el body es FormData no agregamos Content-Type (el browser lo setea con boundary)
@@ -26,8 +53,11 @@ export async function fetchWithAuth(url, options = {}) {
 
   if (!resp.ok) {
     if (resp.status === 401) {
+      // Limpiar AMBOS: localStorage y cookie, para que AccountController.Login
+      // no redirija de vuelta al dashboard (evita el bucle infinito).
       localStorage.removeItem('authToken')
       localStorage.removeItem('user')
+      _clearAuthCookie()
       window.location.href = '/Account/Login'
       throw new Error('Sesión expirada')
     }
@@ -154,26 +184,35 @@ export function getEstadoVentaEmoji(estado) {
 /** Texto legible de un EstadoPago */
 export function getEstadoPagoTexto(estado) {
   return {
-    Pendiente:   'En revisión',
-    Completado:  'Aprobado',
-    Cancelado:   'Rechazado',
+    Pendiente:  'Sin pagar',
+    EnRevision: 'En revisión',
+    Verificado: 'Verificado',
+    Completado: 'Completado',
+    Rechazado:  'Rechazado',
+    Cancelado:  'Cancelado',
   }[estado] ?? estado ?? '—'
 }
 
 /** Texto con emoji del estado de pago */
 export function getEstadoPagoEmoji(estado) {
   return {
-    Pendiente:  '⏳ En revisión',
-    Completado: '✅ Aprobado',
-    Cancelado:  '❌ Rechazado',
+    Pendiente:  '💳 Sin pagar',
+    EnRevision: '🔍 En revisión',
+    Verificado: '✅ Verificado',
+    Completado: '💸 Completado',
+    Rechazado:  '❌ Rechazado',
+    Cancelado:  '❌ Cancelado',
   }[estado] ?? estado ?? '—'
 }
 
 /** Clase Bootstrap del badge según EstadoPago */
 export function getBadgePago(estado) {
   return {
+    Pendiente:  'bg-secondary',
+    EnRevision: 'bg-warning text-dark',
+    Verificado: 'bg-info',
     Completado: 'bg-success',
-    Pendiente:  'bg-warning text-dark',
+    Rechazado:  'bg-danger',
     Cancelado:  'bg-danger',
   }[estado] ?? 'bg-secondary'
 }

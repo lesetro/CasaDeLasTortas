@@ -231,7 +231,7 @@ namespace CasaDeLasTortas.Repositories
             return await _context.Tortas.AnyAsync(predicate);
         }
 
-        // ==================== MÉTODOS NUEVOS PARA EL HOME CONTROLLER ====================
+        // ==================== MÉTODOS  PARA EL HOME CONTROLLER ====================
 
         public async Task<IEnumerable<Torta>> GetTortasDisponiblesConDetallesAsync()
         {
@@ -306,7 +306,7 @@ namespace CasaDeLasTortas.Repositories
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
 
-        // ==================== MÉTODOS NUEVOS PARA EL PAGO CONTROLLER ====================
+        // ==================== MÉTODOS PARA EL PAGO CONTROLLER ====================
 
         public async Task<IEnumerable<Torta>> GetTortasDisponiblesAsync()
         {

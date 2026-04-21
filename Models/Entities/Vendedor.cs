@@ -42,7 +42,7 @@ namespace CasaDeLasTortas.Models.Entities
         [Display(Name = "Horario de Atención")]
         public string? Horario { get; set; }
 
-        // ==================== DATOS DE PAGO (NUEVOS) ====================
+        // ==================== DATOS DE PAGO ====================
         
         /// <summary>
         /// Alias de CBU o MercadoPago para recibir pagos

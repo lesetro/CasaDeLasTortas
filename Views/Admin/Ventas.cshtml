@@ -1,0 +1,309 @@
+@model List<CasaDeLasTortas.Models.Entities.Venta>
+@using CasaDeLasTortas.Models.Entities
+@{
+    ViewData["Title"] = "Ventas - Admin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var filtroEstado = ViewBag.FiltroEstado as string ?? "";
+    var paginacion   = ViewBag.Paginacion as CasaDeLasTortas.Models.ViewModels.PaginacionViewModel;
+}
+
+@section Styles {
+<style>
+    body { background-color: #f1f5f9; }
+    .admin-main { margin-left: 260px; padding: 2rem; }
+    @@media (max-width:991px){ .admin-main { margin-left: 0; padding: 1rem; } }
+
+    .filtro-btn {
+        border-radius: 20px;
+        font-size: .8rem;
+        font-weight: 600;
+        padding: .4rem 1.1rem;
+        transition: all .15s;
+    }
+    .filtro-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.12); }
+
+    .ventas-table th {
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: #64748b;
+        font-weight: 700;
+    }
+    .ventas-table td { font-size: .85rem; vertical-align: middle; }
+    .ventas-table tbody tr:hover { background: #f8fafc; }
+</style>
+}
+
+<partial name="_AdminSidebar" />
+
+<div class="admin-main">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="fw-bold mb-0" style="font-size:1.6rem;">
+                <i class="fas fa-shopping-cart text-primary me-2"></i>Ventas
+            </h1>
+            <p class="text-muted mb-0 small">Gestión y seguimiento de todas las órdenes</p>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 rounded-3 shadow-sm mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 rounded-3 shadow-sm mb-4">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filtros en DOS FILAS -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3 px-4">
+            <p class="text-muted small fw-semibold mb-2">
+                <i class="fas fa-filter me-1"></i>Filtrar por estado:
+            </p>
+
+            <!-- Fila 1: Todos + estados activos -->
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <a asp-action="Ventas" asp-route-estado=""
+                   class="filtro-btn btn btn-sm @(string.IsNullOrEmpty(filtroEstado) ? "btn-dark" : "btn-outline-secondary")">
+                    <i class="fas fa-th me-1"></i>Todos
+                </a>
+                <a asp-action="Ventas" asp-route-estado="Pendiente"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "Pendiente" ? "btn-warning" : "btn-outline-warning")">
+                    <i class="fas fa-clock me-1"></i>Pendiente
+                </a>
+                <a asp-action="Ventas" asp-route-estado="PagoEnRevision"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "PagoEnRevision" ? "btn-info text-dark" : "btn-outline-info")">
+                    <i class="fas fa-search-dollar me-1"></i>Pago en Revisión
+                </a>
+                <a asp-action="Ventas" asp-route-estado="Pagada"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "Pagada" ? "btn-info" : "btn-outline-info")">
+                    <i class="fas fa-check me-1"></i>Pagada
+                </a>
+                <a asp-action="Ventas" asp-route-estado="EnPreparacion"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "EnPreparacion" ? "btn-primary" : "btn-outline-primary")">
+                    <i class="fas fa-fire me-1"></i>En Preparación
+                </a>
+            
+
+                <a asp-action="Ventas" asp-route-estado="ListaParaRetiro"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "ListaParaRetiro" ? "btn-secondary" : "btn-outline-secondary")">
+                    <i class="fas fa-store me-1"></i>Lista para Retiro
+                </a>
+                <a asp-action="Ventas" asp-route-estado="Entregada"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "Entregada" ? "btn-success" : "btn-outline-success")">
+                    <i class="fas fa-box-open me-1"></i>Entregada
+                </a>
+                <a asp-action="Ventas" asp-route-estado="Cancelada"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "Cancelada" ? "btn-danger" : "btn-outline-danger")">
+                    <i class="fas fa-times-circle me-1"></i>Cancelada
+                </a>
+                <a asp-action="Ventas" asp-route-estado="EnDisputa"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "EnDisputa" ? "btn-warning" : "btn-outline-warning")">
+                    <i class="fas fa-exclamation-triangle me-1"></i>En Disputa
+                </a>
+                <a asp-action="Ventas" asp-route-estado="Reembolsada"
+                   class="filtro-btn btn btn-sm @(filtroEstado == "Reembolsada" ? "btn-dark" : "btn-outline-dark")">
+                    <i class="fas fa-undo me-1"></i>Reembolsada
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">
+                <i class="fas fa-list me-2 text-muted"></i>
+                @if (!string.IsNullOrEmpty(filtroEstado))
+                {
+                    <span>Estado: <span class="text-primary">@filtroEstado</span></span>
+                }
+                else
+                {
+                    <span>Todas las ventas</span>
+                }
+            </h6>
+            @if (paginacion != null)
+            {
+                <small class="text-muted">@paginacion.TotalItems registros</small>
+            }
+        </div>
+
+        <div class="card-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                    <h5 class="text-muted">
+                        No hay ventas@(string.IsNullOrEmpty(filtroEstado) ? "" : $" con estado \"{filtroEstado}\"")
+                    </h5>
+                    <a asp-action="Ventas" asp-route-estado="" class="btn btn-sm btn-outline-secondary mt-2">
+                        Ver todas
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 ventas-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Orden</th>
+                                <th>Comprador</th>
+                                <th>Fecha</th>
+                                <th>Productos</th>
+                                <th>Total</th>
+                                <th>Comisión</th>
+                                <th>Estado venta</th>
+                                <th>Estado pago</th>
+                                <th class="text-end pe-4">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var venta in Model)
+                            {
+                                var badgeColor = venta.Estado switch
+                                {
+                                    EstadoVenta.Pendiente       => "warning text-dark",
+                                    EstadoVenta.PagoEnRevision  => "info text-dark",
+                                    EstadoVenta.Pagada          => "info",
+                                    EstadoVenta.EnPreparacion   => "primary",
+                                    EstadoVenta.ListaParaRetiro => "secondary",
+                                    EstadoVenta.Entregada       => "success",
+                                    EstadoVenta.Cancelada       => "danger",
+                                    EstadoVenta.EnDisputa       => "warning text-dark",
+                                    EstadoVenta.Reembolsada     => "dark",
+                                    _                           => "light text-dark"
+                                };
+
+                                var pagoPrincipal = venta.Pagos?
+                                    .Where(p => p.Estado != EstadoPago.Cancelado && p.Estado != EstadoPago.Rechazado)
+                                    .OrderByDescending(p => p.FechaPago)
+                                    .FirstOrDefault();
+
+                                var pagoColor = pagoPrincipal?.Estado switch
+                                {
+                                    EstadoPago.Pendiente          => "warning text-dark",
+                                    EstadoPago.EnRevision         => "info text-dark",
+                                    EstadoPago.Verificado         => "primary",
+                                    EstadoPago.Completado         => "success",
+                                    EstadoPago.Rechazado          => "danger",
+                                    EstadoPago.Cancelado          => "secondary",
+                                    EstadoPago.ReembolsoPendiente => "warning text-dark",
+                                    EstadoPago.Reembolsado        => "dark",
+                                    _                             => "secondary"
+                                };
+
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="fw-bold text-primary">#@venta.NumeroOrden</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@(venta.Comprador?.Persona?.Nombre ?? "—")</div>
+                                        <div class="text-muted" style="font-size:.75rem;">@(venta.Comprador?.Persona?.Email ?? "")</div>
+                                    </td>
+                                    <td>
+                                        <div>@venta.FechaVenta.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-muted" style="font-size:.75rem;">@venta.FechaVenta.ToString("HH:mm")</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @venta.TotalItems item@(venta.TotalItems != 1 ? "s" : "")
+                                        </span>
+                                        @if (venta.CantidadVendedores > 1)
+                                        {
+                                            <div class="text-muted" style="font-size:.73rem;">@venta.CantidadVendedores vendedores</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">$@venta.Total.ToString("N0")</span>
+                                        @if (venta.DescuentoTotal > 0)
+                                        {
+                                            <div class="text-danger" style="font-size:.73rem;">-$@venta.DescuentoTotal.ToString("N0")</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="text-muted">$@venta.ComisionPlataforma.ToString("N0")</div>
+                                        <div style="font-size:.73rem; color:#94a3b8;">@venta.PorcentajeComision%</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@badgeColor rounded-pill px-2">
+                                            @venta.Estado.ToString()
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (pagoPrincipal != null)
+                                        {
+                                            <span class="badge bg-@pagoColor rounded-pill px-2">
+                                                @pagoPrincipal.Estado.ToString()
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Sin pago</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a asp-controller="Venta" asp-action="Details" asp-route-id="@venta.Id"
+                                           class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- Paginación -->
+        @if (paginacion != null && paginacion.TotalPaginas > 1)
+        {
+            <div class="card-footer bg-white border-0 py-3">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(!paginacion.TienePaginaAnterior ? "disabled" : "")">
+                            <a class="page-link rounded" asp-action="Ventas"
+                               asp-route-pagina="@(paginacion.PaginaActual - 1)"
+                               asp-route-estado="@filtroEstado">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        @foreach (var num in paginacion.NumerosPagina)
+                        {
+                            <li class="page-item @(num == paginacion.PaginaActual ? "active" : "")">
+                                <a class="page-link rounded" asp-action="Ventas"
+                                   asp-route-pagina="@num"
+                                   asp-route-estado="@filtroEstado">@num</a>
+                            </li>
+                        }
+                        <li class="page-item @(!paginacion.TienePaginaSiguiente ? "disabled" : "")">
+                            <a class="page-link rounded" asp-action="Ventas"
+                               asp-route-pagina="@(paginacion.PaginaActual + 1)"
+                               asp-route-estado="@filtroEstado">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="text-center text-muted small mt-2 mb-0">
+                        Mostrando @paginacion.ItemsDesde–@paginacion.ItemsHasta de @paginacion.TotalItems ventas
+                    </p>
+                </nav>
+            </div>
+        }
+    </div>
+
+</div>

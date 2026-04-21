@@ -1,0 +1,374 @@
+@model CasaDeLasTortas.Models.ViewModels.AdminReporteViewModel
+@{
+    ViewData["Title"] = "Reportes - Admin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+<style>
+    body { background-color: #f1f5f9; }
+    .admin-main { margin-left: 260px; padding: 2rem; }
+    @@media (max-width:991px){ .admin-main { margin-left: 0; padding: 1rem; } }
+
+    .stat-card {
+        border: none;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.07);
+        transition: transform .15s;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .stat-icon {
+        width: 48px; height: 48px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem;
+    }
+    .section-title {
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        color: #94a3b8;
+        font-weight: 700;
+        margin-bottom: .75rem;
+    }
+    .reporte-table th {
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: #64748b;
+        font-weight: 700;
+    }
+    .reporte-table td { font-size: .85rem; vertical-align: middle; }
+    .bar-bg { background: #e2e8f0; border-radius: 99px; height: 6px; }
+    .bar-fill { background: #f97316; border-radius: 99px; height: 6px; transition: width .4s; }
+</style>
+}
+
+<partial name="_AdminSidebar" />
+
+<div class="admin-main">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="fw-bold mb-0" style="font-size:1.6rem;">
+                <i class="fas fa-chart-bar text-primary me-2"></i>Reportes
+            </h1>
+            <p class="text-muted mb-0 small">Métricas e indicadores del período seleccionado</p>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 rounded-3 shadow-sm mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filtro de fechas -->
+    <div class="card stat-card mb-4">
+        <div class="card-body py-3 px-4">
+            <form method="get" asp-action="Reportes" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small">Fecha inicio</label>
+                    <input type="date" name="fechaInicio" class="form-control"
+                           value="@Model.FechaInicio.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small">Fecha fin</label>
+                    <input type="date" name="fechaFin" class="form-control"
+                           value="@Model.FechaFin.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i>Generar reporte
+                    </button>
+                </div>
+            </form>
+            <div class="mt-2">
+                <small class="text-muted">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    Período: <strong>@Model.RangoFechasTexto</strong>
+                    (@Model.DiasEnRango días)
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon" style="background:#eff6ff;">
+                            <i class="fas fa-shopping-bag text-primary"></i>
+                        </div>
+                        <div class="section-title mb-0">Ventas totales</div>
+                    </div>
+                    <div class="fw-bold" style="font-size:2rem; line-height:1;">@Model.TotalVentas</div>
+                    <div class="text-muted small mt-1">órdenes completadas</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon" style="background:#f0fdf4;">
+                            <i class="fas fa-dollar-sign text-success"></i>
+                        </div>
+                        <div class="section-title mb-0">Ingresos</div>
+                    </div>
+                    <div class="fw-bold text-success" style="font-size:2rem; line-height:1;">
+                        $@Model.TotalIngresos.ToString("N0")
+                    </div>
+                    <div class="text-muted small mt-1">total facturado</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon" style="background:#fff7ed;">
+                            <i class="fas fa-percentage" style="color:#f97316;"></i>
+                        </div>
+                        <div class="section-title mb-0">Comisiones</div>
+                    </div>
+                    <div class="fw-bold" style="font-size:2rem; line-height:1; color:#f97316;">
+                        $@Model.TotalComisiones.ToString("N0")
+                    </div>
+                    <div class="text-muted small mt-1">@Model.MargenComision.ToString("N1")% del total</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon" style="background:#fdf4ff;">
+                            <i class="fas fa-chart-line" style="color:#a855f7;"></i>
+                        </div>
+                        <div class="section-title mb-0">Promedio por venta</div>
+                    </div>
+                    <div class="fw-bold" style="font-size:2rem; line-height:1; color:#a855f7;">
+                        $@Model.PromedioVenta.ToString("N0")
+                    </div>
+                    <div class="text-muted small mt-1">ticket promedio</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Ventas por vendedor -->
+        <div class="col-lg-7">
+            <div class="card stat-card h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fas fa-store text-warning me-2"></i>Ventas por vendedor
+                    </h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    @if (!Model.VentasPorVendedor.Any())
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                            Sin datos en este período
+                        </div>
+                    }
+                    else
+                    {
+                        var maxIngreso = Model.VentasPorVendedor.Max(v => v.TotalIngresos);
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0 reporte-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Vendedor</th>
+                                        <th class="text-center">Ventas</th>
+                                        <th class="text-end">Ingresos</th>
+                                        <th style="min-width:80px;">Participación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{ int pos = 1; }
+                                    @foreach (var v in Model.VentasPorVendedor)
+                                    {
+                                        var pct = maxIngreso > 0 ? (v.TotalIngresos / maxIngreso) * 100 : 0;
+                                        <tr>
+                                            <td>
+                                                <span class="badge @(pos == 1 ? "bg-warning text-dark" : pos == 2 ? "bg-secondary" : "bg-light text-dark border")">
+                                                    @pos
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold small">@v.NombreVendedor</div>
+                                                <div class="text-muted" style="font-size:.73rem;">@v.ProductosVendidos productos</div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary rounded-pill">@v.CantidadVentas</span>
+                                            </td>
+                                            <td class="text-end fw-bold text-success">
+                                                $@v.TotalIngresos.ToString("N0")
+                                            </td>
+                                            <td>
+                                                <div class="bar-bg">
+                                                    <div class="bar-fill" style="width:@pct.ToString("F0")%"></div>
+                                                </div>
+                                                <div style="font-size:.7rem; color:#94a3b8;">@pct.ToString("F0")%</div>
+                                            </td>
+                                        </tr>
+                                        pos++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos más vendidos -->
+        <div class="col-lg-5">
+            <div class="card stat-card h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fas fa-birthday-cake text-danger me-2"></i>Top 10 productos
+                    </h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    @if (!Model.ProductosMasVendidos.Any())
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                            Sin datos en este período
+                        </div>
+                    }
+                    else
+                    {
+                        var maxQty = Model.ProductosMasVendidos.Max(p => p.CantidadVendida);
+                        <div class="d-flex flex-column gap-3">
+                            @{ int rank = 1; }
+                            @foreach (var p in Model.ProductosMasVendidos)
+                            {
+                                var pct = maxQty > 0 ? (decimal)p.CantidadVendida / maxQty * 100 : 0;
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge @(rank == 1 ? "bg-warning text-dark" : rank == 2 ? "bg-secondary" : rank == 3 ? "bg-danger" : "bg-light text-dark border")"
+                                                  style="font-size:.65rem; min-width:20px;">@rank</span>
+                                            <span class="fw-semibold small">@p.NombreTorta</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="fw-bold small">@p.CantidadVendida u.</span>
+                                            <div class="text-muted" style="font-size:.7rem;">$@p.TotalIngresos.ToString("N0")</div>
+                                        </div>
+                                    </div>
+                                    <div class="bar-bg">
+                                        <div class="bar-fill" style="width:@pct.ToString("F0")%; background:#ef4444;"></div>
+                                    </div>
+                                </div>
+                                rank++;
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Ventas por día -->
+    @if (Model.VentasPorDia.Any())
+    {
+        <div class="card stat-card mt-4">
+            <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                <h6 class="fw-bold mb-0">
+                    <i class="fas fa-calendar-alt text-info me-2"></i>Detalle por día
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0 reporte-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Fecha</th>
+                                <th>Día</th>
+                                <th class="text-center">Ventas</th>
+                                <th class="text-center">Productos</th>
+                                <th class="text-end">Ingresos</th>
+                                <th class="text-end">Comisiones</th>
+                                <th class="text-end pe-4">Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var kv in Model.VentasPorDia.OrderByDescending(x => x.Key))
+                            {
+                                var dia = kv.Value;
+                                <tr class="@(kv.Key.DayOfWeek == DayOfWeek.Saturday || kv.Key.DayOfWeek == DayOfWeek.Sunday ? "table-light" : "")">
+                                    <td class="ps-4 fw-semibold">@kv.Key.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-muted small text-capitalize">
+                                        @kv.Key.ToString("dddd", new System.Globalization.CultureInfo("es-ES"))
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary rounded-pill">@dia.CantidadVentas</span>
+                                    </td>
+                                    <td class="text-center text-muted small">@dia.ProductosVendidos</td>
+                                    <td class="text-end fw-bold text-success">$@dia.Ingresos.ToString("N0")</td>
+                                    <td class="text-end text-muted small">$@dia.Comisiones.ToString("N0")</td>
+                                    <td class="text-end pe-4 text-muted small">$@dia.PromedioVenta.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td class="ps-4 fw-bold" colspan="2">TOTAL</td>
+                                <td class="text-center fw-bold">
+                                    <span class="badge bg-primary rounded-pill">@Model.TotalVentas</span>
+                                </td>
+                                <td class="text-center fw-bold text-muted">
+                                    @Model.VentasPorDia.Values.Sum(d => d.ProductosVendidos)
+                                </td>
+                                <td class="text-end fw-bold text-success">$@Model.TotalIngresos.ToString("N0")</td>
+                                <td class="text-end fw-bold text-muted">$@Model.TotalComisiones.ToString("N0")</td>
+                                <td class="text-end pe-4 fw-bold text-muted">$@Model.PromedioVenta.ToString("N0")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Ingreso diario promedio -->
+    <div class="card stat-card mt-4">
+        <div class="card-body p-4">
+            <div class="row g-4 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="section-title">Ingreso diario promedio</div>
+                    <div class="fw-bold fs-4 text-primary">$@Model.PromedioIngresoDiario.ToString("N0")</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="section-title">Días con ventas</div>
+                    <div class="fw-bold fs-4 text-success">@Model.VentasPorDia.Count</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="section-title">Margen comisión</div>
+                    <div class="fw-bold fs-4" style="color:#f97316;">@Model.MargenComision.ToString("N1")%</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="section-title">Vendedores activos</div>
+                    <div class="fw-bold fs-4 text-secondary">@Model.VentasPorVendedor.Count</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

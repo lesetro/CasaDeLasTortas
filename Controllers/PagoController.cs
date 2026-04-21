@@ -9,13 +9,7 @@ using CasaDeLasTortas.Hubs;
 
 namespace CasaDeLasTortas.Controllers
 {
-    // ══════════════════════════════════════════════════════════════════════
-    // PAGO CONTROLLER
-    // ✅ CORREGIDO: Referencias verificadas contra PagoViewModel.cs
-    // ✅ ViewModels usados: ProcesarPagoViewModel, RealizarPagoViewModel,
-    //    ConfirmacionPagoViewModel, ConfirmarPagoViewModel, PagoDetalleViewModel,
-    //    PagoViewModel, VentaResumenViewModel, CompradorViewModel
-    // ══════════════════════════════════════════════════════════════════════
+    
     
     [Authorize]
     public class PagoController : Controller
@@ -225,7 +219,7 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction("MisCompras", "Venta");
                 }
 
-                // ✅ Usar ConfirmacionPagoViewModel (existe en PagoViewModel.cs línea 46)
+                //  Usar ConfirmacionPagoViewModel (existe en PagoViewModel.cs línea 46)
                 var viewModel = new ConfirmacionPagoViewModel
                 {
                     PagoId = pago.Id,
@@ -270,7 +264,7 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction("AccessDenied", "Account");
                 }
 
-                // ✅ Usar ConfirmarPagoViewModel (existe en PagoViewModel.cs línea 62)
+                //  Usar ConfirmarPagoViewModel (existe en PagoViewModel.cs línea 62)
                 var viewModel = new ConfirmarPagoViewModel
                 {
                     PagoId = pago.Id,
@@ -312,7 +306,7 @@ namespace CasaDeLasTortas.Controllers
                 }
 
                 // Actualizar estado del pago
-                // ✅ CORREGIDO: Usar campos reales de Pago.cs
+                //  Usar campos reales de Pago.cs
                 pago.Estado = EstadoPago.Verificado;  // Verificado por vendedor, no Completado aún
                 pago.FechaVerificacion = DateTime.Now;
                 pago.VerificadoPorId = vendedorId;
@@ -363,7 +357,7 @@ namespace CasaDeLasTortas.Controllers
                             ventaId = venta.Id,
                             numeroOrden = venta.NumeroOrden,
                             monto = pago.Monto,
-                            fechaConfirmacion = pago.FechaVerificacion,  // ✅ CORREGIDO
+                            fechaConfirmacion = pago.FechaVerificacion,  
                             mensaje = "Tu pago ha sido confirmado por el vendedor"
                         });
 
@@ -394,7 +388,7 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction("MisCompras", "Venta");
                 }
 
-                // ✅ Usar PagoDetalleViewModel (existe en PagoViewModel.cs línea 188)
+                //  Usar PagoDetalleViewModel (existe en PagoViewModel.cs línea 188)
                 var viewModel = new PagoDetalleViewModel
                 {
                     
@@ -418,7 +412,7 @@ namespace CasaDeLasTortas.Controllers
                         TelefonoComprador = pago.Comprador?.Telefono,
                         NumeroOrden = pago.Venta?.NumeroOrden
                     },
-                    // ✅ VentaResumenViewModel (existe en VentaViewModels.cs)
+                    //  VentaResumenViewModel (existe en VentaViewModels.cs)
                     Venta = new VentaResumenViewModel
                     {
                         Id = pago.Venta?.Id ?? 0,
@@ -428,7 +422,7 @@ namespace CasaDeLasTortas.Controllers
                         Total = pago.Venta?.Total ?? 0,
                         TotalItems = pago.Venta?.Detalles?.Sum(d => d.Cantidad) ?? 0
                     },
-                    // ✅ CompradorViewModel (existe en CompradorViewModel.cs)
+                    //  CompradorViewModel (existe en CompradorViewModel.cs)
                     Comprador = new CompradorViewModel
                     {
                         Id = pago.Comprador?.Id ?? 0,
@@ -510,5 +504,7 @@ namespace CasaDeLasTortas.Controllers
 
             return false;
         }
+
+        
     }
 }

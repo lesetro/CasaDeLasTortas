@@ -6,11 +6,11 @@ namespace CasaDeLasTortas.Services
 {
     public interface IPagoService
     {
-        Task<(bool Success, string Message)> SubirComprobanteAsync(int ventaId, int compradorId, 
+        Task<(bool Success, string Message)> SubirComprobanteAsync(int ventaId, int compradorId,
             string archivoComprobante, MetodoPago metodoPago, string? numeroTransaccion = null);
-        Task<(bool Success, string Message)> VerificarPagoAsync(int pagoId, int adminId, bool aprobado, 
+        Task<(bool Success, string Message)> VerificarPagoAsync(int pagoId, int adminId, bool aprobado,
             string? observaciones = null, string? motivoRechazo = null);
-        Task<(bool Success, string Message)> ProcesarReembolsoAsync(int pagoId, int adminId, 
+        Task<(bool Success, string Message)> ProcesarReembolsoAsync(int pagoId, int adminId,
             string archivoComprobante, string numeroTransaccion);
         Task<DatosPagoPlataformaDTO> GetDatosPagoPlataformaAsync();
         Task<EstadisticasPagosDTO> GetEstadisticasAsync();
@@ -68,13 +68,11 @@ namespace CasaDeLasTortas.Services
             }
         }
 
-        public async Task<(bool Success, string Message)> VerificarPagoAsync(int pagoId, int adminId, 
-            bool aprobado, string? observaciones = null, string? motivoRechazo = null)
+        public async Task<(bool Success, string Message)> VerificarPagoAsync(int pagoId, int adminId,
+     bool aprobado, string? observaciones = null, string? motivoRechazo = null)
         {
             try
             {
-                await _unitOfWork.BeginTransactionAsync();
-
                 var pago = await _unitOfWork.PagoRepository.GetByIdWithVentaAsync(pagoId);
                 if (pago == null)
                     return (false, "Pago no encontrado");
@@ -89,21 +87,27 @@ namespace CasaDeLasTortas.Services
                 if (aprobado)
                 {
                     pago.Estado = EstadoPago.Verificado;
-                    
-                    // Actualizar venta
+
                     if (pago.Venta != null)
                     {
                         pago.Venta.Estado = EstadoVenta.Pagada;
-                        
-                        // Actualizar detalles a "en preparación"
+                        pago.Venta.FechaActualizacion = DateTime.Now;
+
+                        // Los detalles quedan en Pendiente: el vendedor es quien gestiona
+                        // manualmente el progreso (Confirmado → EnPreparacion → Listo → Entregado)
                         var detalles = await _unitOfWork.DetallesVenta.GetByVentaIdAsync(pago.VentaId);
                         foreach (var detalle in detalles)
                         {
-                            detalle.Estado = EstadoDetalleVenta.EnPreparacion;
+                            var torta = await _unitOfWork.TortaRepository.GetByIdAsync(detalle.TortaId);
+                            if (torta != null && torta.Stock <= 0 && torta.Disponible)
+                            {
+                                torta.Disponible = false;
+                                torta.FechaActualizacion = DateTime.Now;
+                                await _unitOfWork.TortaRepository.UpdateAsync(torta);
+                            }
                         }
                     }
 
-                    // Crear liberaciones pendientes
                     var comision = await _unitOfWork.Configuracion.GetComisionPorcentajeAsync();
                     await _unitOfWork.Liberaciones.CrearLiberacionesParaVentaAsync(pago.VentaId, comision);
                 }
@@ -118,18 +122,32 @@ namespace CasaDeLasTortas.Services
                     pago.IntentosRechazados++;
 
                     if (pago.Venta != null)
+                    {
                         pago.Venta.Estado = EstadoVenta.Pendiente;
+
+                        var detalles = await _unitOfWork.DetallesVenta.GetByVentaIdAsync(pago.VentaId);
+                        foreach (var detalle in detalles)
+                        {
+                            var torta = await _unitOfWork.TortaRepository.GetByIdAsync(detalle.TortaId);
+                            if (torta != null)
+                            {
+                                torta.Stock += detalle.Cantidad;
+                                torta.Disponible = true;
+                                torta.FechaActualizacion = DateTime.Now;
+                                await _unitOfWork.TortaRepository.UpdateAsync(torta);
+                            }
+                        }
+                    }
                 }
 
                 _unitOfWork.PagoRepository.Update(pago);
-                await _unitOfWork.CommitTransactionAsync();
+                await _unitOfWork.SaveChangesAsync();
 
                 return (true, aprobado ? "Pago verificado correctamente" : "Pago rechazado");
             }
             catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync();
-                return (false, $"Error: {ex.Message}");
+                return (false, $"Error al verificar el pago: {ex.Message}");
             }
         }
 

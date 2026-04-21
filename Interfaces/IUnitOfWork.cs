@@ -15,7 +15,7 @@ namespace CasaDeLasTortas.Interfaces
         IVentaRepository Ventas { get; }
         IDetalleVentaRepository DetallesVenta { get; }
         
-        // ✅ NUEVOS REPOSITORIOS
+        //  REPOSITORIOS
         ILiberacionRepository Liberaciones { get; }
         IDisputaRepository Disputas { get; }
         IConfiguracionRepository Configuracion { get; }

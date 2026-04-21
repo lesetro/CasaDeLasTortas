@@ -100,12 +100,8 @@
                   <!-- Estado pago -->
                   <td class="border-0 py-3 text-center">
                     <span class="badge rounded-pill" style="font-size:.67rem;"
-                          :class="pedido.estadoPago === 'Completado' ? 'bg-success'
-                                : pedido.estadoPago === 'Pendiente'  ? 'bg-warning text-dark'
-                                : 'bg-secondary'">
-                      {{ pedido.estadoPago === 'Completado' ? '✅ Verificado'
-                       : pedido.estadoPago === 'Pendiente'  ? '⏳ En revisión'
-                       : pedido.estadoPago || 'Sin pago' }}
+                          :class="getBadgePago(pedido.estadoPago)">
+                      {{ getLabelPago(pedido.estadoPago) }}
                     </span>
                   </td>
 
@@ -120,17 +116,21 @@
                   <!-- ── NUEVA COLUMNA: Estado liberación ── -->
                   <td class="border-0 py-3 text-center">
                     <template v-if="pedido.estado === 'Entregado' || pedido.estado === 'Entregada'">
-                      <span v-if="pedido.liberacionEstado === 'Liberado'"
+                      <span v-if="pedido.liberacionEstado === 'Confirmado'"
                             class="badge bg-success rounded-pill" style="font-size:.67rem;">
                         💸 Cobrado
                       </span>
-                      <span v-else-if="pedido.liberacionEstado === 'Pendiente'"
+                      <span v-else-if="pedido.liberacionEstado === 'Transferido'"
+                            class="badge bg-info rounded-pill" style="font-size:.67rem;">
+                        🔄 Transferido
+                      </span>
+                      <span v-else-if="pedido.liberacionEstado === 'ListoParaLiberar'"
                             class="badge bg-warning text-dark rounded-pill" style="font-size:.67rem;">
-                        ⏳ Pendiente
+                        🔜 En proceso
                       </span>
                       <span v-else
                             class="badge bg-light text-muted rounded-pill" style="font-size:.67rem;">
-                        Pendiente
+                        ⏳ Pendiente
                       </span>
                     </template>
                     <span v-else class="text-muted" style="font-size:.75rem;">—</span>
@@ -139,8 +139,8 @@
                   <!-- Subtotal -->
                   <td class="border-0 py-3 text-end fw-bold text-success small">
                     {{ formatMoneda(pedido.subtotal) }}
-                    <div v-if="pedido.liberacionEstado === 'Liberado'" class="text-muted fw-normal" style="font-size:.7rem;">
-                      Cobrado: {{ formatMoneda(pedido.montoLiberado ?? pedido.subtotal * 0.9) }}
+                    <div v-if="pedido.liberacionEstado === 'Confirmado'" class="text-muted fw-normal" style="font-size:.7rem;">
+                      Cobrado: {{ formatMoneda(pedido.montoLiberado) }}
                     </div>
                   </td>
 
@@ -253,7 +253,7 @@ async function cambiarEstado(pedido, nuevoEstado) {
   try {
     cambiando.value = pedido.detalleId
     const resultado = await fetchWithAuth(
-      `/api/PagoApi/detalle/${pedido.detalleId}/estado`,
+      `/api/DetalleVenta/${pedido.detalleId}/estado`,
       { method: 'PATCH', body: JSON.stringify({ estado: nuevoEstado }) }
     )
     pedido.estado              = resultado.estadoNuevo
@@ -268,6 +268,27 @@ async function cambiarEstado(pedido, nuevoEstado) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
+function getBadgePago(estado) {
+  return {
+    Pendiente:  'bg-secondary',
+    EnRevision: 'bg-warning text-dark',
+    Verificado: 'bg-info',
+    Completado: 'bg-success',
+    Rechazado:  'bg-danger',
+    Cancelado:  'bg-danger',
+  }[estado] ?? 'bg-light text-muted'
+}
+function getLabelPago(estado) {
+  return {
+    Pendiente:  '💳 Sin pagar',
+    EnRevision: '🔍 En revisión',
+    Verificado: '✅ Verificado',
+    Completado: '💸 Completado',
+    Rechazado:  '❌ Rechazado',
+    Cancelado:  '❌ Cancelado',
+    SinPago:    '—',
+  }[estado] ?? (estado || '—')
+}
 function getBadgeEstado(estado) {
   return {
     Pendiente: 'bg-warning text-dark', Confirmado: 'bg-info',

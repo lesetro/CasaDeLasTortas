@@ -4,14 +4,19 @@ using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.Entities;
 using CasaDeLasTortas.Models.ViewModels;
 using CasaDeLasTortas.Services;
+using CasaDeLasTortas.Models.DTOs;
+using Microsoft.AspNetCore.SignalR;
+using CasaDeLasTortas.Hubs;
+
 
 namespace CasaDeLasTortas.Controllers
 {
     /// <summary>
     /// Controller de Administración - Acceso restringido a rol Admin
-    /// ✅ MODIFICADO: Incluye gestión de pagos, liberaciones y disputas
+    /// Incluye gestión de pagos, liberaciones y disputas
     /// </summary>
     [Authorize(Roles = "Admin")]
+
     public class AdminController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -19,23 +24,26 @@ namespace CasaDeLasTortas.Controllers
         private readonly ILiberacionService _liberacionService;
         private readonly IFileService _fileService;
         private readonly ILogger<AdminController> _logger;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
         public AdminController(
             IUnitOfWork unitOfWork,
             IPagoService pagoService,
             ILiberacionService liberacionService,
             IFileService fileService,
-            ILogger<AdminController> logger)
+            ILogger<AdminController> logger,
+            IHubContext<NotificationHub> hubContext)
         {
             _unitOfWork = unitOfWork;
             _pagoService = pagoService;
             _liberacionService = liberacionService;
             _fileService = fileService;
             _logger = logger;
+            _hubContext = hubContext;
         }
 
         /// <summary>
-        /// Dashboard principal del administrador (MODIFICADO)
+        /// Dashboard principal del administrador
         /// </summary>
         public async Task<IActionResult> Index()
         {
@@ -59,6 +67,7 @@ namespace CasaDeLasTortas.Controllers
                 // Acciones pendientes
                 var pagosEnRevision = await _unitOfWork.PagoRepository.CountEnRevisionAsync();
                 var liberacionesPendientesCount = await _unitOfWork.Liberaciones.CountByEstadoAsync(EstadoLiberacion.ListoParaLiberar);
+                var liberacionesPendientesList = await _liberacionService.GetLiberacionesPendientesAsync();
                 var disputasAbiertasCount = await _unitOfWork.Disputas.CountAbiertasAsync();
                 var vendedoresPendientesCount = vendedores.Count(v => !v.Verificado && v.Activo);
 
@@ -74,16 +83,29 @@ namespace CasaDeLasTortas.Controllers
                     ingresosPorDiaList.Add(new DatoGraficoDTO { Etiqueta = fecha.ToString("dd/MM"), Valor = pagosDelDia.Sum(p => p.Monto) });
                 }
 
-                // Top vendedores
+                // Top vendedores — ingresos calculados desde pagos reales
+                var ingresosPorVendedor = pagosCompletados
+                    .Where(p => p.Venta?.Detalles != null)
+                    .SelectMany(p => p.Venta!.Detalles.Select(d => new { d.VendedorId, d.Subtotal }))
+                    .GroupBy(x => x.VendedorId)
+                    .ToDictionary(g => g.Key, g => g.Sum(x => x.Subtotal));
+
+                var ventasPorVendedor = pagosCompletados
+                    .Where(p => p.Venta?.Detalles != null)
+                    .SelectMany(p => p.Venta!.Detalles.Select(d => new { d.VendedorId, d.VentaId }))
+                    .GroupBy(x => x.VendedorId)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.VentaId).Distinct().Count());
+
                 var topVendedoresList = vendedores
-                    .OrderByDescending(v => v.TotalVentas)
+                    .OrderByDescending(v => ingresosPorVendedor.GetValueOrDefault(v.Id, 0))
                     .Take(5)
                     .Select((v, index) => new TopVendedorDTO
                     {
                         Id = v.Id,
                         NombreComercial = v.NombreComercial,
                         Avatar = v.Persona?.Avatar,
-                        TotalVentas = v.TotalVentas,
+                        TotalVentas = ventasPorVendedor.GetValueOrDefault(v.Id, 0),
+                        TotalIngresos = ingresosPorVendedor.GetValueOrDefault(v.Id, 0),
                         Calificacion = v.Calificacion,
                         Verificado = v.Verificado,
                         Posicion = index + 1
@@ -130,6 +152,7 @@ namespace CasaDeLasTortas.Controllers
                     // Acciones pendientes (contadores)
                     TotalPagosPendientes = pagosEnRevision,
                     TotalLiberacionesPendientes = liberacionesPendientesCount,
+                    LiberacionesPendientes = liberacionesPendientesList.ToList(),
                     TotalDisputasAbiertas = disputasAbiertasCount,
                     TotalVendedoresPendientes = vendedoresPendientesCount,
 
@@ -153,12 +176,9 @@ namespace CasaDeLasTortas.Controllers
 
 
         // ══════════════════════════════════════════════
-        // ✅ NUEVO: GESTIÓN DE PAGOS
+        //  GESTIÓN DE PAGOS
         // ══════════════════════════════════════════════
 
-        /// <summary>
-        /// Vista de gestión de pagos
-        /// </summary>
         public async Task<IActionResult> Pagos(string estado = "", int pagina = 1)
         {
             try
@@ -170,23 +190,53 @@ namespace CasaDeLasTortas.Controllers
 
                 var totalItems = pagos.Count();
                 var tamanioPagina = 15;
+                var totalPaginas = (int)Math.Ceiling(totalItems / (double)tamanioPagina);
+
                 var pagosPaginados = pagos
                     .OrderByDescending(p => p.FechaPago)
                     .Skip((pagina - 1) * tamanioPagina)
                     .Take(tamanioPagina)
                     .ToList();
 
-                ViewBag.FiltroEstado = estado;
-                ViewBag.Paginacion = new PaginacionViewModel(totalItems, pagina, tamanioPagina);
-                ViewBag.Estadisticas = await _pagoService.GetEstadisticasAsync();
+                var viewModel = new AdminPagosViewModel
+                {
+                    PagosPendientes = pagosPaginados.Select(p =>
+                    {
+                        var fechaRef = p.FechaComprobante ?? p.FechaPago;
+                        return new PagoPendienteDTO
+                        {
+                            Id = p.Id,
+                            VentaId = p.VentaId,
+                            NumeroOrden = p.Venta?.NumeroOrden ?? "",
+                            NombreComprador = p.Comprador?.Persona?.Nombre ?? "",
+                            EmailComprador = p.Comprador?.Persona?.Email ?? "",
+                            Monto = p.Monto,
+                            Estado = p.Estado,
+                            FechaPago = fechaRef,
+                            FechaComprobante = p.FechaComprobante,
+                            HorasEsperando = fechaRef == default
+                                ? 0
+                                : (int)(DateTime.Now - fechaRef).TotalHours,
+                            MetodoPago = p.MetodoPago?.ToString() ?? "Transferencia",
+                            NumeroTransaccion = p.NumeroTransaccion,
+                            ArchivoComprobante = p.ArchivoComprobante,
+                            IntentosRechazados = p.IntentosRechazados
+                        };
+                    }).ToList(),
+                    Estadisticas = await _pagoService.GetEstadisticasAsync(),
+                    FiltroEstado = estado,
+                    PaginaActual = pagina,
+                    TotalPaginas = totalPaginas,
+                    TotalRegistros = totalItems
+                };
 
-                return View(pagosPaginados);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cargar pagos");
                 TempData["Error"] = "Error al cargar los pagos";
-                return View(new List<Pago>());
+                return View(new AdminPagosViewModel());
             }
         }
 
@@ -217,8 +267,13 @@ namespace CasaDeLasTortas.Controllers
         {
             try
             {
-                var adminEmail = User.Identity?.Name;
-                var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(adminEmail ?? "");
+                var personaIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(personaIdClaim, out int adminPersonaId))
+                {
+                    TempData["Error"] = "Sesión inválida";
+                    return RedirectToAction(nameof(Pagos));
+                }
+                var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(adminPersonaId);
                 if (persona == null)
                 {
                     TempData["Error"] = "Sesión inválida";
@@ -228,7 +283,40 @@ namespace CasaDeLasTortas.Controllers
                 var result = await _pagoService.VerificarPagoAsync(pagoId, persona.Id, aprobado, observaciones, motivoRechazo);
 
                 if (result.Success)
+                {
                     TempData["Success"] = result.Message;
+
+                    // Notificar al comprador por SignalR
+                    var pago = await _unitOfWork.PagoRepository.GetByIdWithDetallesAsync(pagoId);
+                    var compradorPersonaId = pago?.Comprador?.PersonaId.ToString();
+                    if (!string.IsNullOrEmpty(compradorPersonaId))
+                    {
+                        if (aprobado)
+                        {
+                            await _hubContext.Clients.User(compradorPersonaId).SendAsync("PagoVerificado", new
+                            {
+                                tipo        = "pago_verificado",
+                                pagoId,
+                                numeroOrden = pago!.Venta?.NumeroOrden,
+                                monto       = pago.Monto,
+                                mensaje     = $"¡Tu pago fue aprobado! Ya podés esperar la preparación de tu pedido #{pago.Venta?.NumeroOrden}.",
+                                timestamp   = DateTime.UtcNow
+                            });
+                        }
+                        else
+                        {
+                            await _hubContext.Clients.User(compradorPersonaId).SendAsync("PagoRechazado", new
+                            {
+                                tipo        = "pago_rechazado",
+                                pagoId,
+                                numeroOrden = pago!.Venta?.NumeroOrden,
+                                motivo      = motivoRechazo,
+                                mensaje     = $"Tu comprobante de la orden #{pago.Venta?.NumeroOrden} fue rechazado: {motivoRechazo}",
+                                timestamp   = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
                 else
                     TempData["Error"] = result.Message;
 
@@ -242,9 +330,59 @@ namespace CasaDeLasTortas.Controllers
             }
         }
 
-        // ══════════════════════════════════════════════
-        // ✅ NUEVO: GESTIÓN DE LIBERACIONES
-        // ══════════════════════════════════════════════
+        /// <summary>
+        /// Marca un pago rechazado como pendiente de reembolso,
+        /// para que aparezca en la sección Reembolsos y el admin pueda devolver el dinero.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarcarParaReembolso(int pagoId, string motivoReembolso)
+        {
+            try
+            {
+                var pago = await _unitOfWork.PagoRepository.GetByIdWithDetallesAsync(pagoId);
+                if (pago == null)
+                {
+                    TempData["Error"] = "Pago no encontrado";
+                    return RedirectToAction(nameof(Pagos));
+                }
+
+                if (pago.Estado != EstadoPago.Rechazado)
+                {
+                    TempData["Error"] = "Solo se puede marcar para reembolso un pago rechazado";
+                    return RedirectToAction(nameof(VerificarPago), new { id = pagoId });
+                }
+
+                pago.Estado = EstadoPago.ReembolsoPendiente;
+                pago.MotivoReembolso = motivoReembolso;
+                _unitOfWork.PagoRepository.Update(pago);
+                await _unitOfWork.SaveChangesAsync();
+
+                // Notificar al comprador
+                var compradorPersonaId = pago.Comprador?.PersonaId.ToString();
+                if (!string.IsNullOrEmpty(compradorPersonaId))
+                {
+                    await _hubContext.Clients.User(compradorPersonaId).SendAsync("ReembolsoPendiente", new
+                    {
+                        tipo        = "reembolso_pendiente",
+                        pagoId,
+                        numeroOrden = pago.Venta?.NumeroOrden,
+                        monto       = pago.Monto,
+                        mensaje     = $"Tu pago de la orden #{pago.Venta?.NumeroOrden} será reembolsado. Nos contactaremos para coordinar la devolución.",
+                        timestamp   = DateTime.UtcNow
+                    });
+                }
+
+                TempData["Success"] = "Pago marcado para reembolso. Aparecerá en la sección Reembolsos.";
+                return RedirectToAction(nameof(Reembolsos));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al marcar pago {PagoId} para reembolso", pagoId);
+                TempData["Error"] = "Error al procesar el reembolso";
+                return RedirectToAction(nameof(Pagos));
+            }
+        }
 
         /// <summary>
         /// Vista de gestión de liberaciones de fondos
@@ -253,22 +391,46 @@ namespace CasaDeLasTortas.Controllers
         {
             try
             {
-                IEnumerable<LiberacionFondos> liberaciones;
+                // ── Ventas que requieren acción del admin ──────────────────────
+                // Incluye: pago verificado, fondos aún no liberados, estado relevante
+                var estadosRelevantes = new[]
+                {
+                    EstadoVenta.Pagada, EstadoVenta.EnPreparacion,
+                    EstadoVenta.ListaParaRetiro, EstadoVenta.Enviada
+                };
+                var todasVentas = await _unitOfWork.Ventas.GetAllWithDetailsAsync();
+                var ventasPendientesEntrega = todasVentas
+                    .Where(v => !v.FondosLiberados && estadosRelevantes.Contains(v.Estado))
+                    .OrderBy(v => v.FechaVenta)
+                    .ToList();
 
-                if (!string.IsNullOrEmpty(estado) && Enum.TryParse<EstadoLiberacion>(estado, out var estadoEnum))
-                    liberaciones = await _unitOfWork.Liberaciones.GetByEstadoAsync(estadoEnum);
-                else
-                    liberaciones = await _unitOfWork.Liberaciones.GetAllAsync(pagina, 20);
+                // ── Liberaciones listas para transferir ───────────────────────
+                var liberacionesListas = (await _unitOfWork.Liberaciones.GetListasParaLiberarAsync()).ToList();
 
-                var totalItems = await _unitOfWork.Liberaciones.CountAsync();
-                var tamanioPagina = 20;
+                // ── KPIs ──────────────────────────────────────────────────────
+                var countPendiente = await _unitOfWork.Liberaciones.CountByEstadoAsync(EstadoLiberacion.Pendiente)
+                                   + await _unitOfWork.Liberaciones.CountByEstadoAsync(EstadoLiberacion.ListoParaLiberar);
+                var totalPendiente = await _unitOfWork.Liberaciones.GetMontoPendienteLiberacionAsync();
+                var countLiberado  = await _unitOfWork.Liberaciones.CountByEstadoAsync(EstadoLiberacion.Confirmado)
+                                   + await _unitOfWork.Liberaciones.CountByEstadoAsync(EstadoLiberacion.Transferido);
+                var totalLiberado  = await _unitOfWork.Liberaciones.GetMontoTotalLiberadoAsync();
 
-                ViewBag.FiltroEstado = estado;
-                ViewBag.Paginacion = new PaginacionViewModel(totalItems, pagina, tamanioPagina);
-                ViewBag.Estadisticas = await _liberacionService.GetEstadisticasAsync();
-                ViewBag.PendientesLiberar = await _liberacionService.GetLiberacionesPendientesAsync();
+                // ── Historial (Transferido + Confirmado) ──────────────────────
+                var historialLibs = (await _unitOfWork.Liberaciones.GetByEstadoAsync(EstadoLiberacion.Confirmado))
+                    .Concat(await _unitOfWork.Liberaciones.GetByEstadoAsync(EstadoLiberacion.Transferido))
+                    .OrderByDescending(l => l.FechaTransferencia ?? l.FechaConfirmacion)
+                    .ToList();
 
-                return View(liberaciones.ToList());
+                ViewBag.CountPendiente          = countPendiente;
+                ViewBag.TotalPendiente          = totalPendiente;
+                ViewBag.CountLiberado           = countLiberado;
+                ViewBag.TotalLiberado           = totalLiberado;
+                ViewBag.VentasPendientesEntrega = ventasPendientesEntrega;
+                ViewBag.VentasEntregadas        = new List<Venta>();
+                ViewBag.LiberacionesListas      = liberacionesListas;
+                ViewBag.HistorialLiberaciones   = historialLibs;
+
+                return View(new List<LiberacionFondos>());
             }
             catch (Exception ex)
             {
@@ -308,8 +470,13 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction(nameof(ProcesarLiberacion), new { id = liberacionId });
                 }
 
-                var adminEmail = User.Identity?.Name;
-                var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(adminEmail ?? "");
+                var personaIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(personaIdClaim, out int adminPersonaId))
+                {
+                    TempData["Error"] = "Sesión inválida";
+                    return RedirectToAction(nameof(Liberaciones));
+                }
+                var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(adminPersonaId);
                 if (persona == null)
                 {
                     TempData["Error"] = "Sesión inválida";
@@ -336,7 +503,7 @@ namespace CasaDeLasTortas.Controllers
         }
 
         // ══════════════════════════════════════════════
-        // ✅ NUEVO: GESTIÓN DE DISPUTAS
+        //  GESTIÓN DE DISPUTAS
         // ══════════════════════════════════════════════
 
         /// <summary>
@@ -346,30 +513,125 @@ namespace CasaDeLasTortas.Controllers
         {
             try
             {
-                IEnumerable<Disputa> disputas;
+                // Traer todas con todos los datos relacionados
+                var todasDisputas = (await _unitOfWork.Disputas.GetAllWithDetallesAsync()).ToList();
 
-                if (!string.IsNullOrEmpty(estado) && Enum.TryParse<EstadoDisputa>(estado, out var estadoEnum))
-                    disputas = await _unitOfWork.Disputas.GetByEstadoAsync(estadoEnum);
-                else
-                    disputas = await _unitOfWork.Disputas.GetAllAsync(pagina, 20);
+                // Filtrar usando los nombres simples que envían los botones de la vista
+                IEnumerable<Disputa> disputasFiltradas = estado switch
+                {
+                    "Abierta"   => todasDisputas.Where(d => d.Estado == EstadoDisputa.Abierta),
+                    "EnProceso" => todasDisputas.Where(d =>
+                                        d.Estado == EstadoDisputa.EnInvestigacion ||
+                                        d.Estado == EstadoDisputa.EsperandoVendedor ||
+                                        d.Estado == EstadoDisputa.EsperandoComprador),
+                    "Resuelta"  => todasDisputas.Where(d =>
+                                        d.Estado == EstadoDisputa.ResueltaFavorComprador ||
+                                        d.Estado == EstadoDisputa.ResueltaFavorVendedor ||
+                                        d.Estado == EstadoDisputa.ResueltaAcuerdo ||
+                                        d.Estado == EstadoDisputa.Cerrada ||
+                                        d.Estado == EstadoDisputa.Cancelada),
+                    _           => todasDisputas
+                };
 
-                var totalItems = await _unitOfWork.Disputas.CountAsync();
-                var abiertas = await _unitOfWork.Disputas.CountAbiertasAsync();
+                // KPIs con los nombres que lee la vista
+                ViewBag.CountAbiertas  = todasDisputas.Count(d => d.Estado == EstadoDisputa.Abierta);
+                ViewBag.CountResueltas = todasDisputas.Count(d =>
+                    d.Estado == EstadoDisputa.EnInvestigacion ||
+                    d.Estado == EstadoDisputa.EsperandoVendedor ||
+                    d.Estado == EstadoDisputa.EsperandoComprador);
+                ViewBag.CountCerradas  = todasDisputas.Count(d =>
+                    d.Estado == EstadoDisputa.ResueltaFavorComprador ||
+                    d.Estado == EstadoDisputa.ResueltaFavorVendedor ||
+                    d.Estado == EstadoDisputa.ResueltaAcuerdo ||
+                    d.Estado == EstadoDisputa.Cerrada ||
+                    d.Estado == EstadoDisputa.Cancelada);
 
                 ViewBag.FiltroEstado = estado;
-                ViewBag.Paginacion = new PaginacionViewModel(totalItems, pagina, 20);
-                ViewBag.DisputasAbiertas = abiertas;
-                ViewBag.SinAsignar = (await _unitOfWork.Disputas.GetSinAsignarAsync()).Count();
 
-                return View(disputas.ToList());
+                // Shape rico para la vista — incluye datos de venta, productos y pago
+                ViewBag.Disputas = disputasFiltradas.Select(d =>
+                {
+                    var detalles   = d.Venta?.Detalles?.ToList() ?? new List<DetalleVenta>();
+                    var pagos      = d.Venta?.Pagos?.ToList()    ?? new List<Pago>();
+                    var pagoPrincipal = pagos.OrderByDescending(p => p.FechaComprobante ?? p.FechaPago).FirstOrDefault();
+
+                    // Nombre(s) de vendedor(es) involucrados
+                    var vendedores = detalles
+                        .Where(det => det.Vendedor != null)
+                        .Select(det => det.Vendedor!.NombreComercial)
+                        .Distinct()
+                        .ToList();
+
+                    return (object)new
+                    {
+                        Id              = d.Id,
+                        NumeroOrden     = d.Venta?.NumeroOrden ?? "—",
+                        FechaVenta      = d.Venta?.FechaVenta,
+                        NombreComprador = d.Iniciador?.Nombre ?? "—",
+                        EmailComprador  = d.Iniciador?.Email  ?? "—",
+                        NombreVendedor  = vendedores.Any() ? string.Join(", ", vendedores) : "—",
+                        Motivo          = d.Titulo ?? d.Descripcion ?? "Sin descripción",
+                        Descripcion     = d.Descripcion ?? "—",
+                        Estado          = MapearEstadoSimpleDisputa(d.Estado),
+                        FechaCreacion   = (DateTime?)d.FechaCreacion,
+
+                        // Venta
+                        TotalVenta      = d.Venta?.Total ?? 0m,
+                        EstadoVenta     = d.Venta?.Estado.ToString() ?? "—",
+                        MontoInvolucrado= d.MontoInvolucrado ?? 0m,
+
+                        // Productos
+                        Productos       = detalles.Select(det => new
+                        {
+                            Nombre    = det.Torta?.Nombre ?? "Producto",
+                            Vendedor  = det.Vendedor?.NombreComercial ?? "—",
+                            Cantidad  = det.Cantidad,
+                            Subtotal  = det.Subtotal,
+                            Estado    = det.Estado.ToString()
+                        }).ToList(),
+
+                        // Comprador extra
+                        TelefonoComprador  = d.Iniciador?.Telefono ?? "—",
+
+                        // Pago
+                        EstadoPago         = pagoPrincipal?.Estado.ToString() ?? "SinPago",
+                        TieneComprobante   = pagoPrincipal?.ArchivoComprobante != null,
+                        MontoPagado        = pagoPrincipal?.Monto ?? 0m,
+                        FechaPago          = pagoPrincipal?.FechaPago,
+
+                        // Resolución
+                        Resolucion         = d.Resolucion.ToString(),
+                        DetalleResolucion  = d.DetalleResolucion ?? "—",
+                        FechaResolucion    = d.FechaResolucion
+                    };
+                }).ToList();
+
+                return View();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cargar disputas");
                 TempData["Error"] = "Error al cargar las disputas";
-                return View(new List<Disputa>());
+                ViewBag.Disputas       = new List<object>();
+                ViewBag.CountAbiertas  = 0;
+                ViewBag.CountResueltas = 0;
+                ViewBag.CountCerradas  = 0;
+                return View();
             }
         }
+
+        private static string MapearEstadoSimpleDisputa(EstadoDisputa estado) => estado switch
+        {
+            EstadoDisputa.EnInvestigacion or
+            EstadoDisputa.EsperandoVendedor or
+            EstadoDisputa.EsperandoComprador    => "EnProceso",
+            EstadoDisputa.ResueltaFavorComprador or
+            EstadoDisputa.ResueltaFavorVendedor or
+            EstadoDisputa.ResueltaAcuerdo       => "Resuelta",
+            EstadoDisputa.Cerrada or
+            EstadoDisputa.Cancelada             => "Cerrada",
+            _                                   => "Abierta"
+        };
 
         /// <summary>
         /// Ver detalle de disputa
@@ -389,14 +651,206 @@ namespace CasaDeLasTortas.Controllers
         /// <summary>
         /// Asignarse una disputa
         /// </summary>
+        /// <summary>
+        /// Gestionar disputa desde el modal de la vista Disputas.cshtml
+        /// Acepta: disputaId, nuevoEstado (string), resolucion (texto), procesarReembolso (bool)
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GestionarDisputa(int disputaId, string nuevoEstado, string resolucion,
+            bool procesarReembolso = false, string? aliasReembolso = null,
+            string? numTransaccionReembolso = null, IFormFile? comprobanteReembolso = null)
+        {
+            try
+            {
+                if (!Enum.TryParse<EstadoDisputa>(nuevoEstado, ignoreCase: true, out var estadoEnum))
+                {
+                    // Mapear nombres simples de la vista a valores del enum
+                    estadoEnum = nuevoEstado switch
+                    {
+                        "EnProceso"      => EstadoDisputa.EnInvestigacion,
+                        "FavorComprador" => EstadoDisputa.ResueltaFavorComprador,
+                        "FavorVendedor"  => EstadoDisputa.ResueltaFavorVendedor,
+                        "Resuelta"       => EstadoDisputa.ResueltaAcuerdo,
+                        "Cerrada"        => EstadoDisputa.Cerrada,
+                        _                => EstadoDisputa.EnInvestigacion
+                    };
+                }
+
+                var disputa = await _unitOfWork.Disputas.GetByIdAsync(disputaId);
+                if (disputa == null)
+                {
+                    TempData["Error"] = "Disputa no encontrada";
+                    return RedirectToAction(nameof(Disputas));
+                }
+
+                disputa.Estado = estadoEnum;
+                disputa.DetalleResolucion = resolucion;
+                disputa.FechaActualizacion = DateTime.Now;
+
+                // Si se resuelve, registrar fecha y resolución formal
+                if (estadoEnum == EstadoDisputa.ResueltaFavorComprador ||
+                    estadoEnum == EstadoDisputa.ResueltaFavorVendedor ||
+                    estadoEnum == EstadoDisputa.ResueltaAcuerdo ||
+                    estadoEnum == EstadoDisputa.Cerrada)
+                {
+                    disputa.FechaResolucion = DateTime.Now;
+                    disputa.Resolucion = estadoEnum switch
+                    {
+                        EstadoDisputa.ResueltaFavorComprador => procesarReembolso
+                            ? ResolucionDisputa.ReembolsoTotal
+                            : ResolucionDisputa.ReembolsoParcial,
+                        EstadoDisputa.ResueltaFavorVendedor => ResolucionDisputa.SinAccion,
+                        _ => ResolucionDisputa.OtroAcuerdo
+                    };
+
+                    // Si se resuelve a favor del comprador y hay reembolso, actualizar venta y pago
+                    if (procesarReembolso)
+                    {
+                        var venta = await _unitOfWork.Ventas.GetByIdAsync(disputa.VentaId);
+                        if (venta != null)
+                        {
+                            venta.Estado = EstadoVenta.Cancelada;
+                            _unitOfWork.Ventas.Update(venta);
+                        }
+
+                        // Marcar el pago como pendiente de reembolso
+                        var pagos = await _unitOfWork.PagoRepository.GetByVentaIdAsync(disputa.VentaId);
+                        var pago  = pagos.OrderByDescending(p => p.FechaPago).FirstOrDefault();
+                        if (pago != null)
+                        {
+                            pago.Estado = EstadoPago.ReembolsoPendiente;
+                            pago.MotivoReembolso = resolucion;
+                            _unitOfWork.PagoRepository.Update(pago);
+                        }
+                    }
+                    else
+                    {
+                        // Restaurar venta a Pagada si no hay reembolso
+                        var venta = await _unitOfWork.Ventas.GetByIdAsync(disputa.VentaId);
+                        if (venta != null && venta.Estado == EstadoVenta.EnDisputa)
+                        {
+                            venta.Estado = EstadoVenta.Pagada;
+                            _unitOfWork.Ventas.Update(venta);
+                        }
+                    }
+                }
+
+                _unitOfWork.Disputas.Update(disputa);
+                await _unitOfWork.SaveChangesAsync();
+
+                // Si se proporcionó comprobante de reembolso, procesar inmediatamente
+                if (procesarReembolso && comprobanteReembolso != null && !string.IsNullOrEmpty(numTransaccionReembolso))
+                {
+                    var pagos = await _unitOfWork.PagoRepository.GetByVentaIdAsync(disputa.VentaId);
+                    var pago  = pagos.FirstOrDefault(p => p.Estado == EstadoPago.ReembolsoPendiente);
+                    if (pago != null)
+                    {
+                        var adminIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                        if (int.TryParse(adminIdClaim, out int adminId))
+                        {
+                            var ruta = await _fileService.SaveFileAsync(comprobanteReembolso, "reembolsos");
+                            await _pagoService.ProcesarReembolsoAsync(pago.Id, adminId, ruta, numTransaccionReembolso);
+                        }
+                    }
+                }
+
+                TempData["Success"] = $"Disputa actualizada a: {nuevoEstado}";
+                return RedirectToAction(nameof(Disputas));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al gestionar disputa {Id}", disputaId);
+                TempData["Error"] = "Error al gestionar la disputa";
+                return RedirectToAction(nameof(Disputas));
+            }
+        }
+
+        // ==================== REEMBOLSOS ====================
+
+        public async Task<IActionResult> Reembolsos()
+        {
+            try
+            {
+                var pagos = await _unitOfWork.PagoRepository.GetReembolsosPendientesAsync();
+
+                var lista = pagos.Select(p => new
+                {
+                    PagoId            = p.Id,
+                    VentaId           = p.VentaId,
+                    NumeroOrden       = p.Venta?.NumeroOrden ?? "—",
+                    NombreComprador   = p.Comprador?.Persona?.Nombre + " " + p.Comprador?.Persona?.Apellido,
+                    EmailComprador    = p.Comprador?.Persona?.Email ?? "—",
+                    TelefonoComprador = p.Comprador?.Persona?.Telefono ?? "—",
+                    Monto             = p.Monto,
+                    FechaPago         = p.FechaPago,
+                    MotivoReembolso   = p.MotivoReembolso ?? "—"
+                }).ToList();
+
+                ViewBag.Reembolsos          = lista;
+                ViewBag.ReembolsosPendientes = lista.Count;
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cargar reembolsos pendientes");
+                TempData["Error"] = "Error al cargar los reembolsos";
+                ViewBag.Reembolsos = new List<object>();
+                return View();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProcesarReembolso(int pagoId, string numeroTransaccion,
+            IFormFile? comprobanteReembolso)
+        {
+            try
+            {
+                if (comprobanteReembolso == null || string.IsNullOrWhiteSpace(numeroTransaccion))
+                {
+                    TempData["Error"] = "El comprobante y el número de transacción son obligatorios";
+                    return RedirectToAction(nameof(Reembolsos));
+                }
+
+                var adminIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(adminIdClaim, out int adminId))
+                {
+                    TempData["Error"] = "No se pudo identificar al administrador";
+                    return RedirectToAction(nameof(Reembolsos));
+                }
+
+                var ruta = await _fileService.SaveFileAsync(comprobanteReembolso, "reembolsos");
+                var result = await _pagoService.ProcesarReembolsoAsync(pagoId, adminId, ruta, numeroTransaccion);
+
+                if (result.Success)
+                    TempData["Success"] = "Reembolso registrado correctamente";
+                else
+                    TempData["Error"] = result.Message;
+
+                return RedirectToAction(nameof(Reembolsos));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al procesar reembolso del pago {PagoId}", pagoId);
+                TempData["Error"] = "Error al procesar el reembolso";
+                return RedirectToAction(nameof(Reembolsos));
+            }
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AsignarDisputa(int disputaId)
         {
             try
             {
-                var adminEmail = User.Identity?.Name;
-                var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(adminEmail ?? "");
+                var personaIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(personaIdClaim, out int adminPersonaId))
+                {
+                    TempData["Error"] = "Sesión inválida";
+                    return RedirectToAction(nameof(Disputas));
+                }
+                var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(adminPersonaId);
                 if (persona == null)
                 {
                     TempData["Error"] = "Sesión inválida";
@@ -440,9 +894,7 @@ namespace CasaDeLasTortas.Controllers
             }
         }
 
-        // ══════════════════════════════════════════════
-        // ✅ NUEVO: CONFIGURACIÓN DE PLATAFORMA
-        // ══════════════════════════════════════════════
+
 
         /// <summary>
         /// Vista de configuración de la plataforma
@@ -454,13 +906,19 @@ namespace CasaDeLasTortas.Controllers
                 var config = await _unitOfWork.Configuracion.GetOrCreateAsync();
                 ViewBag.UrlImagenQR = !string.IsNullOrEmpty(config.ImagenQR)
                     ? _fileService.GetFileUrl(config.ImagenQR) : null;
-                return View(config);
+
+                //  Envolver en el ViewModel que espera la vista
+                var viewModel = new AdminConfiguracionViewModel
+                {
+                    Configuracion = config
+                };
+                return View(viewModel);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cargar configuración");
                 TempData["Error"] = "Error al cargar la configuración";
-                return View(new ConfiguracionPlataforma());
+                return View(new AdminConfiguracionViewModel());
             }
         }
 
@@ -512,47 +970,23 @@ namespace CasaDeLasTortas.Controllers
         }
 
         // ══════════════════════════════════════════════
-        // MÉTODOS EXISTENTES (sin cambios)
+        // MÉTODOS EXISTENTES 
         // ══════════════════════════════════════════════
 
         public async Task<IActionResult> Usuarios(int pagina = 1, string busqueda = "", string filtroRol = "", bool? activo = null)
         {
             try
             {
-                var personas = await _unitOfWork.PersonaRepository.GetAllAsync();
+                const int tamanioPagina = 20;
 
-                if (!string.IsNullOrEmpty(busqueda))
-                    personas = personas.Where(p =>
-                        p.Nombre.Contains(busqueda, StringComparison.OrdinalIgnoreCase) ||
-                        p.Email.Contains(busqueda, StringComparison.OrdinalIgnoreCase));
+                // Paginación y filtros se ejecutan en la BD, no en memoria
+                var personas = await _unitOfWork.PersonaRepository.GetAllConPerfilesAsync(
+                    pagina, tamanioPagina, busqueda, filtroRol, activo);
 
-                if (!string.IsNullOrEmpty(filtroRol))
-                {
-                    personas = filtroRol switch
-                    {
-                        "Vendedor" => personas.Where(p => p.Vendedor != null),
-                        "Comprador" => personas.Where(p => p.Comprador != null),
-                        "Admin" => personas.Where(p => p.Rol == "Admin"),
-                        "SinRol" => personas.Where(p => p.Vendedor == null && p.Comprador == null && p.Rol != "Admin"),
-                        _ => personas
-                    };
-                }
+                var totalItems = await _unitOfWork.PersonaRepository.CountConPerfilesAsync(
+                    busqueda, filtroRol, activo);
 
-                if (activo.HasValue)
-                    personas = personas.Where(p => p.Activo == activo.Value);
-
-                var totalItems = personas.Count();
-                var tamanioPagina = 20;
-                var totalPaginas = (int)Math.Ceiling(totalItems / (double)tamanioPagina);
-
-                var personasPaginadas = personas
-                    .OrderByDescending(p => p.FechaRegistro)
-                    .Skip((pagina - 1) * tamanioPagina)
-                    .Take(tamanioPagina)
-                    .ToList();
-
-                // Convertir Persona a UsuarioListaDTO
-                var usuariosDTO = personasPaginadas.Select(p => new UsuarioListaDTO
+                var usuariosDTO = personas.Select(p => new UsuarioListaDTO
                 {
                     PersonaId = p.Id,
                     VendedorId = p.Vendedor?.Id,
@@ -561,10 +995,7 @@ namespace CasaDeLasTortas.Controllers
                     NombreCompleto = p.NombreCompleto,
                     Email = p.Email,
                     Avatar = p.Avatar,
-                    Rol = p.Rol == "Admin" ? "Admin"
-                        : p.Vendedor != null ? "Vendedor"
-                        : p.Comprador != null ? "Comprador"
-                        : "SinRol",
+                    Rol = p.Rol,
                     NombreComercial = p.Vendedor?.NombreComercial,
                     Activo = p.Activo && (p.Vendedor?.Activo ?? true) && (p.Comprador?.Activo ?? true),
                     Verificado = p.Vendedor?.Verificado ?? false,
@@ -572,31 +1003,26 @@ namespace CasaDeLasTortas.Controllers
                     UltimoAcceso = p.UltimoAcceso
                 }).ToList();
 
-                // Estadísticas
-                var todasPersonas = await _unitOfWork.PersonaRepository.GetAllAsync();
+                // Estadísticas: conteos simples sin traer registros
                 var estadisticas = new EstadisticasUsuariosDTO
                 {
-                    TotalUsuarios = todasPersonas.Count(),
-                    TotalCompradores = todasPersonas.Count(p => p.Comprador != null),
-                    TotalVendedores = todasPersonas.Count(p => p.Vendedor != null),
-                    TotalAdmins = todasPersonas.Count(p => p.Rol == "Admin"),
-                    UsuariosActivos = todasPersonas.Count(p => p.Activo),
-                    UsuariosInactivos = todasPersonas.Count(p => !p.Activo),
-                    NuevosHoy = todasPersonas.Count(p => p.FechaRegistro.Date == DateTime.Today),
-                    NuevosEstaSemana = todasPersonas.Count(p => p.FechaRegistro >= DateTime.Today.AddDays(-7))
+                    TotalUsuarios    = await _unitOfWork.PersonaRepository.CountAsync(),
+                    TotalCompradores = await _unitOfWork.PersonaRepository.CountByRolAsync("Comprador"),
+                    TotalVendedores  = await _unitOfWork.PersonaRepository.CountByRolAsync("Vendedor"),
+                    TotalAdmins      = await _unitOfWork.PersonaRepository.CountByRolAsync("Admin"),
                 };
 
                 var viewModel = new AdminUsuariosViewModel
                 {
-                    Usuarios = usuariosDTO,
-                    Estadisticas = estadisticas,
-                    Busqueda = busqueda,
-                    FiltroRol = filtroRol,
-                    FiltroActivo = activo,
-                    PaginaActual = pagina,
-                    TotalPaginas = totalPaginas,
+                    Usuarios       = usuariosDTO,
+                    Estadisticas   = estadisticas,
+                    Busqueda       = busqueda,
+                    FiltroRol      = filtroRol,
+                    FiltroActivo   = activo,
+                    PaginaActual   = pagina,
+                    TotalPaginas   = (int)Math.Ceiling(totalItems / (double)tamanioPagina),
                     TotalRegistros = totalItems,
-                    TamanioPagina = tamanioPagina
+                    TamanioPagina  = tamanioPagina
                 };
 
                 return View(viewModel);
@@ -613,7 +1039,7 @@ namespace CasaDeLasTortas.Controllers
         {
             try
             {
-                var ventas = await _unitOfWork.Ventas.GetAllAsync();
+                var ventas = await _unitOfWork.Ventas.GetAllWithDetailsAsync();
 
                 if (!string.IsNullOrEmpty(estado) && Enum.TryParse<EstadoVenta>(estado, out var estadoEnum))
                     ventas = ventas.Where(v => v.Estado == estadoEnum);
@@ -711,6 +1137,45 @@ namespace CasaDeLasTortas.Controllers
                 TempData["Error"] = "Error al cargar los reportes";
                 return View(new AdminReporteViewModel());
             }
+
+
         }
+        /// <summary>
+        /// Confirmar entrega de una venta (dispara la liberación de fondos)
+        /// </summary>
+        /// <remarks>
+        /// Esta acción es llamada desde la vista Liberaciones cuando el admin 
+        /// hace clic en "Confirmar entrega". Cambia el estado de las liberaciones
+        /// de "Pendiente" a "ListoParaLiberar" para que el admin pueda transferir.
+        /// </remarks>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmarEntrega(int ventaId)
+        {
+            try
+            {
+                // Llamar al servicio de liberación para marcar la entrega como confirmada
+                var result = await _liberacionService.MarcarEntregaConfirmadaAsync(ventaId);
+
+                if (result.Success)
+                {
+                    TempData["Success"] = result.Message;
+                }
+                else
+                {
+                    TempData["Error"] = result.Message;
+                }
+
+                return RedirectToAction(nameof(Liberaciones));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al confirmar entrega de venta {VentaId}", ventaId);
+                TempData["Error"] = "Error al confirmar la entrega";
+                return RedirectToAction(nameof(Liberaciones));
+            }
+        }
+
+
     }
 }

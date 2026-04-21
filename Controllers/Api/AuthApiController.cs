@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.ViewModels;
 using CasaDeLasTortas.Services;
 using System.Security.Claims;
@@ -40,7 +41,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         // ══════════════════════════════════════════════════════════
-        //  NUEVO: POST api/AuthApi/reset-password
+        //   POST api/AuthApi/reset-password
         // ══════════════════════════════════════════════════════════
         [AllowAnonymous]
         [HttpPost("reset-password")]
@@ -265,6 +266,7 @@ namespace CasaDeLasTortas.Controllers.Api
                         rol = persona.Rol,
                         telefono = persona.Telefono,
                         avatar = persona.Avatar,
+                        dni = persona.Dni,
                         fechaRegistro = persona.FechaRegistro,
                         ultimoAcceso = persona.UltimoAcceso,
                         activo = persona.Activo,
@@ -385,10 +387,4 @@ namespace CasaDeLasTortas.Controllers.Api
         }
     }
 
-    // ── Modelo para el request ──
-    public class ResetPasswordRequest
-    {
-        public string Email { get; set; } = string.Empty;
-        public string NewPassword { get; set; } = string.Empty;
-    }
 }

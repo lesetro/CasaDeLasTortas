@@ -19,7 +19,7 @@ namespace CasaDeLasTortas.Repositories
         public async Task<Persona?> GetByIdAsync(int id)
         {
             return await _context.Personas
-                .FirstOrDefaultAsync(p => p.Id == id); // CORREGIDO: IdPersona → Id
+                .FirstOrDefaultAsync(p => p.Id == id); // IdPersona → Id
         }
 
         public async Task<IEnumerable<Persona>> GetAllAsync(int pagina = 1, int registrosPorPagina = 10)
@@ -84,7 +84,7 @@ namespace CasaDeLasTortas.Repositories
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.Personas
-                .AnyAsync(p => p.Id == id); // CORREGIDO: IdPersona → Id
+                .AnyAsync(p => p.Id == id); 
         }
 
         // ==================== ESTADÍSTICAS Y CONTEOS ====================
@@ -168,6 +168,68 @@ namespace CasaDeLasTortas.Repositories
                 .AnyAsync(p => p.Email.ToLower() == email.Trim().ToLower());
         }
 
+        public async Task<IEnumerable<Persona>> GetAllConPerfilesAsync(
+            int pagina = 1, int registrosPorPagina = 10,
+            string? busqueda = null, string? rol = null, bool? activo = null)
+        {
+            var query = _context.Personas
+                .Include(p => p.Vendedor)
+                .Include(p => p.Comprador)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(busqueda))
+                query = query.Where(p =>
+                    p.Nombre.Contains(busqueda) ||
+                    p.Apellido.Contains(busqueda) ||
+                    p.Email.Contains(busqueda));
+
+            if (!string.IsNullOrEmpty(rol))
+                query = rol switch
+                {
+                    "Admin"     => query.Where(p => p.Rol == "Admin"),
+                    "Vendedor"  => query.Where(p => p.Vendedor != null),
+                    "Comprador" => query.Where(p => p.Comprador != null),
+                    _           => query
+                };
+
+            if (activo.HasValue)
+                query = query.Where(p => p.Activo == activo.Value);
+
+            return await query
+                .OrderByDescending(p => p.FechaRegistro)
+                .Skip((pagina - 1) * registrosPorPagina)
+                .Take(registrosPorPagina)
+                .ToListAsync();
+        }
+
+        public async Task<int> CountConPerfilesAsync(
+            string? busqueda = null, string? rol = null, bool? activo = null)
+        {
+            var query = _context.Personas
+                .Include(p => p.Vendedor)
+                .Include(p => p.Comprador)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(busqueda))
+                query = query.Where(p =>
+                    p.Nombre.Contains(busqueda) ||
+                    p.Apellido.Contains(busqueda) ||
+                    p.Email.Contains(busqueda));
+
+            if (!string.IsNullOrEmpty(rol))
+                query = rol switch
+                {
+                    "Admin"     => query.Where(p => p.Rol == "Admin"),
+                    "Vendedor"  => query.Where(p => p.Vendedor != null),
+                    "Comprador" => query.Where(p => p.Comprador != null),
+                    _           => query
+                };
+
+            if (activo.HasValue)
+                query = query.Where(p => p.Activo == activo.Value);
+
+            return await query.CountAsync();
+        }
 
     }
     

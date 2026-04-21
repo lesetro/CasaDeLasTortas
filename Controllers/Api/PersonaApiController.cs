@@ -137,9 +137,9 @@ namespace CasaDeLasTortas.Controllers.Api
                 return NotFound(new { message = "Persona no encontrada" });
 
             // Verificar permisos (solo admin o el propio usuario)
-            var usuarioActual = User.Identity?.Name;
+            var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var esAdmin = User.IsInRole("Admin");
-            var esPropioUsuario = persona.Email == usuarioActual;
+            var esPropioUsuario = int.TryParse(idClaim, out var cId) && persona.Id == cId;
 
             if (!esAdmin && !esPropioUsuario)
             {
@@ -199,9 +199,9 @@ namespace CasaDeLasTortas.Controllers.Api
                 return NotFound(new { message = "Persona no encontrada" });
 
             // Verificar permisos (solo admin o el propio usuario)
-            var usuarioActual = User.Identity?.Name;
+            var idClaim2 = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var esAdmin = User.IsInRole("Admin");
-            var esPropioUsuario = persona.Email == usuarioActual;
+            var esPropioUsuario = int.TryParse(idClaim2, out var cId2) && persona.Id == cId2;
 
             if (!esAdmin && !esPropioUsuario)
             {
@@ -242,11 +242,12 @@ namespace CasaDeLasTortas.Controllers.Api
         [HttpGet("perfil")]
         public async Task<IActionResult> GetPerfil()
         {
-            var email = User.Identity?.Name;
-            if (string.IsNullOrEmpty(email))
+            var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("PersonaId")?.Value;
+            if (!int.TryParse(claim, out var personaId))
                 return Unauthorized();
 
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(email);
+            var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(personaId);
             if (persona == null)
                 return NotFound(new { message = "Usuario no encontrado" });
 

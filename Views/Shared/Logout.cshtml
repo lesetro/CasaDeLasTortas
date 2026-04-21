@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Cerrando sesión...";
+    Layout = null; // Sin layout para cargar más rápido
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Casa de las Tortas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logout-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
+        }
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="logout-card">
+        <div class="spinner-border spinner mb-4" role="status">
+            <span class="visually-hidden">Cerrando sesión...</span>
+        </div>
+        <h4 class="mb-3">Cerrando sesión...</h4>
+        <p class="text-muted mb-0">
+            <i class="fas fa-check-circle text-success me-1"></i>
+            Limpiando datos de sesión
+        </p>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // LOGOUT 100% JWT
+        // Limpia todo el almacenamiento local y redirige al login
+        // ═══════════════════════════════════════════════════════════════
+        
+        (function() {
+            console.log('🚪 Iniciando proceso de logout...');
+            
+            // 1. Limpiar localStorage (JWT y datos de usuario)
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            localStorage.removeItem('token'); // Por si acaso
+            
+            // 2. Limpiar sessionStorage
+            sessionStorage.clear();
+            
+            // 3. Limpiar cookie de token (si existe)
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            
+            // 4. Limpiar cualquier otro dato relacionado
+            try {
+                // Limpiar items que empiecen con ciertos prefijos
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (
+                        key.startsWith('auth') || 
+                        key.startsWith('user') || 
+                        key.startsWith('token') ||
+                        key.startsWith('session')
+                    )) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+            } catch (e) {
+                console.warn('Error limpiando localStorage adicional:', e);
+            }
+            
+            console.log('✅ Sesión cerrada correctamente');
+            
+            // 5. Redirigir al login después de un breve delay (para mostrar el mensaje)
+            setTimeout(function() {
+                window.location.href = '/Account/Login';
+            }, 800);
+        })();
+    </script>
+</body>
+</html>

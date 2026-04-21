@@ -77,10 +77,10 @@ namespace CasaDeLasTortas.Controllers.Api
             return Ok(MapearVendedorDetalle(vendedor));
         }
 
-        // ==================== ✅ NUEVOS ENDPOINTS DE DATOS DE PAGO ====================
+        // ====================  ENDPOINTS DE DATOS DE PAGO ====================
 
         /// <summary>
-        /// ✅ NUEVO: Obtener datos de pago del vendedor
+        ///  Obtener datos de pago del vendedor
         /// </summary>
         [HttpGet("mi-perfil/datos-pago")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor")]
@@ -111,7 +111,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Actualizar datos de pago del vendedor
+        ///  Actualizar datos de pago del vendedor
         /// </summary>
         [HttpPut("mi-perfil/datos-pago")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor")]
@@ -150,7 +150,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Subir imagen QR de pago
+        ///  Subir imagen QR de pago
         /// </summary>
         [HttpPost("mi-perfil/imagen-qr")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor")]
@@ -188,7 +188,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Obtener resumen financiero del vendedor
+        ///  Obtener resumen financiero del vendedor
         /// </summary>
         [HttpGet("mi-perfil/resumen-financiero")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor")]
@@ -216,7 +216,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Obtener mis liberaciones de fondos
+        ///  Obtener mis liberaciones de fondos
         /// </summary>
         [HttpGet("mi-perfil/liberaciones")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor")]
@@ -264,7 +264,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Confirmar recepción de fondos
+        ///  Confirmar recepción de fondos
         /// </summary>
         [HttpPost("liberaciones/{liberacionId}/confirmar")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor")]
@@ -283,7 +283,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// ✅ NUEVO: Verificar si puede publicar tortas
+        ///  Verificar si puede publicar tortas
         /// </summary>
         [HttpGet("mi-perfil/puede-publicar")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Vendedor")]
@@ -300,7 +300,7 @@ namespace CasaDeLasTortas.Controllers.Api
             {
                 puedePublicar,
                 tieneDatosPago,
-                mensaje = !tieneDatosPago 
+                mensaje = !tieneDatosPago
                     ? "Debe completar sus datos de pago antes de publicar tortas"
                     : "Puede publicar tortas"
             });
@@ -322,13 +322,13 @@ namespace CasaDeLasTortas.Controllers.Api
             var totalTortasActivas = tortas.Count(t => t.Disponible && t.Stock > 0);
 
             var detalles = await _unitOfWork.DetallesVenta.GetByVendedorIdWithVentaAsync(id);
-            var detallesCompletados = detalles.Where(d => d.Venta.Pagos.Any(p => 
+            var detallesCompletados = detalles.Where(d => d.Venta.Pagos.Any(p =>
                 p.Estado == EstadoPago.Completado || p.Estado == EstadoPago.Verificado));
 
             var inicioMes = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             var detallesMes = detallesCompletados.Where(d => d.Venta.FechaVenta >= inicioMes);
 
-            // ✅ NUEVO: Agregar datos financieros
+            //  Agregar datos financieros
             var resumenFinanciero = await _unitOfWork.VendedorRepository.GetResumenFinancieroAsync(id);
 
             return Ok(new
@@ -339,14 +339,104 @@ namespace CasaDeLasTortas.Controllers.Api
                 ventasMes = detallesMes.Count(),
                 ingresosBrutos = detallesCompletados.Sum(d => d.Subtotal),
                 ingresosBrutosMes = detallesMes.Sum(d => d.Subtotal),
-                pedidosPendientes = detalles.Count(d => d.Estado == EstadoDetalleVenta.Pendiente || 
+                pedidosPendientes = detalles.Count(d => d.Estado == EstadoDetalleVenta.Pendiente ||
                                                          d.Estado == EstadoDetalleVenta.EnPreparacion),
-                // ✅ NUEVO
+                
                 totalCobrado = resumenFinanciero.TotalCobrado,
                 totalComisiones = resumenFinanciero.TotalComisiones,
                 pendienteCobro = resumenFinanciero.PendienteCobro
             });
         }
+        /// <summary>
+        /// Obtener las tortas más vendidas del vendedor
+        /// GET /api/VendedorApi/{id}/tortas-mas-vendidas?limit=5
+        /// </summary>
+        [HttpGet("{id}/tortas-mas-vendidas")]
+        public async Task<IActionResult> GetTortasMasVendidas(int id, [FromQuery] int limit = 5)
+        {
+            var vendedor = await _unitOfWork.VendedorRepository.GetByIdAsync(id);
+            if (vendedor == null)
+                return NotFound(new { message = "Vendedor no encontrado" });
+
+            var tortas = await _unitOfWork.TortaRepository.GetByVendedorIdAsync(id);
+
+            var tortasMasVendidas = tortas
+                .OrderByDescending(t => t.VecesVendida)
+                .Take(limit)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    nombre = t.Nombre,
+                    precio = t.Precio,
+                    vecesVendida = t.VecesVendida,
+                    ingresoGenerado = t.VecesVendida * t.Precio,
+                    imagenPrincipal = t.Imagenes?
+                        .Where(i => i.EsPrincipal)
+                        .Select(i => i.UrlImagen)
+                        .FirstOrDefault()
+                        ?? t.Imagenes?.FirstOrDefault()?.UrlImagen,
+                    categoria = t.Categoria,
+                    disponible = t.Disponible,
+                    stock = t.Stock
+                })
+                .ToList();
+
+            return Ok(tortasMasVendidas);
+        }
+
+        /// <summary>
+        /// Obtener actividad reciente del vendedor
+        /// GET /api/VendedorApi/{id}/actividad-reciente?limit=10
+        /// </summary>
+        [HttpGet("{id}/actividad-reciente")]
+        public async Task<IActionResult> GetActividadReciente(int id, [FromQuery] int limit = 10)
+        {
+            var vendedor = await _unitOfWork.VendedorRepository.GetByIdAsync(id);
+            if (vendedor == null)
+                return NotFound(new { message = "Vendedor no encontrado" });
+
+            var detalles = await _unitOfWork.DetallesVenta.GetByVendedorIdWithVentaAsync(id);
+
+            var actividadReciente = detalles
+                .OrderByDescending(d => d.Venta.FechaVenta)
+                .Take(limit)
+                .Select(d => new
+                {
+                    id = d.Id,
+                    tipo = d.Estado switch
+                    {
+                        EstadoDetalleVenta.Pendiente => "nuevo_pedido",
+                        EstadoDetalleVenta.Confirmado => "pedido_confirmado",
+                        EstadoDetalleVenta.EnPreparacion => "en_preparacion",
+                        EstadoDetalleVenta.Listo => "listo_entrega",
+                        EstadoDetalleVenta.Entregado => "entregado",
+                        EstadoDetalleVenta.Cancelado => "cancelado",
+                        _ => "actividad"
+                    },
+                    fecha = d.Venta.FechaVenta,
+                    descripcion = $"Pedido #{d.Venta.NumeroOrden} - {d.Torta?.Nombre ?? "Producto"} x{d.Cantidad}",
+                    monto = d.Subtotal,
+                    estado = d.Estado.ToString(),
+                    icono = d.Estado switch
+                    {
+                        EstadoDetalleVenta.Pendiente => "🛒",
+                        EstadoDetalleVenta.Confirmado => "✅",
+                        EstadoDetalleVenta.EnPreparacion => "👨‍🍳",
+                        EstadoDetalleVenta.Listo => "📦",
+                        EstadoDetalleVenta.Entregado => "🎉",
+                        EstadoDetalleVenta.Cancelado => "❌",
+                        _ => "📋"
+                    },
+                    ventaId = d.VentaId,
+                    numeroOrden = d.Venta.NumeroOrden,
+                    tortaNombre = d.Torta?.Nombre,
+                    compradorNombre = d.Venta.Comprador?.Persona?.Nombre ?? "Cliente"
+                })
+                .ToList();
+
+            return Ok(actividadReciente);
+        }
+
 
         /// <summary>
         /// Obtener tortas del vendedor
@@ -354,11 +444,41 @@ namespace CasaDeLasTortas.Controllers.Api
         [HttpGet("{id}/tortas")]
         public async Task<IActionResult> GetTortas(int id)
         {
-            var vendedor = await _unitOfWork.VendedorRepository.GetByIdWithTortasAsync(id);
+            var vendedor = await _unitOfWork.VendedorRepository.GetByIdAsync(id);
             if (vendedor == null)
                 return NotFound(new { message = "Vendedor no encontrado" });
 
-            return Ok(vendedor.Tortas);
+            var tortas = await _unitOfWork.TortaRepository.GetByVendedorIdAsync(id);
+
+            return Ok(tortas.Select(t => new
+            {
+                id = t.Id,
+                nombre = t.Nombre,
+                descripcion = t.Descripcion,
+                precio = t.Precio,
+                stock = t.Stock,
+                categoria = t.Categoria,
+                tamanio = t.Tamanio,
+                tiempoPreparacion = t.TiempoPreparacion,
+                personalizable = t.Personalizable,
+                disponible = t.Disponible,
+                ingredientes = t.Ingredientes,
+                vendedorId = t.VendedorId,
+                vecesVendida = t.VecesVendida,
+                fechaCreacion = t.FechaCreacion,
+                imagenPrincipal = t.Imagenes?
+                    .Where(i => i.EsPrincipal)
+                    .Select(i => i.UrlImagen)
+                    .FirstOrDefault()
+                    ?? t.Imagenes?.FirstOrDefault()?.UrlImagen,
+                totalImagenes = t.Imagenes?.Count ?? 0,
+                imagenes = t.Imagenes?.Select(i => new
+                {
+                    id = i.Id,
+                    urlImagen = i.UrlImagen,
+                    esPrincipal = i.EsPrincipal,
+                }).ToList()
+            }));
         }
 
         /// <summary>
@@ -382,28 +502,46 @@ namespace CasaDeLasTortas.Controllers.Api
 
             var total = detalles.Count();
 
+            // Cargar liberaciones del vendedor para incluir el estado y monto en cada pedido
+            var liberaciones = await _unitOfWork.Liberaciones.GetByVendedorIdAsync(id);
+            var liberacionPorVenta = liberaciones
+                .GroupBy(l => l.VentaId)
+                .ToDictionary(g => g.Key, g => g.First());
+
             var pedidos = detalles
                 .OrderByDescending(d => d.Venta.FechaVenta)
                 .Skip((pagina - 1) * registrosPorPagina)
                 .Take(registrosPorPagina)
-                .Select(d => new
+                .Select(d =>
                 {
-                    detalleId = d.Id,
-                    ventaId = d.VentaId,
-                    numeroOrden = d.Venta.NumeroOrden,
-                    fecha = d.Venta.FechaVenta,
-                    tortaId = d.TortaId,
-                    nombreTorta = d.Torta.Nombre,
-                    cantidad = d.Cantidad,
-                    precioUnitario = d.PrecioUnitario,
-                    subtotal = d.Subtotal,
-                    notasPersonalizacion = d.NotasPersonalizacion,
-                    estado = d.Estado.ToString(),
-                    estadoLabel = GetEstadoLabel(d.Estado),
-                    estadoPago = d.Venta.Pagos.OrderByDescending(p => p.FechaPago).FirstOrDefault()?.Estado.ToString() ?? "SinPago",
-                    compradorNombre = d.Venta.Comprador.Persona.Nombre,
-                    direccionEntrega = d.Venta.DireccionEntrega,
-                    accionesDisponibles = GetAccionesDisponibles(d.Estado)
+                    liberacionPorVenta.TryGetValue(d.VentaId, out var lib);
+                    // Se usa el estado de la venta para determinar si el pago fue aprobado,
+                    // ya que Pagos puede no estar cargado en el query.
+                    var pagoAprobado = d.Venta.Estado == EstadoVenta.Pagada
+                        || d.Venta.Estado == EstadoVenta.EnPreparacion
+                        || d.Venta.Estado == EstadoVenta.ListaParaRetiro
+                        || d.Venta.Estado == EstadoVenta.Entregada;
+                    return new
+                    {
+                        detalleId = d.Id,
+                        ventaId = d.VentaId,
+                        numeroOrden = d.Venta.NumeroOrden,
+                        fecha = d.Venta.FechaVenta,
+                        tortaId = d.TortaId,
+                        nombreTorta = d.Torta.Nombre,
+                        cantidad = d.Cantidad,
+                        precioUnitario = d.PrecioUnitario,
+                        subtotal = d.Subtotal,
+                        notasPersonalizacion = d.NotasPersonalizacion,
+                        estado = d.Estado.ToString(),
+                        estadoLabel = GetEstadoLabel(d.Estado),
+                        estadoPago = d.Venta.Pagos.OrderByDescending(p => p.FechaPago).FirstOrDefault()?.Estado.ToString() ?? "SinPago",
+                        compradorNombre = d.Venta.Comprador?.Persona?.Nombre ?? "",
+                        direccionEntrega = d.Venta.DireccionEntrega,
+                        accionesDisponibles = pagoAprobado ? GetAccionesDisponibles(d.Estado) : new List<string>(),
+                        liberacionEstado = lib?.Estado.ToString(),
+                        montoLiberado = lib?.MontoNeto,
+                    };
                 })
                 .ToList();
 
@@ -462,11 +600,24 @@ namespace CasaDeLasTortas.Controllers.Api
             vendedor.NombreComercial = dto.NombreComercial;
             vendedor.Especialidad = dto.Especialidad;
             vendedor.Descripcion = dto.Descripcion;
+            vendedor.Horario = dto.Horario;
+
+            // Actualizar datos bancarios si se envían
+            if (dto.AliasCbu != null || dto.Cbu != null || dto.TitularCuenta != null)
+            {
+                vendedor.AliasCBU = dto.AliasCbu;
+                vendedor.CBU = dto.Cbu;
+                vendedor.Banco = dto.BancoCuenta;
+                vendedor.TitularCuenta = dto.TitularCuenta;
+                vendedor.CUIT = dto.Cuit;
+                vendedor.ActualizarEstadoDatosPago();
+            }
 
             _unitOfWork.VendedorRepository.Update(vendedor);
             await _unitOfWork.SaveChangesAsync();
 
-            return Ok(vendedor);
+            return Ok(MapearVendedorDetalle(
+                await _unitOfWork.VendedorRepository.GetByIdWithPersonaAsync(id) ?? vendedor));
         }
 
         [HttpDelete("{id}")]
@@ -503,14 +654,25 @@ namespace CasaDeLasTortas.Controllers.Api
             nombreComercial = v.NombreComercial,
             especialidad = v.Especialidad,
             descripcion = v.Descripcion,
+            horario = v.Horario,
             avatar = v.Persona?.Avatar,
+            nombre = v.Persona != null ? $"{v.Persona.Nombre} {v.Persona.Apellido}" : null,
+            email = v.Persona?.Email,
+            telefono = v.Persona?.Telefono,
+            dni = v.Persona?.Dni,
             calificacion = v.Calificacion,
             totalVentas = v.TotalVentas,
             activo = v.Activo,
             verificado = v.Verificado,
             datosPagoCompletos = v.DatosPagoCompletos,
             totalCobrado = v.TotalCobrado,
-            pendienteCobro = v.PendienteCobro
+            pendienteCobro = v.PendienteCobro,
+            // datos bancarios
+            aliasCbu = v.AliasCBU,
+            cbu = v.CBU,
+            banco = v.Banco,
+            titularCuenta = v.TitularCuenta,
+            cuit = v.CUIT,
         };
 
         private async Task<int?> ObtenerVendedorIdActual()
@@ -542,32 +704,6 @@ namespace CasaDeLasTortas.Controllers.Api
             EstadoDetalleVenta.Listo => new List<string> { "Entregado" },
             _ => new List<string>()
         };
-    }
-
-    // ==================== DTOs ====================
-
-    public class ActualizarDatosPagoDTO
-    {
-        [Required(ErrorMessage = "El alias es requerido")]
-        [StringLength(50)]
-        public string AliasCBU { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El CBU es requerido")]
-        [StringLength(22, MinimumLength = 22, ErrorMessage = "El CBU debe tener 22 dígitos")]
-        [RegularExpression(@"^\d{22}$", ErrorMessage = "El CBU solo debe contener números")]
-        public string CBU { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El banco es requerido")]
-        [StringLength(100)]
-        public string Banco { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El titular es requerido")]
-        [StringLength(200)]
-        public string TitularCuenta { get; set; } = string.Empty;
-
-        [StringLength(13)]
-        public string? CUIT { get; set; }
-
-        public string? ImagenQR { get; set; }
+        
     }
 }

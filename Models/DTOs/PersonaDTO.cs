@@ -175,4 +175,13 @@ namespace CasaDeLasTortas.Models.DTOs
         public DateTime FechaRegistro { get; set; }
         public DateTime? UltimoAcceso { get; set; }
     }
+
+    /// <summary>
+    /// DTO para restablecer la contraseña de un usuario
+    /// </summary>
+    public class ResetPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

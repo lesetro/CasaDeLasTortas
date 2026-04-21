@@ -143,17 +143,42 @@
                                 </td>
                                 <td class="text-center text-muted small">@d.FechaCreacion?.ToString("dd/MM/yy")</td>
                                 <td class="text-center">
+                                    @{
+                                        bool esResuelta = d.Estado == "Resuelta" || d.Estado == "Cerrada";
+                                    }
                                     <button type="button"
-                                            class="btn btn-sm btn-primary"
+                                            class="btn btn-sm @(esResuelta ? "btn-outline-secondary" : "btn-primary")"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalDisputa"
+                                            data-readonly="@esResuelta.ToString().ToLower()"
                                             data-disputa-id="@d.Id"
                                             data-comprador="@d.NombreComprador"
+                                            data-email-comprador="@d.EmailComprador"
+                                            data-telefono-comprador="@d.TelefonoComprador"
                                             data-vendedor="@d.NombreVendedor"
                                             data-motivo="@d.Motivo"
+                                            data-descripcion="@d.Descripcion"
                                             data-estado="@d.Estado"
-                                            data-orden="@d.NumeroOrden">
-                                        <i class="fas fa-gavel me-1"></i>Gestionar
+                                            data-orden="@d.NumeroOrden"
+                                            data-fecha-venta="@d.FechaVenta?.ToString("dd/MM/yyyy HH:mm")"
+                                            data-total-venta="@d.TotalVenta.ToString("N0")"
+                                            data-estado-venta="@d.EstadoVenta"
+                                            data-estado-pago="@d.EstadoPago"
+                                            data-monto-pagado="@d.MontoPagado.ToString("N0")"
+                                            data-tiene-comprobante="@d.TieneComprobante.ToString().ToLower()"
+                                            data-fecha-pago="@d.FechaPago?.ToString("dd/MM/yyyy")"
+                                            data-productos="@System.Text.Json.JsonSerializer.Serialize(d.Productos)"
+                                            data-resolucion="@d.Resolucion"
+                                            data-detalle-resolucion="@d.DetalleResolucion"
+                                            data-fecha-resolucion="@d.FechaResolucion?.ToString("dd/MM/yyyy")">
+                                        @if (esResuelta)
+                                        {
+                                            <i class="fas fa-eye me-1"></i><text>Ver detalle</text>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-gavel me-1"></i><text>Gestionar</text>
+                                        }
                                     </button>
                                 </td>
                             </tr>
@@ -176,105 +201,326 @@
 
 <!-- ── Modal: Gestionar disputa ── -->
 <div class="modal fade" id="modalDisputa" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content border-0 rounded-4">
             <div class="modal-header border-0 pb-0">
                 <h6 class="modal-title fw-bold">
                     <i class="fas fa-gavel text-primary me-2"></i>
-                    Gestionar Disputa — Orden <span id="dOrden"></span>
+                    Disputa — Orden <span id="dOrden"></span>
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="ResolverDisputa" method="post">
-                @Html.AntiForgeryToken()
-                <div class="modal-body">
-                    <input type="hidden" name="disputaId" id="dId" />
+            <div class="modal-body">
+                <div class="row g-3">
 
-                    <!-- Info -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <div class="p-3 rounded-3" style="background:#eff6ff;">
-                                <div class="small text-muted fw-semibold mb-1">Comprador</div>
-                                <div id="dComprador" class="fw-semibold"></div>
+                    <!-- Columna izquierda: datos + productos -->
+                    <div class="col-lg-7">
+
+                        <!-- Partes -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="p-3 rounded-3 h-100" style="background:#eff6ff;">
+                                    <div class="text-muted fw-semibold mb-1" style="font-size:.7rem;">COMPRADOR</div>
+                                    <div id="dComprador" class="fw-semibold small"></div>
+                                    <div id="dEmailComprador" class="text-muted" style="font-size:.72rem;"></div>
+                                    <div id="dTelefonoComprador" class="text-muted" style="font-size:.72rem;"></div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 rounded-3 h-100" style="background:#f0fdf4;">
+                                    <div class="text-muted fw-semibold mb-1" style="font-size:.7rem;">VENDEDOR</div>
+                                    <div id="dVendedor" class="fw-semibold small"></div>
+                                    <div class="text-muted" style="font-size:.72rem;">
+                                        Fecha compra: <span id="dFechaVenta"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div class="p-3 rounded-3" style="background:#f0fdf4;">
-                                <div class="small text-muted fw-semibold mb-1">Vendedor</div>
-                                <div id="dVendedor" class="fw-semibold"></div>
+
+                        <!-- Motivo -->
+                        <div class="mb-3">
+                            <div class="text-muted fw-semibold mb-1" style="font-size:.7rem;">MOTIVO DEL RECLAMO</div>
+                            <div id="dMotivo" class="p-3 rounded-3 small fw-semibold" style="background:#fef9c3; border-left:3px solid #f59e0b;"></div>
+                            <div id="dDescripcion" class="small text-muted mt-1 px-1"></div>
+                        </div>
+
+                        <!-- Productos involucrados -->
+                        <div class="mb-2">
+                            <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;">PRODUCTOS EN ESTA VENTA</div>
+                            <div id="dProductos" class="table-responsive">
+                                <table class="table table-sm mb-0" style="font-size:.8rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Vendedor</th>
+                                            <th class="text-center">Cant.</th>
+                                            <th class="text-end">Subtotal</th>
+                                            <th class="text-center">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dProductosTbody"></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Motivo -->
-                    <div class="mb-3">
-                        <div class="small fw-semibold text-muted mb-1">Motivo del reclamo</div>
-                        <div id="dMotivo" class="p-3 rounded-3 small" style="background:#fef9c3; border-left:3px solid #f59e0b;"></div>
-                    </div>
+                    <!-- Columna derecha: estado pago + acción -->
+                    <div class="col-lg-5">
 
-                    <!-- Resolución -->
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">
-                            Nuevo estado <span class="text-danger">*</span>
-                        </label>
-                        <select name="nuevoEstado" class="form-select" id="dEstadoSelect" required>
-                            <option value="EnProceso">🟡 Tomar el caso (En Proceso)</option>
-                            <option value="FavorComprador">✅ Resolver: Favor del Comprador</option>
-                            <option value="FavorVendedor">✅ Resolver: Favor del Vendedor</option>
-                            <option value="Resuelta">✅ Marcar como Resuelta</option>
-                            <option value="Cerrada">🔒 Cerrar sin resolución</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">
-                            Resolución / Comentario admin <span class="text-danger">*</span>
-                        </label>
-                        <textarea name="resolucion" class="form-control" rows="3"
-                                  placeholder="Explicá tu decisión. Ambas partes recibirán esta notificación."
-                                  required></textarea>
-                    </div>
-
-                    <!-- Panel reembolso (visible si resuelve a favor del comprador) -->
-                    <div id="panelReembolso" class="p-3 rounded-3 border border-danger-subtle d-none" style="background:#fef2f2;">
-                        <div class="fw-semibold small text-danger mb-2">
-                            <i class="fas fa-undo me-1"></i>¿Procesar reembolso?
+                        <!-- Resumen financiero -->
+                        <div class="p-3 rounded-3 mb-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                            <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;">ESTADO DEL PAGO</div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small text-muted">Total venta</span>
+                                <span class="fw-bold small">$<span id="dTotalVenta"></span></span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small text-muted">Monto pagado</span>
+                                <span class="fw-semibold small">$<span id="dMontoPagado"></span></span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small text-muted">Estado pago</span>
+                                <span id="dEstadoPagoBadge" class="badge rounded-pill"></span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small text-muted">Comprobante</span>
+                                <span id="dComprobanteInfo" class="small fw-semibold"></span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small text-muted">Fecha pago</span>
+                                <span id="dFechaPago" class="small"></span>
+                            </div>
                         </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="procesarReembolso" id="chkReembolso" />
-                            <label class="form-check-label small" for="chkReembolso">
-                                Sí, iniciar devolución al comprador
-                            </label>
+
+                        <!-- Estado de la venta -->
+                        <div class="p-3 rounded-3 mb-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                            <div class="text-muted fw-semibold mb-1" style="font-size:.7rem;">ESTADO DE LA VENTA</div>
+                            <span id="dEstadoVentaBadge" class="badge rounded-pill"></span>
                         </div>
+
+                        <!-- Panel resolución (solo lectura) -->
+                        <div id="panelResolucion" class="d-none">
+                            <div class="p-3 rounded-3 mb-3" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                                <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;">RESOLUCIÓN DE LA DISPUTA</div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small text-muted">Resultado</span>
+                                    <span id="dResolucionBadge" class="badge rounded-pill"></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small text-muted">Fecha resolución</span>
+                                    <span id="dFechaResolucion" class="small fw-semibold"></span>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="text-muted fw-semibold mb-1" style="font-size:.7rem;">DETALLE</div>
+                                    <div id="dDetalleResolucion" class="small p-2 rounded-2" style="background:#fff; border:1px solid #e2e8f0; white-space:pre-wrap;"></div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+
+                        <!-- Formulario acción (solo para disputas activas) -->
+                        <form id="formGestionar" asp-action="GestionarDisputa" method="post" enctype="multipart/form-data">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="disputaId" id="dId" />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">
+                                    Nueva acción <span class="text-danger">*</span>
+                                </label>
+                                <select name="nuevoEstado" class="form-select form-select-sm" id="dEstadoSelect" required>
+                                    <option value="EnProceso">🟡 Tomar el caso</option>
+                                    <option value="FavorComprador">✅ Resolver a favor del Comprador</option>
+                                    <option value="FavorVendedor">✅ Resolver a favor del Vendedor</option>
+                                    <option value="Resuelta">✅ Marcar como Resuelta</option>
+                                    <option value="Cerrada">🔒 Cerrar sin resolución</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">
+                                    Resolución / Comentario <span class="text-danger">*</span>
+                                </label>
+                                <textarea name="resolucion" class="form-control form-control-sm" rows="3"
+                                          placeholder="Explicá tu decisión..."
+                                          required></textarea>
+                            </div>
+
+                            <div id="panelReembolso" class="p-2 rounded-3 border border-danger-subtle mb-3 d-none" style="background:#fef2f2;">
+                                <div class="form-check mb-1">
+                                    <input type="checkbox" class="form-check-input" name="procesarReembolso" id="chkReembolso" value="true" />
+                                    <label class="form-check-label small" for="chkReembolso">
+                                        <i class="fas fa-undo text-danger me-1"></i>Iniciar devolución al comprador
+                                    </label>
+                                </div>
+                                <div id="panelDatosReembolso" class="d-none border-top mt-2 pt-2">
+                                    <div class="p-2 rounded-2 mb-2" style="background:#fff3cd;">
+                                        <div class="text-muted fw-semibold mb-1" style="font-size:.68rem;">CONTACTAR AL COMPRADOR PARA OBTENER SU CBU/ALIAS</div>
+                                        <div class="small"><i class="fas fa-user me-1 text-muted"></i><span id="dNombreReembolso"></span></div>
+                                        <div class="small"><i class="fas fa-envelope me-1 text-muted"></i><span id="dEmailReembolso"></span></div>
+                                        <div class="small"><i class="fas fa-phone me-1 text-muted"></i><span id="dTelefonoReembolso"></span></div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label fw-semibold small mb-1">Alias o CBU destino</label>
+                                        <input type="text" name="aliasReembolso" class="form-control form-control-sm"
+                                               placeholder="alias.ejemplo o CBU 22 dígitos">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label fw-semibold small mb-1">Número de transacción</label>
+                                        <input type="text" name="numTransaccionReembolso" class="form-control form-control-sm"
+                                               placeholder="Nº operación / referencia">
+                                    </div>
+                                    <div>
+                                        <label class="form-label fw-semibold small mb-1">Comprobante de transferencia</label>
+                                        <input type="file" name="comprobanteReembolso" class="form-control form-control-sm"
+                                               accept="image/*,.pdf">
+                                        <div class="text-muted mt-1" style="font-size:.68rem;">Podés completar esto ahora o hacerlo después desde Reembolsos Pendientes.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-sm btn-primary fw-semibold flex-fill">
+                                    <i class="fas fa-gavel me-1"></i>Aplicar
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-semibold">
-                        <i class="fas fa-gavel me-1"></i>Aplicar resolución
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
 <script>
-    const modal = document.getElementById('modalDisputa');
-    modal.addEventListener('show.bs.modal', e => {
+    const estadoPagoBadge = {
+        'Pendiente':  ['bg-secondary', 'Sin pagar'],
+        'EnRevision': ['bg-warning text-dark', 'En revisión'],
+        'Verificado': ['bg-info', 'Verificado'],
+        'Completado': ['bg-success', 'Completado'],
+        'Rechazado':  ['bg-danger', 'Rechazado'],
+        'Cancelado':  ['bg-danger', 'Cancelado'],
+        'SinPago':    ['bg-light text-muted', 'Sin pago'],
+    };
+    const estadoVentaBadge = {
+        'Pendiente':       ['bg-warning text-dark', 'Pendiente'],
+        'Pagada':          ['bg-info', 'Pagada'],
+        'EnPreparacion':   ['bg-primary', 'En preparación'],
+        'ListaParaRetiro': ['bg-secondary', 'Lista para retirar'],
+        'Entregada':       ['bg-success', 'Entregada'],
+        'EnDisputa':       ['bg-danger', 'En disputa'],
+        'Cancelada':       ['bg-dark', 'Cancelada'],
+    };
+    const estadoDetalleBadge = {
+        'Pendiente':     ['bg-warning text-dark', 'Pendiente'],
+        'Confirmado':    ['bg-info', 'Confirmado'],
+        'EnPreparacion': ['bg-primary', 'En prep.'],
+        'Listo':         ['bg-success', 'Listo'],
+        'Entregado':     ['bg-success', 'Entregado ✓'],
+        'Cancelado':     ['bg-danger', 'Cancelado'],
+    };
+
+    function setBadge(el, map, key) {
+        const [cls, txt] = map[key] ?? ['bg-secondary', key];
+        el.className = 'badge rounded-pill ' + cls;
+        el.textContent = txt;
+    }
+
+    const resolucionLabel = {
+        'SinResolucion':      ['bg-secondary', 'Sin resolución'],
+        'ReembolsoTotal':     ['bg-success',   'Reembolso total'],
+        'ReembolsoParcial':   ['bg-warning text-dark', 'Reembolso parcial'],
+        'ReenvioProducto':    ['bg-info',      'Reenvío del producto'],
+        'SinAccion':          ['bg-secondary', 'Sin acción'],
+        'Credito':            ['bg-primary',   'Crédito'],
+        'OtroAcuerdo':        ['bg-dark',      'Otro acuerdo'],
+        'FavorComprador':     ['bg-success',   'A favor del comprador'],
+        'FavorVendedor':      ['bg-primary',   'A favor del vendedor'],
+        'Resuelta':           ['bg-success',   'Resuelta'],
+        'Cerrada':            ['bg-secondary', 'Cerrada'],
+    };
+
+    document.getElementById('modalDisputa').addEventListener('show.bs.modal', e => {
         const btn = e.relatedTarget;
-        document.getElementById('dId').value          = btn.dataset.disputaId;
-        document.getElementById('dOrden').textContent = btn.dataset.orden;
+        const soloLectura = btn.dataset.readonly === 'true';
+
+        // Mostrar/ocultar paneles según modo
+        document.getElementById('panelResolucion').classList.toggle('d-none', !soloLectura);
+        document.getElementById('formGestionar').classList.toggle('d-none', soloLectura);
+
+        document.getElementById('dOrden').textContent     = btn.dataset.orden;
         document.getElementById('dComprador').textContent = btn.dataset.comprador;
+        document.getElementById('dEmailComprador').textContent    = btn.dataset.emailComprador;
+        document.getElementById('dTelefonoComprador').textContent = btn.dataset.telefonoComprador || '—';
         document.getElementById('dVendedor').textContent  = btn.dataset.vendedor;
         document.getElementById('dMotivo').textContent    = btn.dataset.motivo;
+        document.getElementById('dDescripcion').textContent = btn.dataset.descripcion !== btn.dataset.motivo
+            ? btn.dataset.descripcion : '';
+        document.getElementById('dFechaVenta').textContent   = btn.dataset.fechaVenta || '—';
+        document.getElementById('dTotalVenta').textContent   = btn.dataset.totalVenta || '0';
+        document.getElementById('dMontoPagado').textContent  = btn.dataset.montoPagado || '0';
+        document.getElementById('dFechaPago').textContent    = btn.dataset.fechaPago || '—';
+
+        // Comprobante
+        const compEl = document.getElementById('dComprobanteInfo');
+        compEl.textContent = btn.dataset.tieneComprobante === 'true' ? '✅ Enviado' : '❌ No enviado';
+        compEl.className = 'small fw-semibold ' + (btn.dataset.tieneComprobante === 'true' ? 'text-success' : 'text-danger');
+
+        // Badges
+        setBadge(document.getElementById('dEstadoPagoBadge'),   estadoPagoBadge,  btn.dataset.estadoPago);
+        setBadge(document.getElementById('dEstadoVentaBadge'),  estadoVentaBadge, btn.dataset.estadoVenta);
+
+        // Productos
+        const tbody = document.getElementById('dProductosTbody');
+        tbody.innerHTML = '';
+        try {
+            const prods = JSON.parse(btn.dataset.productos || '[]');
+            prods.forEach(p => {
+                const [cls, txt] = estadoDetalleBadge[p.Estado] ?? ['bg-secondary', p.Estado];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="fw-semibold">${p.Nombre}</td>
+                    <td class="text-muted">${p.Vendedor}</td>
+                    <td class="text-center">${p.Cantidad}</td>
+                    <td class="text-end">$${Number(p.Subtotal).toLocaleString('es-AR')}</td>
+                    <td class="text-center"><span class="badge ${cls} rounded-pill" style="font-size:.65rem;">${txt}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch {}
+
+        if (soloLectura) {
+            // Panel resolución
+            const [resCls, resTxt] = resolucionLabel[btn.dataset.resolucion] ?? ['bg-secondary', btn.dataset.resolucion];
+            const resBadge = document.getElementById('dResolucionBadge');
+            resBadge.className = 'badge rounded-pill ' + resCls;
+            resBadge.textContent = resTxt;
+            document.getElementById('dFechaResolucion').textContent  = btn.dataset.fechaResolucion || '—';
+            document.getElementById('dDetalleResolucion').textContent = btn.dataset.detalleResolucion || '—';
+        } else {
+            // Reset form
+            document.getElementById('dId').value = btn.dataset.disputaId;
+            document.getElementById('dNombreReembolso').textContent   = btn.dataset.comprador;
+            document.getElementById('dEmailReembolso').textContent    = btn.dataset.emailComprador;
+            document.getElementById('dTelefonoReembolso').textContent = btn.dataset.telefonoComprador || '—';
+            document.getElementById('chkReembolso').checked = false;
+            document.getElementById('panelDatosReembolso').classList.add('d-none');
+            document.getElementById('panelReembolso').classList.add('d-none');
+        }
     });
 
     document.getElementById('dEstadoSelect').addEventListener('change', function() {
-        document.getElementById('panelReembolso').classList.toggle(
-            'd-none', this.value !== 'FavorComprador'
-        );
+        const esFavor = this.value === 'FavorComprador';
+        document.getElementById('panelReembolso').classList.toggle('d-none', !esFavor);
+        if (!esFavor) {
+            document.getElementById('chkReembolso').checked = false;
+            document.getElementById('panelDatosReembolso').classList.add('d-none');
+        }
+    });
+
+    document.getElementById('chkReembolso').addEventListener('change', function() {
+        document.getElementById('panelDatosReembolso').classList.toggle('d-none', !this.checked);
     });
 </script>
 }

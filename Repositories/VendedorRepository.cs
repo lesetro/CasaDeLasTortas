@@ -127,7 +127,7 @@ namespace CasaDeLasTortas.Repositories
                            v.Persona.Nombre.Contains(termino))
                 .ToListAsync();
 
-        // ✅ NUEVOS: Filtros de datos de pago
+        // Filtros de datos de pago
         public async Task<IEnumerable<Vendedor>> GetConDatosPagoCompletosAsync()
             => await _context.Vendedores
                 .Include(v => v.Persona)
@@ -170,7 +170,7 @@ namespace CasaDeLasTortas.Repositories
                 .Select(v => v.TotalVentas)
                 .FirstOrDefaultAsync();
 
-        // ✅ NUEVOS: Estadísticas financieras
+        // Estadísticas financieras
         public async Task<decimal> GetTotalCobradoAsync(int vendedorId)
         {
             var vendedor = await _context.Vendedores.FindAsync(vendedorId);

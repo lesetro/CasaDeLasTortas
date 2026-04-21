@@ -6,14 +6,7 @@ using System.Linq;
 
 namespace CasaDeLasTortas.Models.ViewModels
 {
-    // ══════════════════════════════════════════════════════════════════════
-    // VIEWMODELS PARA VENTAS
-    // Archivo: VentaViewModels.cs
-    // Ubicación: Models/ViewModels/
-    // ✅ CORREGIDO: ListaParaEnvio → ListaParaRetiro
-    // ✅ AGREGADO: Campos faltantes para VentaDetalleViewModel
-    // ══════════════════════════════════════════════════════════════════════
-
+    
     // =============================================
     // VIEWMODELS PARA MIS COMPRAS (COMPRADOR)
     // =============================================

@@ -91,7 +91,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         /// <summary>
-        /// 🔥 CORREGIDO: Obtener tortas disponibles - SIN referencias circulares
+        ///  Obtener tortas disponibles - SIN referencias circulares
         /// </summary>
         [HttpGet("disponibles")]
         public async Task<IActionResult> GetDisponibles()
@@ -353,7 +353,7 @@ namespace CasaDeLasTortas.Controllers.Api
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // 🔥 MÉTODO HELPER: Mapear Torta a DTO plano (evita referencias circulares)
+        //  MÉTODO HELPER: Mapear Torta a DTO plano (evita referencias circulares)
         // ═══════════════════════════════════════════════════════════════
         private object MapTortaToDto(Torta t)
         {

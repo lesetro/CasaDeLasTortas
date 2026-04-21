@@ -7,6 +7,42 @@
           <i class="fas fa-birthday-cake me-2"></i>Casa de las Tortas - Comprador
         </a>
         <div class="navbar-nav ms-auto d-flex flex-row align-items-center gap-3">
+          <!-- Notificaciones -->
+          <div class="dropdown">
+            <button class="btn btn-outline-light btn-sm position-relative" data-bs-toggle="dropdown">
+              <i class="fas fa-bell"></i>
+              <span v-if="notificacionesNoLeidas > 0"
+                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                    style="font-size:.6rem;">
+                {{ notificacionesNoLeidas }}
+              </span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width:300px;max-height:360px;overflow-y:auto;">
+              <li class="px-3 py-2 d-flex justify-content-between align-items-center border-bottom">
+                <span class="fw-semibold small">Notificaciones</span>
+                <button v-if="notificaciones.length" class="btn btn-link btn-sm p-0 text-muted"
+                        @click="marcarTodasLeidas">Marcar leídas</button>
+              </li>
+              <li v-if="!notificaciones.length" class="px-3 py-3 text-center text-muted small">
+                Sin notificaciones
+              </li>
+              <li v-for="n in notificaciones" :key="n.id"
+                  class="px-3 py-2 border-bottom"
+                  :class="n.leida ? '' : 'bg-light'">
+                <div class="small fw-semibold">{{ n.titulo }}</div>
+                <div class="text-muted" style="font-size:.75rem;">{{ n.mensaje }}</div>
+                <div class="text-muted" style="font-size:.68rem;">{{ n.hora }}</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Indicador SignalR -->
+          <span class="badge"
+                :class="signalRConectado ? 'bg-success' : 'bg-secondary'"
+                :title="signalRConectado ? 'Tiempo real activo' : 'Sin conexión en tiempo real'">
+            <i :class="signalRConectado ? 'fas fa-wifi' : 'fas fa-wifi-slash'"></i>
+          </span>
+
           <span class="navbar-text text-white d-flex align-items-center gap-2">
             <img :src="avatarUrl" class="rounded-circle border border-2 border-white"
                  style="width:32px;height:32px;object-fit:cover">
@@ -75,6 +111,13 @@
               <CarritoCompras v-else-if="vistaActiva === 'carrito'"
                               @cambiar-vista="cambiarVista"
                               @actualizar-carrito="actualizarContadorCarrito" />
+              
+              <!--  Checkout completo en Vue -->
+              <CheckoutCompras v-else-if="vistaActiva === 'checkout'"
+                               @cambiar-vista="cambiarVista"
+                               @actualizar-carrito="actualizarContadorCarrito"
+                               @ver-detalle="verDetalle" />
+              
               <PerfilComprador v-else-if="vistaActiva === 'perfil'" />
             </template>
           </template>
@@ -86,13 +129,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { fetchWithAuth } from '@shared/apiUtils.js'
+import { fetchWithAuth, clearAuth } from '@shared/apiUtils.js'
 import DashboardComprador from './components/DashboardComprador.vue'
 import CatalogoComprador  from './components/CatalogoComprador.vue'
 import HistorialCompras   from './components/HistorialCompras.vue'
 import DetalleVenta       from './components/DetalleVenta.vue'
 import CarritoCompras     from './components/CarritoCompras.vue'
 import PerfilComprador    from './components/PerfilComprador.vue'
+import CheckoutCompras    from './components/CheckoutCompras.vue'  
 
 function generarAvatarUrl(nombre) {
   if (!nombre || !nombre.trim()) nombre = 'U'
@@ -100,13 +144,18 @@ function generarAvatarUrl(nombre) {
   return `https://ui-avatars.com/api/?name=${encoded}&background=random&color=fff&size=150&bold=true&format=svg`
 }
 
-const vistaActiva       = ref('dashboard')
-const ventaSeleccionada = ref(null)
-const nombreUsuario     = ref('...')
-const emailUsuario      = ref('')
-const avatarUsuario     = ref(null)
-const contadorCarrito   = ref(0)
-const inicializando     = ref(true)
+const vistaActiva            = ref('dashboard')
+const ventaSeleccionada      = ref(null)
+const nombreUsuario          = ref('...')
+const emailUsuario           = ref('')
+const avatarUsuario          = ref(null)
+const contadorCarrito        = ref(0)
+const inicializando          = ref(true)
+const signalRConectado       = ref(false)
+const notificaciones         = ref([])
+const notificacionesNoLeidas = ref(0)
+let   hubConnection          = null
+let   notifId                = 0
 
 const avatarUrl = computed(() => {
   if (avatarUsuario.value) return avatarUsuario.value
@@ -120,6 +169,70 @@ const menuItems = [
   { vista: 'historial', label: 'Historial',  icono: 'fas fa-history' },
   { vista: 'perfil',    label: 'Mi Perfil',  icono: 'fas fa-user' },
 ]
+
+function agregarNotificacion(titulo, mensaje) {
+  const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  notificaciones.value.unshift({ id: ++notifId, titulo, mensaje, hora, leida: false })
+  notificacionesNoLeidas.value++
+  if (notificaciones.value.length > 20)
+    notificaciones.value.pop()
+}
+
+function marcarTodasLeidas() {
+  notificaciones.value.forEach(n => n.leida = true)
+  notificacionesNoLeidas.value = 0
+}
+
+async function conectarSignalR(token) {
+  try {
+    const signalR = await import('@microsoft/signalr')
+    hubConnection = new signalR.HubConnectionBuilder()
+      .withUrl('/hubs/notifications', { accessTokenFactory: () => token })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Warning)
+      .build()
+
+    hubConnection.on('PedidoListo', (data) => {
+      const lineas = [data.mensaje || `Tu pedido #${data.numeroOrden} está listo.`]
+      if (data.nombreVendedor) lineas.push(`📍 Retirá en: ${data.nombreVendedor}`)
+      if (data.direccionRetiro) lineas.push(`🗺 ${data.direccionRetiro}`)
+      if (data.horarioRetiro)  lineas.push(`🕐 Horario: ${data.horarioRetiro}`)
+      agregarNotificacion('🎉 ¡Pedido listo para retirar!', lineas.join(' — '))
+    })
+
+    hubConnection.on('PagoVerificado', (data) => {
+      agregarNotificacion(
+        '✅ Pago verificado',
+        data.mensaje || `Tu pago para la orden ${data.numeroOrden} fue aprobado.`
+      )
+    })
+
+    hubConnection.on('PagoRechazado', (data) => {
+      const motivo = data.motivo ? ` — Motivo: ${data.motivo}` : ''
+      agregarNotificacion(
+        '❌ Comprobante rechazado',
+        (data.mensaje || `Tu comprobante de la orden ${data.numeroOrden} fue rechazado`) + motivo
+      )
+    })
+
+    hubConnection.on('ReembolsoPendiente', (data) => {
+      agregarNotificacion(
+        '💰 Reembolso en proceso',
+        data.mensaje || `Tu pago de la orden ${data.numeroOrden} será reembolsado.`
+      )
+    })
+
+    hubConnection.onreconnecting(() => { signalRConectado.value = false })
+    hubConnection.onreconnected(() =>  { signalRConectado.value = true  })
+    hubConnection.onclose(() =>        { signalRConectado.value = false })
+
+    await hubConnection.start()
+    signalRConectado.value = true
+  } catch (err) {
+    console.warn('SignalR no disponible:', err.message)
+    signalRConectado.value = false
+  }
+}
 
 async function inicializar() {
   try {
@@ -140,6 +253,7 @@ async function inicializar() {
     }
 
     await actualizarContadorCarrito()
+    await conectarSignalR(token)
   } catch (err) {
     console.error('Error inicializando comprador:', err)
     if (err.message.includes('401')) redirigirLogin()
@@ -165,14 +279,12 @@ function verDetalle(ventaId) { ventaSeleccionada.value = ventaId }
 
 function logout() {
   if (!confirm('¿Cerrar sesión?')) return
-  localStorage.removeItem('authToken')
-  localStorage.removeItem('user')
+  clearAuth()
   window.location.href = '/Account/Logout'
 }
 
 function redirigirLogin() {
-  localStorage.removeItem('authToken')
-  localStorage.removeItem('user')
+  clearAuth()
   window.location.href = '/Account/Login'
 }
 

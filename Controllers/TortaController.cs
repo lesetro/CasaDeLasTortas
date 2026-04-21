@@ -526,7 +526,7 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction(nameof(Details), new { id });
                 }
 
-                // ✅ CORREGIDO: Verificar si tiene detalles de venta asociados (en lugar de pagos directos)
+                //  Verificar si tiene detalles de venta asociados (en lugar de pagos directos)
                 var tieneDetallesVenta = torta.DetallesVenta != null && torta.DetallesVenta.Any();
                 if (tieneDetallesVenta)
                 {

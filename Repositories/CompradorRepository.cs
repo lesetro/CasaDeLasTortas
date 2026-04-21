@@ -2,7 +2,7 @@ using CasaDeLasTortas.Data;
 using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions; // ✅ AGREGAR ESTA DIRECTIVA
+using System.Linq.Expressions; 
 
 namespace CasaDeLasTortas.Repositories
 {
@@ -78,7 +78,7 @@ namespace CasaDeLasTortas.Repositories
         {
             return await _context.Compradores
                 .Include(c => c.Persona)
-                .Include(c => c.Ventas)  // ← Incluir ventas en lugar de pagos directos
+                .Include(c => c.Ventas)  //  ventas en lugar de pagos directos
                     .ThenInclude(v => v.Detalles)
                         .ThenInclude(d => d.Torta)
                             .ThenInclude(t => t.Imagenes)

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
+using CasaDeLasTortas.Services;
 
 namespace CasaDeLasTortas.Controllers.Api
 {
@@ -12,10 +13,12 @@ namespace CasaDeLasTortas.Controllers.Api
     public class CompradorApiController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IFileService _fileService;
 
-        public CompradorApiController(IUnitOfWork unitOfWork)
+        public CompradorApiController(IUnitOfWork unitOfWork, IFileService fileService)
         {
             _unitOfWork = unitOfWork;
+            _fileService = fileService;
         }
 
         /// <summary>
@@ -207,8 +210,9 @@ public async Task<IActionResult> GetEstadisticas(int id)
 
     // Obtener ventas y pagos
     var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
-    var pagosCompletados = ventas.SelectMany(v => v.Pagos.Where(p => p.Estado == EstadoPago.Completado)).ToList();
-    
+    var pagosCompletados = ventas.SelectMany(v => v.Pagos.Where(p =>
+        p.Estado == EstadoPago.Completado || p.Estado == EstadoPago.Verificado)).ToList();
+
     var totalCompras = pagosCompletados.Count;
     var totalGastado = pagosCompletados.Sum(p => p.Monto);
     var compraPromedio = totalCompras > 0 ? totalGastado / totalCompras : 0;
@@ -232,61 +236,74 @@ public async Task<IActionResult> GetEstadisticas(int id)
         fechaUltimaCompra = pagosCompletados.Any() ? pagosCompletados.Max(p => p.FechaPago) : (DateTime?)null
     });
 }
-
-/// <summary>
-/// Obtener historial de compras del comprador (MÉTODO CORREGIDO)
-/// </summary>
-[HttpGet("{id}/historial")]
-public async Task<IActionResult> GetHistorial(int id, [FromQuery] int pagina = 1, [FromQuery] int registrosPorPagina = 10)
-{
-    var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
-    
-    var historial = ventas
-        .OrderByDescending(v => v.FechaVenta)
-        .Skip((pagina - 1) * registrosPorPagina)
-        .Take(registrosPorPagina)
-        .Select(v => new
+ [HttpGet("{id}/historial")]
+        public async Task<IActionResult> GetHistorial(
+            int id,
+            [FromQuery] int pagina = 1,
+            [FromQuery] int registrosPorPagina = 10)
         {
-            ventaId = v.Id,
-            numeroOrden = v.NumeroOrden,
-            fechaVenta = v.FechaVenta,
-            estado = v.Estado.ToString(),
-            total = v.Total,
-            totalItems = v.Detalles.Sum(d => d.Cantidad),
-            pagos = v.Pagos.Select(p => new
+            var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
+ 
+            var historial = ventas
+                .OrderByDescending(v => v.FechaVenta)
+                .Skip((pagina - 1) * registrosPorPagina)
+                .Take(registrosPorPagina)
+                .Select(v => new
+                {
+                    ventaId              = v.Id,
+                    numeroOrden          = v.NumeroOrden,
+                    fechaVenta           = v.FechaVenta,
+                    fechaEntregaEstimada = v.FechaEntregaEstimada,
+                    estado               = v.Estado.ToString(),
+                    total                = v.Total,
+                    totalItems           = v.Detalles.Sum(d => d.Cantidad),
+ 
+                    pagos = v.Pagos.Select(p => new
+                    {
+                        pagoId            = p.Id,
+                        monto             = p.Monto,
+                        fechaPago         = p.FechaPago,
+                        estado            = p.Estado.ToString(),
+                        metodoPago        = p.MetodoPago.HasValue
+                                                ? p.MetodoPago.Value.ToString()
+                                                : null,
+                        numeroTransaccion  = p.NumeroTransaccion,
+                        archivoComprobante = !string.IsNullOrEmpty(p.ArchivoComprobante)
+                                                ? _fileService.GetFileUrl(p.ArchivoComprobante)
+                                                : null,
+                        observaciones      = p.MotivoRechazo ?? p.ObservacionesAdmin,
+                    }),
+ 
+                    productos = v.Detalles.Select(d => new
+                    {
+                        tortaId              = d.TortaId,
+                        nombreTorta          = d.Torta.Nombre,
+                        cantidad             = d.Cantidad,
+                        precioUnitario       = d.PrecioUnitario,
+                        subtotal             = d.Subtotal,
+                        imagenTorta          = d.Torta.Imagenes
+                                                ?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen,
+                        nombreVendedor       = d.Vendedor?.NombreComercial,
+                        notasPersonalizacion = d.NotasPersonalizacion,
+                        estadoDetalle        = d.Estado.ToString()
+                    })
+                })
+                .ToList();
+ 
+            var totalVentas = ventas.Count();
+ 
+            return Ok(new
             {
-                pagoId = p.Id,
-                monto = p.Monto,
-                fechaPago = p.FechaPago,
-                estado = p.Estado.ToString(),
-                metodoPago = p.MetodoPago?.ToString()
-            }),
-            productos = v.Detalles.Select(d => new
-            {
-                tortaId = d.TortaId,
-                nombreTorta = d.Torta.Nombre,
-                cantidad = d.Cantidad,
-                precioUnitario = d.PrecioUnitario,
-                subtotal = d.Subtotal,
-                imagenTorta = d.Torta.Imagenes?.FirstOrDefault(i => i.EsPrincipal)?.UrlImagen
-            })
-        })
-        .ToList();
-
-    var totalVentas = ventas.Count();
-
-    return Ok(new
-    {
-        data = historial,
-        pagina,
-        registrosPorPagina,
-        totalRegistros = totalVentas,
-        totalPaginas = (int)Math.Ceiling((double)totalVentas / registrosPorPagina)
-    });
-}
+                data               = historial,
+                pagina,
+                registrosPorPagina,
+                totalRegistros     = totalVentas,
+                totalPaginas       = (int)Math.Ceiling((double)totalVentas / registrosPorPagina)
+            });
+        }
 
 /// <summary>
-/// Obtener perfil completo del comprador (MÉTODO CORREGIDO)
+/// Obtener perfil completo del comprador 
 /// </summary>
 [HttpGet("{id}/perfil")]
 public async Task<IActionResult> GetPerfil(int id)
@@ -297,7 +314,8 @@ public async Task<IActionResult> GetPerfil(int id)
         return NotFound(new { message = "Comprador no encontrado" });
 
     var ventas = await _unitOfWork.Ventas.GetByCompradorIdWithDetailsAsync(id);
-    var pagosCompletados = ventas.SelectMany(v => v.Pagos.Where(p => p.Estado == EstadoPago.Completado)).ToList();
+    var pagosCompletados = ventas.SelectMany(v => v.Pagos.Where(p =>
+        p.Estado == EstadoPago.Completado || p.Estado == EstadoPago.Verificado)).ToList();
     var totalGastado = pagosCompletados.Sum(p => p.Monto);
 
     var historialCompras = ventas

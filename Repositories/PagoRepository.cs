@@ -69,7 +69,9 @@ namespace CasaDeLasTortas.Repositories
 
         public async Task<IEnumerable<Pago>> GetAllWithDetailsAsync()
             => await _context.Pagos
-                .Include(p => p.Venta).ThenInclude(v => v.Detalles)
+                .Include(p => p.Venta).ThenInclude(v => v.Detalles).ThenInclude(d => d.Vendedor)
+                .Include(p => p.Venta).ThenInclude(v => v.Detalles).ThenInclude(d => d.Torta)
+                .Include(p => p.Venta).ThenInclude(v => v.Comprador).ThenInclude(c => c.Persona)
                 .Include(p => p.Comprador).ThenInclude(c => c.Persona)
                 .Include(p => p.VerificadoPor)
                 .OrderByDescending(p => p.FechaPago)
@@ -376,7 +378,7 @@ namespace CasaDeLasTortas.Repositories
                 .ToListAsync();
         }
 
-        // ✅ CORREGIDO: Cálculo en memoria para evitar ambigüedad de EF.Functions
+        //  Cálculo en memoria para evitar ambigüedad de EF.Functions
         public async Task<double> GetTiempoPromedioVerificacionAsync()
         {
             var pagosVerificados = await _context.Pagos

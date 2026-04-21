@@ -37,6 +37,11 @@ namespace CasaDeLasTortas.Interfaces
         Task<IEnumerable<Persona>> GetPersonasSinCompradorAsync();
         Task<IEnumerable<Persona>> GetPersonasSinVendedorAsync();
         Task<bool> ExistsByEmailAsync(string email);
-        
+        Task<IEnumerable<Persona>> GetAllConPerfilesAsync(
+            int pagina = 1, int registrosPorPagina = 10,
+            string? busqueda = null, string? rol = null, bool? activo = null);
+        Task<int> CountConPerfilesAsync(
+            string? busqueda = null, string? rol = null, bool? activo = null);
+
     }
 }

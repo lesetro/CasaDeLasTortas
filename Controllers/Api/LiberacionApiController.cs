@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using CasaDeLasTortas.Interfaces;
+using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
 using CasaDeLasTortas.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -249,6 +250,7 @@ namespace CasaDeLasTortas.Controllers.Api
             id = l.Id,
             ventaId = l.VentaId,
             numeroOrden = l.Venta?.NumeroOrden,
+            compradorNombre = l.Venta?.Comprador?.Persona?.Nombre,
             vendedorId = l.VendedorId,
             nombreComercial = l.Vendedor?.NombreComercial,
             montoBruto = l.MontoBruto,
@@ -259,7 +261,10 @@ namespace CasaDeLasTortas.Controllers.Api
             fechaCreacion = l.FechaCreacion,
             fechaListoParaLiberar = l.FechaListoParaLiberar,
             fechaTransferencia = l.FechaTransferencia,
-            fechaConfirmacion = l.FechaConfirmacion
+            fechaConfirmacion = l.FechaConfirmacion,
+            fechaLiberacion = l.FechaTransferencia ?? l.FechaConfirmacion,
+            comprobanteUrl = !string.IsNullOrEmpty(l.ArchivoComprobante)
+                ? _fileService.GetFileUrl(l.ArchivoComprobante) : null
         };
 
         private object MapearLiberacionDetalle(LiberacionFondos l) => new
@@ -290,12 +295,11 @@ namespace CasaDeLasTortas.Controllers.Api
             compradorNombre = l.Venta?.Comprador?.Persona?.Nombre
         };
 
-        private async Task<int?> ObtenerPersonaIdActual()
+        private Task<int?> ObtenerPersonaIdActual()
         {
-            var userEmail = User.Identity?.Name;
-            if (string.IsNullOrEmpty(userEmail)) return null;
-            var persona = await _unitOfWork.PersonaRepository.GetByEmailAsync(userEmail);
-            return persona?.Id;
+            var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("PersonaId")?.Value;
+            return Task.FromResult(int.TryParse(claim, out var id) ? id : (int?)null);
         }
 
         private async Task<int?> ObtenerVendedorIdActual()
@@ -306,17 +310,5 @@ namespace CasaDeLasTortas.Controllers.Api
             var vendedor = await _unitOfWork.VendedorRepository.GetByPersonaIdAsync(personaId);
             return vendedor?.Id;
         }
-    }
-
-    // ==================== DTOs ====================
-
-    public class ProcesarTransferenciaDTO
-    {
-        [Required]
-        public IFormFile Archivo { get; set; } = null!;
-
-        [Required]
-        [StringLength(100)]
-        public string NumeroOperacion { get; set; } = string.Empty;
     }
 }

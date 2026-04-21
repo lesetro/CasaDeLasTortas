@@ -130,6 +130,8 @@ namespace CasaDeLasTortas.Repositories
                 .Include(v => v.Detalles)
                     .ThenInclude(d => d.Torta)
                         .ThenInclude(t => t.Imagenes)
+                .Include(v => v.Detalles)
+                        .ThenInclude(d => d.Vendedor)  
                 .Include(v => v.Pagos)
                 .Where(v => v.CompradorId == compradorId)
                 .OrderByDescending(v => v.FechaVenta)

@@ -136,7 +136,7 @@ namespace CasaDeLasTortas.Models.ViewModels
         public bool AceptaTerminos { get; set; }
     }
 
-    // ✅ CLASE AGREGADA - PersonaEditViewModel
+    //  PersonaEditViewModel
     public class PersonaEditViewModel
     {
         public int Id { get; set; }

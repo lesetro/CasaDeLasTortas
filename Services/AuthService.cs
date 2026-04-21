@@ -41,7 +41,7 @@ namespace CasaDeLasTortas.Services
         }
 
         // ══════════════════════════════════════════════════════
-        //  NUEVO: Resetear contraseña directamente por email
+        //   Resetear contraseña directamente por email
         // ══════════════════════════════════════════════════════
         public async Task<bool> ResetPasswordDirectAsync(string email, string newPassword)
         {

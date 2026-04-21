@@ -171,12 +171,12 @@ namespace CasaDeLasTortas.Controllers
                 {
                     Id = persona.Id,
                     Nombre = persona.Nombre,
-                    Apellido = persona.Apellido,       // ← faltaba
+                    Apellido = persona.Apellido,       
                     Email = persona.Email,
                     Telefono = persona.Telefono,
-                    Dni = persona.Dni,            // ← faltaba
-                    Direccion = persona.Direccion,      // ← faltaba
-                    FechaNacimiento = persona.FechaNacimiento,// ← faltaba
+                    Dni = persona.Dni,            
+                    Direccion = persona.Direccion,      
+                    FechaNacimiento = persona.FechaNacimiento,
                     AvatarActual = persona.Avatar,
                     Activo = persona.Activo
                 };
@@ -190,7 +190,6 @@ namespace CasaDeLasTortas.Controllers
             }
         }
 
-        // ── REEMPLAZÁ el POST Edit en PersonaController.cs ─────────────────────
         // POST: Persona/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -225,12 +224,12 @@ namespace CasaDeLasTortas.Controllers
 
                 // Actualizar todos los campos
                 persona.Nombre = viewModel.Nombre;
-                persona.Apellido = viewModel.Apellido;        // ← faltaba
+                persona.Apellido = viewModel.Apellido;        
                 persona.Email = viewModel.Email;
                 persona.Telefono = viewModel.Telefono;
-                persona.Dni = viewModel.Dni;             // ← faltaba
-                persona.Direccion = viewModel.Direccion;       // ← faltaba
-                persona.FechaNacimiento = viewModel.FechaNacimiento; // ← faltaba
+                persona.Dni = viewModel.Dni;             
+                persona.Direccion = viewModel.Direccion;       
+                persona.FechaNacimiento = viewModel.FechaNacimiento; 
                 persona.Activo = viewModel.Activo;
 
                 // Manejar avatar
@@ -378,10 +377,10 @@ namespace CasaDeLasTortas.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Verificar contraseña actual (aquí necesitarías tu servicio de hash)
+                // Verificar contraseña actual 
                 // Por ejemplo: if (!_authService.VerifyPassword(viewModel.CurrentPassword, persona.PasswordHash))
 
-                // Actualizar contraseña (aquí necesitarías tu servicio de hash)
+                // Actualizar contraseña 
                 // persona.PasswordHash = _authService.HashPassword(viewModel.NewPassword);
 
                 await _unitOfWork.PersonaRepository.UpdateAsync(persona);

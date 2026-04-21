@@ -103,10 +103,10 @@ namespace CasaDeLasTortas.Repositories
 
         public async Task<bool> ExistePendienteParaVentaAsync(int ventaId, int vendedorId)
             => await _context.LiberacionesFondos
-                .AnyAsync(l => l.VentaId == ventaId && l.VendedorId == vendedorId && 
+                .AnyAsync(l => l.VentaId == ventaId && l.VendedorId == vendedorId &&
                           l.Estado != EstadoLiberacion.Confirmado && l.Estado != EstadoLiberacion.Cancelado);
 
-        // ✅ CORREGIDO: Usar firma correcta de LiberacionFondos.Crear(Venta, int, decimal, decimal)
+        //  Usar firma correcta de LiberacionFondos.Crear(Venta, int, decimal, decimal)
         public async Task<IEnumerable<LiberacionFondos>> CrearLiberacionesParaVentaAsync(int ventaId, decimal porcentajeComision)
         {
             var venta = await _context.Ventas
@@ -137,40 +137,52 @@ namespace CasaDeLasTortas.Repositories
             var liberacion = await _context.LiberacionesFondos.FindAsync(liberacionId);
             if (liberacion != null)
             {
-                liberacion.MarcarListoParaLiberar();
+                liberacion.Estado = EstadoLiberacion.ListoParaLiberar;
+                liberacion.FechaListoParaLiberar = DateTime.Now;
+                _context.LiberacionesFondos.Update(liberacion);
             }
         }
 
-        // ✅ CORREGIDO: Usar firma correcta de RegistrarTransferencia(int adminId, string numeroOperacion, string? archivoComprobante, Vendedor vendedor)
+        //  Se agregó _context.LiberacionesFondos.Update(liberacion) para persistir los cambios
         public async Task RegistrarTransferenciaAsync(int liberacionId, string numeroOperacion, string archivoComprobante, int adminId)
         {
             var liberacion = await _context.LiberacionesFondos
                 .Include(l => l.Vendedor)
                 .FirstOrDefaultAsync(l => l.Id == liberacionId);
-                
+
             if (liberacion != null && liberacion.Vendedor != null)
             {
                 // Firma correcta: RegistrarTransferencia(int adminId, string numeroOperacion, string? archivoComprobante, Vendedor vendedor)
                 liberacion.RegistrarTransferencia(adminId, numeroOperacion, archivoComprobante, liberacion.Vendedor);
+                
+                //  Marcar la entidad como modificada para que EF Core guarde los cambios
+                _context.LiberacionesFondos.Update(liberacion);
             }
         }
 
+        //  Se agregó Update tanto para liberación como para vendedor
         public async Task ConfirmarRecepcionAsync(int liberacionId)
         {
             var liberacion = await _context.LiberacionesFondos
                 .Include(l => l.Vendedor)
                 .FirstOrDefaultAsync(l => l.Id == liberacionId);
-            
+
             if (liberacion != null)
             {
                 liberacion.ConfirmarRecepcion();
                 
+                //  Marcar liberación como modificada
+                _context.LiberacionesFondos.Update(liberacion);
+
                 // Actualizar estadísticas del vendedor
                 if (liberacion.Vendedor != null)
                 {
                     liberacion.Vendedor.TotalCobrado += liberacion.MontoNeto;
                     liberacion.Vendedor.TotalComisiones += liberacion.Comision;
                     liberacion.Vendedor.PendienteCobro -= liberacion.MontoBruto;
+                    
+                    //  Marcar vendedor como modificado
+                    _context.Vendedores.Update(liberacion.Vendedor);
                 }
             }
         }
