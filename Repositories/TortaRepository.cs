@@ -144,6 +144,7 @@ namespace CasaDeLasTortas.Repositories
         {
             return await _context.Tortas
                 .Include(t => t.Vendedor)
+                    .ThenInclude(v => v.Persona)
                 .Include(t => t.Imagenes)
                 .Where(t => t.Disponible && t.Stock > 0)
                 .OrderBy(t => t.Nombre)
@@ -154,6 +155,7 @@ namespace CasaDeLasTortas.Repositories
         {
             return await _context.Tortas
                 .Include(t => t.Vendedor)
+                    .ThenInclude(v => v.Persona)
                 .Include(t => t.Imagenes)
                 .Where(t =>
                     t.Nombre.Contains(termino) ||
@@ -312,6 +314,7 @@ namespace CasaDeLasTortas.Repositories
         {
             return await _context.Tortas
                 .Include(t => t.Vendedor)
+                    .ThenInclude(v => v.Persona)
                 .Include(t => t.Imagenes)
                 .Where(t => t.Disponible && t.Stock > 0)
                 .OrderBy(t => t.Nombre)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace CasaDeLasTortas.Models.DTOs
 {
@@ -33,13 +34,29 @@ namespace CasaDeLasTortas.Models.DTOs
 
     public class TortaCreateDTO
     {
+        [Required(ErrorMessage = "El vendedor es obligatorio")]
         public int VendedorId { get; set; }
+
+        [Required(ErrorMessage = "El nombre es obligatorio")]
+        [StringLength(150, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 150 caracteres")]
         public string Nombre { get; set; }
+
+        [Required(ErrorMessage = "La descripción es obligatoria")]
+        [StringLength(1000, MinimumLength = 5, ErrorMessage = "La descripción debe tener al menos 5 caracteres")]
         public string Descripcion { get; set; }
+
+        [Range(0.01, 9999999, ErrorMessage = "El precio debe ser mayor a 0")]
         public decimal Precio { get; set; }
+
+        [Range(0, 100000, ErrorMessage = "El stock no puede ser negativo")]
         public int Stock { get; set; }
+
+        [Required(ErrorMessage = "La categoría es obligatoria")]
         public string? Categoria { get; set; }
+
+        [Required(ErrorMessage = "El tamaño es obligatorio")]
         public string Tamanio { get; set; }
+
         public int? TiempoPreparacion { get; set; }
         public string? Ingredientes { get; set; }
         public bool Personalizable { get; set; }

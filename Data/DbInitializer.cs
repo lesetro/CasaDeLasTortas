@@ -13,8 +13,9 @@ namespace CasaDeLasTortas.Data
     {
         public static async Task Initialize(ApplicationDbContext context)
         {
-            // Asegura que la base de datos existe
-            await context.Database.EnsureCreatedAsync();
+            // Aplica las migraciones pendientes (crea/actualiza el esquema de forma reproducible).
+            // En una base nueva crea todo; en una existente ya baselineada, no hace nada.
+            await context.Database.MigrateAsync();
 
             // Si ya hay datos, no hacer nada
             if (await context.Personas.AnyAsync())

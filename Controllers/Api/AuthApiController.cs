@@ -144,6 +144,12 @@ namespace CasaDeLasTortas.Controllers.Api
             if (model == null)
                 return BadRequest(new { message = "Datos de registro requeridos" });
 
+            // La app móvil no envía ConfirmPassword ni AceptaTerminos (son campos del
+            // formulario web). Los quitamos de la validación para no rechazar el registro
+            // desde la app por ModelState inválido.
+            ModelState.Remove(nameof(model.ConfirmPassword));
+            ModelState.Remove(nameof(model.AceptaTerminos));
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values
@@ -169,6 +175,7 @@ namespace CasaDeLasTortas.Controllers.Api
                     Nombre = model.Nombre,
                     Email = model.Email,
                     Telefono = model.Telefono,
+                    Dni = model.Dni,
                     Rol = model.Rol ?? "Comprador",
                     Avatar = avatarUrl,
                     FechaRegistro = DateTime.Now,

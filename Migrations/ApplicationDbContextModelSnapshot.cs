@@ -761,6 +761,10 @@ namespace CasaDeLasTortas.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("FcmToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
                     b.Property<DateTime?>("FechaNacimiento")
                         .HasColumnType("datetime(6)");
 

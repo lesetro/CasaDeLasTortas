@@ -10,9 +10,32 @@ using CasaDeLasTortas.Services;
 using CasaDeLasTortas.Helpers;
 using CasaDeLasTortas.Hubs;
 using CasaDeLasTortas.Middleware;
-using CasaDeLasTortas.Models.Options;  
+using CasaDeLasTortas.Models.Options;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ==================== FIREBASE ADMIN (FCM) ====================
+// Inicializa el SDK con la service account (firebase-admin.json) para mandar push.
+try
+{
+    var firebaseJson = Path.Combine(AppContext.BaseDirectory, "firebase-admin.json");
+    if (!File.Exists(firebaseJson))
+        firebaseJson = Path.Combine(Directory.GetCurrentDirectory(), "firebase-admin.json");
+
+    if (File.Exists(firebaseJson) && FirebaseApp.DefaultInstance == null)
+    {
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromFile(firebaseJson)
+        });
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine("⚠️ Firebase Admin no se inicializó (FCM deshabilitado): " + ex.Message);
+}
 
 // ==================== BASE DE DATOS ====================
 
@@ -194,9 +217,10 @@ builder.Services.AddScoped<IAuthService,   AuthService>();
 builder.Services.AddScoped<IJwtService,    JwtService>();
 builder.Services.AddScoped<ICarritoService,CarritoService>();
 
-// ── Servicios NUEVOS 
+// ── Servicios NUEVOS
 builder.Services.AddScoped<IPagoService,        PagoService>();
 builder.Services.AddScoped<ILiberacionService,  LiberacionService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // ── JwtHelper (singleton) ─────────────────────────────────────────────────────
 builder.Services.AddSingleton<JwtHelper>(provider =>

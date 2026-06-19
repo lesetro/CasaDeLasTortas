@@ -30,6 +30,9 @@ namespace CasaDeLasTortas.Models.ViewModels
         [Display(Name = "Teléfono")]
         public string? Telefono { get; set; }
 
+        [Display(Name = "DNI")]
+        public string? Dni { get; set; }
+
         [Required(ErrorMessage = "Debe seleccionar un rol")]
         [Display(Name = "Tipo de Cuenta")]
         public string Rol { get; set; } = "Comprador";

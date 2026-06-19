@@ -119,6 +119,15 @@ namespace CasaDeLasTortas.Controllers.Api
             if (vendedor == null)
                 return BadRequest(new { message = "Vendedor no encontrado" });
 
+            // No se puede publicar una torta si el vendedor no cargó sus datos de pago
+            if (!vendedor.DatosPagoCompletos || string.IsNullOrWhiteSpace(vendedor.AliasCBU) || string.IsNullOrWhiteSpace(vendedor.CBU))
+                return BadRequest(new { message = "Completá tus datos de pago (alias y CBU) antes de publicar tortas" });
+
+            // El vendedor debe tener su dirección cargada: es el punto de retiro que ve el comprador
+            var personaVendedor = await _unitOfWork.PersonaRepository.GetByIdAsync(vendedor.PersonaId);
+            if (personaVendedor == null || string.IsNullOrWhiteSpace(personaVendedor.Direccion))
+                return BadRequest(new { message = "Cargá tu dirección (punto de retiro) antes de publicar tortas" });
+
             var torta = new Torta
             {
                 VendedorId = dto.VendedorId,
@@ -362,6 +371,7 @@ namespace CasaDeLasTortas.Controllers.Api
                 id = t.Id,
                 nombre = t.Nombre,
                 descripcion = t.Descripcion ?? "",
+                ingredientes = t.Ingredientes ?? "",
                 precio = t.Precio,
                 stock = t.Stock,
                 categoria = t.Categoria ?? "",
@@ -373,6 +383,8 @@ namespace CasaDeLasTortas.Controllers.Api
                 disponible = t.Disponible,
                 vendedorId = t.Vendedor?.Id ?? 0,
                 nombreVendedor = t.Vendedor?.NombreComercial ?? "Sin vendedor",
+                especialidadVendedor = t.Vendedor?.Especialidad ?? "",
+                direccionVendedor = t.Vendedor?.Persona?.Direccion ?? "",
                 // Imágenes como array plano
                 imagenes = (t.Imagenes ?? new List<ImagenTorta>())
                     .OrderBy(i => i.Orden)

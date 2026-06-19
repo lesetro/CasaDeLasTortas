@@ -25,17 +25,20 @@ namespace CasaDeLasTortas.Controllers.Api
         private readonly ILiberacionService _liberacionService;
         private readonly ILogger<DetalleVentaApiController> _logger;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly INotificationService _notificationService;
 
         public DetalleVentaApiController(
             IUnitOfWork unitOfWork,
             ILiberacionService liberacionService,
             ILogger<DetalleVentaApiController> logger,
-            IHubContext<NotificationHub> hubContext)
+            IHubContext<NotificationHub> hubContext,
+            INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _liberacionService = liberacionService;
             _logger = logger;
             _hubContext = hubContext;
+            _notificationService = notificationService;
         }
 
         // ─────────────────────────────────────────────
@@ -295,6 +298,14 @@ namespace CasaDeLasTortas.Controllers.Api
                         _logger.LogInformation(
                             "Notificación PedidoListo enviada al comprador {CompradorId} — Orden #{Orden} — Vendedor: {Vendedor}",
                             compradorPersonaId, numeroOrden, nombreVendedor);
+
+                        // Push FCM al celular del comprador (llega aunque la app esté cerrada)
+                        var personaComprador = await _unitOfWork.PersonaRepository
+                            .GetByIdAsync(detalle.Venta.Comprador.PersonaId);
+                        await _notificationService.EnviarAsync(
+                            personaComprador?.FcmToken,
+                            "¡Pedido listo!",
+                            $"Tu pedido #{numeroOrden} está listo para retirar en {nombreVendedor}.");
                     }
                 }
 

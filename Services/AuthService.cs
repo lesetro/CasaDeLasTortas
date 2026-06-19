@@ -163,6 +163,23 @@ namespace CasaDeLasTortas.Services
                 _context.Personas.Add(persona);
                 await _context.SaveChangesAsync();
 
+                // Si el rol es Comprador, creamos también su entidad Comprador.
+                // Sin esto el usuario existe como Persona pero no puede comprar ni
+                // editar su perfil (no tiene compradorId).
+                if (persona.Rol == "Comprador")
+                {
+                    var comprador = new Comprador
+                    {
+                        PersonaId = persona.Id,
+                        Direccion = "",
+                        Telefono = persona.Telefono ?? "",
+                        FechaCreacion = DateTime.Now,
+                        Activo = true
+                    };
+                    _context.Compradores.Add(comprador);
+                    await _context.SaveChangesAsync();
+                }
+
                 _logger.LogInformation("Usuario registrado: {Email}", persona.Email);
                 return persona;
             }

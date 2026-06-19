@@ -67,6 +67,10 @@ namespace CasaDeLasTortas.Models.Entities
         [Display(Name = "Activo")]
         public bool Activo { get; set; } = true;
 
+        // Token FCM del dispositivo (para notificaciones push)
+        [StringLength(500)]
+        public string? FcmToken { get; set; }
+
         // Propiedades calculadas (no se mapean a la base de datos)
         [NotMapped]
         [Display(Name = "Nombre Completo")]

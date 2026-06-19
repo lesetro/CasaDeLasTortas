@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using CasaDeLasTortas.Interfaces;
 using CasaDeLasTortas.Models.DTOs;
 using CasaDeLasTortas.Models.Entities;
+using CasaDeLasTortas.Services;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
@@ -15,10 +17,12 @@ namespace CasaDeLasTortas.Controllers.Api
     public class PersonaApiController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IFileService _fileService;
 
-        public PersonaApiController(IUnitOfWork unitOfWork)
+        public PersonaApiController(IUnitOfWork unitOfWork, IFileService fileService)
         {
             _unitOfWork = unitOfWork;
+            _fileService = fileService;
         }
 
         /// <summary>
@@ -163,6 +167,67 @@ namespace CasaDeLasTortas.Controllers.Api
             await _unitOfWork.SaveChangesAsync();
 
             return Ok(new { message = "Persona actualizada correctamente" });
+        }
+
+        /// <summary>
+        /// Subir / cambiar el avatar de la persona (multipart).
+        /// POST /api/PersonaApi/{id}/avatar  — campo del form: "archivo"
+        /// </summary>
+        [HttpPost("{id}/avatar")]
+        public async Task<IActionResult> SubirAvatar(int id, [FromForm] IFormFile archivo)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest(new { message = "Debe enviar una imagen" });
+
+            var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(id);
+            if (persona == null)
+                return NotFound(new { message = "Persona no encontrada" });
+
+            // Solo el propio usuario (o un admin) puede cambiar su avatar
+            var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var esAdmin = User.IsInRole("Admin");
+            var esPropioUsuario = int.TryParse(idClaim, out var cId) && persona.Id == cId;
+            if (!esAdmin && !esPropioUsuario)
+                return Forbid();
+
+            try
+            {
+                var ruta = await _fileService.SaveFileAsync(archivo, "avatares");
+                persona.Avatar = ruta;
+                _unitOfWork.PersonaRepository.Update(persona);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Ok(new { message = "Avatar actualizado", avatar = ruta });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error al subir el avatar: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Registrar el token FCM del dispositivo del usuario logueado (para push).
+        /// POST /api/PersonaApi/device-token
+        /// </summary>
+        [HttpPost("device-token")]
+        public async Task<IActionResult> RegistrarDeviceToken([FromBody] DeviceTokenDTO dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Token))
+                return BadRequest(new { message = "Token requerido" });
+
+            var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(idClaim, out var personaId))
+                return Unauthorized();
+
+            var persona = await _unitOfWork.PersonaRepository.GetByIdAsync(personaId);
+            if (persona == null)
+                return NotFound(new { message = "Persona no encontrada" });
+
+            persona.FcmToken = dto.Token;
+            _unitOfWork.PersonaRepository.Update(persona);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Ok(new { message = "Token registrado" });
         }
 
         /// <summary>
